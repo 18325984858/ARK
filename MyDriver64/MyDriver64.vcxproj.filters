@@ -1,0 +1,230 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Driver Files">
+      <UniqueIdentifier>{8E41214B-6785-4CFE-B992-037D68949A14}</UniqueIdentifier>
+      <Extensions>inf;inv;inx;mof;mc;</Extensions>
+    </Filter>
+    <Filter Include="Header Files\DataStruct">
+      <UniqueIdentifier>{721ff7d3-5e0c-4d52-8b56-cd1467de8847}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\DataStruct">
+      <UniqueIdentifier>{323555c0-93ab-47f1-8d23-b55862d6c9fe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Hook">
+      <UniqueIdentifier>{5bdcfdd7-aaae-4316-8036-92087ba35143}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\SSDT">
+      <UniqueIdentifier>{d5da8608-14ff-408c-bfaa-d6aded353195}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Inf Include="MyDriver64.inf">
+      <Filter>Driver Files</Filter>
+    </Inf>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="MainDriver.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Function.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CommuniCation.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Interface.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SearchMemory.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FindModuleData.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DataStruct\CList.c">
+      <Filter>Source Files\DataStruct</Filter>
+    </ClCompile>
+    <ClCompile Include="DataStruct\CStack.c">
+      <Filter>Source Files\DataStruct</Filter>
+    </ClCompile>
+    <ClCompile Include="File.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Hook\EtwHook.c">
+      <Filter>Source Files\Hook</Filter>
+    </ClCompile>
+    <ClCompile Include="Hook\hde64.c">
+      <Filter>Source Files\Hook</Filter>
+    </ClCompile>
+    <ClCompile Include="Ssdt.c">
+      <Filter>Source Files\SSDT</Filter>
+    </ClCompile>
+    <ClCompile Include="Filter.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Hook\SystemServiceTableCallBack.c">
+      <Filter>Source Files\Hook</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Head.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CommunCation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Interface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DefineArea.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Struct.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Define.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="KernelStruct.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DataStruct\CList.h">
+      <Filter>Header Files\DataStruct</Filter>
+    </ClInclude>
+    <ClInclude Include="DataStruct\CStack.h">
+      <Filter>Header Files\DataStruct</Filter>
+    </ClInclude>
+    <ClInclude Include="Hook\EtwHook.h">
+      <Filter>Source Files\Hook</Filter>
+    </ClInclude>
+    <ClInclude Include="Hook\hde64.h">
+      <Filter>Source Files\Hook</Filter>
+    </ClInclude>
+    <ClInclude Include="Hook\table64.h">
+      <Filter>Source Files\Hook</Filter>
+    </ClInclude>
+    <ClInclude Include="Ssdt.h">
+      <Filter>Source Files\SSDT</Filter>
+    </ClInclude>
+    <ClInclude Include="Filter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FunctionPtr.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Hook\SystemServiceTableCallBack.h">
+      <Filter>Source Files\Hook</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\aarch64.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\alpha.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\arc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\arm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\arm64.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\bpf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\capstone.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\cs_operand.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\evm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\hppa.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\loongarch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\m680x.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\m68k.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\mips.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\mos65xx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\platform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\ppc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\riscv.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\sh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\sparc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\systemz.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\systemz_compatibility.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\tms320c64x.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\tricore.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\wasm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\x86.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\xcore.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\xtensa.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\platform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\windowsce\intrin.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\windowsce\stdint.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <MASM Include="Hook\EtwHookAsm.asm">
+      <Filter>Source Files\Hook</Filter>
+    </MASM>
+  </ItemGroup>
+</Project>

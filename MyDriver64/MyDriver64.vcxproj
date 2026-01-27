@@ -1,0 +1,201 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|ARM64">
+      <Configuration>Debug</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|ARM64">
+      <Configuration>Release</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{A650AE17-156E-4930-B5B6-1C78D9BCE2F5}</ProjectGuid>
+    <TemplateGuid>{1bc93793-694f-48fe-9372-81e2b05556fd}</TemplateGuid>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <MinimumVisualStudioVersion>12.0</MinimumVisualStudioVersion>
+    <Configuration>Debug</Configuration>
+    <Platform Condition="'$(Platform)' == ''">x64</Platform>
+    <RootNamespace>MyDriver64</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
+    <ProjectName>MyDriver64</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <TargetVersion>Windows10</TargetVersion>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
+    <ConfigurationType>Driver</ConfigurationType>
+    <DriverType>KMDF</DriverType>
+    <DriverTargetPlatform>Universal</DriverTargetPlatform>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <TargetVersion>Windows10</TargetVersion>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
+    <ConfigurationType>Driver</ConfigurationType>
+    <DriverType>KMDF</DriverType>
+    <DriverTargetPlatform>Desktop</DriverTargetPlatform>
+    <Driver_SpectreMitigation>false</Driver_SpectreMitigation>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'" Label="Configuration">
+    <TargetVersion>Windows10</TargetVersion>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
+    <ConfigurationType>Driver</ConfigurationType>
+    <DriverType>KMDF</DriverType>
+    <DriverTargetPlatform>Universal</DriverTargetPlatform>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'" Label="Configuration">
+    <TargetVersion>Windows10</TargetVersion>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
+    <ConfigurationType>Driver</ConfigurationType>
+    <DriverType>KMDF</DriverType>
+    <DriverTargetPlatform>Universal</DriverTargetPlatform>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
+    <Inf2CatUseLocalTime>true</Inf2CatUseLocalTime>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
+    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
+    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <DriverSign>
+      <FileDigestAlgorithm>sha256</FileDigestAlgorithm>
+    </DriverSign>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <DriverSign>
+      <FileDigestAlgorithm>sha256</FileDigestAlgorithm>
+    </DriverSign>
+    <ClCompile>
+      <TreatWarningAsError>false</TreatWarningAsError>
+      <StructMemberAlignment>8Bytes</StructMemberAlignment>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+      <LanguageStandard>Default</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>fltmgr.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <TreatLinkerWarningAsErrors>false</TreatLinkerWarningAsErrors>
+      <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
+    </Link>
+    <MASM>
+      <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+      <WarningLevel>0</WarningLevel>
+    </MASM>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
+    <DriverSign>
+      <FileDigestAlgorithm>sha256</FileDigestAlgorithm>
+    </DriverSign>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
+    <DriverSign>
+      <FileDigestAlgorithm>sha256</FileDigestAlgorithm>
+    </DriverSign>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <Inf Include="MyDriver64.inf" />
+  </ItemGroup>
+  <ItemGroup>
+    <FilesToPackage Include="$(TargetPath)" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="CommuniCation.c" />
+    <ClCompile Include="DataStruct\CList.c" />
+    <ClCompile Include="DataStruct\CStack.c" />
+    <ClCompile Include="File.c" />
+    <ClCompile Include="Filter.c" />
+    <ClCompile Include="FindModuleData.c" />
+    <ClCompile Include="Function.c" />
+    <ClCompile Include="Hook\EtwHook.c" />
+    <ClCompile Include="Hook\hde64.c" />
+    <ClCompile Include="Hook\SystemServiceTableCallBack.c" />
+    <ClCompile Include="Interface.c" />
+    <ClCompile Include="MainDriver.c" />
+    <ClCompile Include="SearchMemory.c" />
+    <ClCompile Include="Ssdt.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\aarch64.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\alpha.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\arc.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\arm.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\arm64.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\bpf.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\capstone.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\cs_operand.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\evm.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\hppa.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\loongarch.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\m680x.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\m68k.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\mips.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\mos65xx.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\platform.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\ppc.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\riscv.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\sh.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\sparc.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\systemz.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\systemz_compatibility.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\tms320c64x.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\tricore.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\wasm.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\x86.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\xcore.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\xtensa.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\platform.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\windowsce\intrin.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\windowsce\stdint.h" />
+    <ClInclude Include="CommunCation.h" />
+    <ClInclude Include="DataStruct\CList.h" />
+    <ClInclude Include="DataStruct\CStack.h" />
+    <ClInclude Include="Define.h" />
+    <ClInclude Include="DefineArea.h" />
+    <ClInclude Include="Filter.h" />
+    <ClInclude Include="FunctionPtr.h" />
+    <ClInclude Include="Head.h" />
+    <ClInclude Include="Hook\EtwHook.h" />
+    <ClInclude Include="Hook\hde64.h" />
+    <ClInclude Include="Hook\SystemServiceTableCallBack.h" />
+    <ClInclude Include="Hook\table64.h" />
+    <ClInclude Include="Interface.h" />
+    <ClInclude Include="KernelStruct.h" />
+    <ClInclude Include="Ssdt.h" />
+    <ClInclude Include="Struct.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <MASM Include="Hook\EtwHookAsm.asm" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
+  </ImportGroup>
+</Project>

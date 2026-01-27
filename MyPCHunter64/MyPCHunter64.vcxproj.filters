@@ -1,0 +1,372 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="LoadPe">
+      <UniqueIdentifier>{eb7f5c22-0eeb-4dae-868c-e7adff89c1c5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThreadPool">
+      <UniqueIdentifier>{d8c0150c-3f53-4305-b877-634a5ebe5986}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include">
+      <UniqueIdentifier>{266bb2a4-f913-40bb-9356-ad479bcd74f4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\PDB">
+      <UniqueIdentifier>{980aa14a-7963-4123-ac65-bee3ce053489}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\capstone">
+      <UniqueIdentifier>{c098af4c-146a-4044-a93f-97be2e766b42}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="MyPCHunter64.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="MyPCHunter64Dlg.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="framework.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DlgProcess.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DlgDriverModule.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="CLoadDriver.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\MyDriver64\Struct.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Thread.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DlgEnumFile.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DlgEnumRegistry.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DlgKernel.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DlgKernelHook.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DlgGdt.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="UserStruct.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DlgProcessVad.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DlgProcessThread.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DlgProcessHandle.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DlgProcessModule.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DlgIdt.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DlgSsdt.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DlgSsdtShadow.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="LoadPe.h">
+      <Filter>LoadPe</Filter>
+    </ClInclude>
+    <ClInclude Include="DlgKernelCallBack.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DlgMiniFilterCallBack.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DlgObjectCallBack.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DlgMajorfunction.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DlgDpc.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DlgRWMemory.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DlgHalTable.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DlgWdf.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="BaseClass.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="CThreadPool.h">
+      <Filter>ThreadPool</Filter>
+    </ClInclude>
+    <ClInclude Include="DlgProcessMonitor.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Pdb\Pdb.h">
+      <Filter>include\PDB</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Pdb\SymLoader.h">
+      <Filter>include\PDB</Filter>
+    </ClInclude>
+    <ClInclude Include="DlgFilterDriver.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DlgSetting.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\aarch64.h">
+      <Filter>include\capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\alpha.h">
+      <Filter>include\capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\arc.h">
+      <Filter>include\capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\arm.h">
+      <Filter>include\capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\arm64.h">
+      <Filter>include\capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\bpf.h">
+      <Filter>include\capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\capstone.h">
+      <Filter>include\capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\cs_operand.h">
+      <Filter>include\capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\evm.h">
+      <Filter>include\capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\hppa.h">
+      <Filter>include\capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\loongarch.h">
+      <Filter>include\capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\m680x.h">
+      <Filter>include\capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\m68k.h">
+      <Filter>include\capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\mips.h">
+      <Filter>include\capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\mos65xx.h">
+      <Filter>include\capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\platform.h">
+      <Filter>include\capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\ppc.h">
+      <Filter>include\capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\riscv.h">
+      <Filter>include\capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\sh.h">
+      <Filter>include\capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\sparc.h">
+      <Filter>include\capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\systemz.h">
+      <Filter>include\capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\systemz_compatibility.h">
+      <Filter>include\capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\tms320c64x.h">
+      <Filter>include\capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\tricore.h">
+      <Filter>include\capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\wasm.h">
+      <Filter>include\capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\x86.h">
+      <Filter>include\capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\xcore.h">
+      <Filter>include\capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\xtensa.h">
+      <Filter>include\capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\platform.h">
+      <Filter>include\capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\windowsce\intrin.h">
+      <Filter>include\capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\windowsce\stdint.h">
+      <Filter>include\capstone</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="MyPCHunter64.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="MyPCHunter64Dlg.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DlgProcess.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DlgDriverModule.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="CLoadDriver.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="function.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Thread.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DlgEnumFile.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DlgEnumRegistry.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DlgKernel.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DlgKernelHook.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DlgGdt.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DlgProcessVad.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DlgProcessThread.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DlgProcessHandle.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DlgProcessModule.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DlgIdt.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DlgSsdt.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DlgSsdtShadow.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="LoadPe.cpp">
+      <Filter>LoadPe</Filter>
+    </ClCompile>
+    <ClCompile Include="DlgKernelCallBack.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DlgMiniFilterCallBack.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DlgObjectCallBack.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DlgMajorfunction.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DlgDpc.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DlgRWMemory.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DlgHalTable.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DlgWdf.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseClass.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="CThreadPool.cpp">
+      <Filter>ThreadPool</Filter>
+    </ClCompile>
+    <ClCompile Include="DlgProcessMonitor.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="include\Pdb\Pdb.cpp">
+      <Filter>include\PDB</Filter>
+    </ClCompile>
+    <ClCompile Include="include\Pdb\SymLoader.cpp">
+      <Filter>include\PDB</Filter>
+    </ClCompile>
+    <ClCompile Include="DlgFilterDriver.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DlgSetting.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MyPCHunter64.rc">
+      <Filter>资源文件</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\MyPCHunter64.rc2">
+      <Filter>资源文件</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\MyPCHunter64.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+  </ItemGroup>
+</Project>

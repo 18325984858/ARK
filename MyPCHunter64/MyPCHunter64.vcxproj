@@ -1,0 +1,321 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <ProjectGuid>{56815098-76FE-46E5-9EB6-FA383F580D08}</ProjectGuid>
+    <Keyword>MFCProj</Keyword>
+    <RootNamespace>MyPCHunter64</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <UseOfMfc>Dynamic</UseOfMfc>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <UseOfMfc>Dynamic</UseOfMfc>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <UseOfMfc>Dynamic</UseOfMfc>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <UseOfMfc>Static</UseOfMfc>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>.\include;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+    </Link>
+    <Midl>
+      <MkTypLibCompatible>false</MkTypLibCompatible>
+      <ValidateAllParameters>true</ValidateAllParameters>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </Midl>
+    <ResourceCompile>
+      <Culture>0x0804</Culture>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+    </Link>
+    <Midl>
+      <MkTypLibCompatible>false</MkTypLibCompatible>
+      <ValidateAllParameters>true</ValidateAllParameters>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </Midl>
+    <ResourceCompile>
+      <Culture>0x0804</Culture>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+    <Midl>
+      <MkTypLibCompatible>false</MkTypLibCompatible>
+      <ValidateAllParameters>true</ValidateAllParameters>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </Midl>
+    <ResourceCompile>
+      <Culture>0x0804</Culture>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>false</SDLCheck>
+      <PreprocessorDefinitions>_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <StructMemberAlignment>8Bytes</StructMemberAlignment>
+      <LanguageStandard>stdcpp14</LanguageStandard>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <LanguageStandard_C>Default</LanguageStandard_C>
+      <ConformanceMode>false</ConformanceMode>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>FltLib.lib;Advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <Midl>
+      <MkTypLibCompatible>false</MkTypLibCompatible>
+      <ValidateAllParameters>true</ValidateAllParameters>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </Midl>
+    <ResourceCompile>
+      <Culture>0x0804</Culture>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\aarch64.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\alpha.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\arc.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\arm.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\arm64.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\bpf.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\capstone.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\cs_operand.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\evm.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\hppa.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\loongarch.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\m680x.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\m68k.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\mips.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\mos65xx.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\platform.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\ppc.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\riscv.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\sh.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\sparc.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\systemz.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\systemz_compatibility.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\tms320c64x.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\tricore.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\wasm.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\x86.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\xcore.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\capstone\xtensa.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\platform.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\windowsce\intrin.h" />
+    <ClInclude Include="..\capstone-6.0.0-Alpha6\include\windowsce\stdint.h" />
+    <ClInclude Include="..\MyDriver64\Struct.h" />
+    <ClInclude Include="BaseClass.h" />
+    <ClInclude Include="CLoadDriver.h" />
+    <ClInclude Include="CThreadPool.h" />
+    <ClInclude Include="DlgDpc.h" />
+    <ClInclude Include="DlgFilterDriver.h" />
+    <ClInclude Include="DlgHalTable.h" />
+    <ClInclude Include="DlgMajorfunction.h" />
+    <ClInclude Include="DlgDriverModule.h" />
+    <ClInclude Include="DlgEnumFile.h" />
+    <ClInclude Include="DlgEnumRegistry.h" />
+    <ClInclude Include="DlgGdt.h" />
+    <ClInclude Include="DlgIdt.h" />
+    <ClInclude Include="DlgKernel.h" />
+    <ClInclude Include="DlgKernelCallBack.h" />
+    <ClInclude Include="DlgKernelHook.h" />
+    <ClInclude Include="DlgMiniFilterCallBack.h" />
+    <ClInclude Include="DlgObjectCallBack.h" />
+    <ClInclude Include="DlgProcess.h" />
+    <ClInclude Include="DlgProcessHandle.h" />
+    <ClInclude Include="DlgProcessModule.h" />
+    <ClInclude Include="DlgProcessMonitor.h" />
+    <ClInclude Include="DlgProcessThread.h" />
+    <ClInclude Include="DlgProcessVad.h" />
+    <ClInclude Include="DlgRWMemory.h" />
+    <ClInclude Include="DlgSetting.h" />
+    <ClInclude Include="DlgSsdt.h" />
+    <ClInclude Include="DlgSsdtShadow.h" />
+    <ClInclude Include="DlgWdf.h" />
+    <ClInclude Include="framework.h" />
+    <ClInclude Include="include\Pdb\Pdb.h" />
+    <ClInclude Include="include\Pdb\SymLoader.h" />
+    <ClInclude Include="LoadPe.h" />
+    <ClInclude Include="MyPCHunter64.h" />
+    <ClInclude Include="MyPCHunter64Dlg.h" />
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="Resource.h" />
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="Thread.h" />
+    <ClInclude Include="UserStruct.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="BaseClass.cpp" />
+    <ClCompile Include="CLoadDriver.cpp" />
+    <ClCompile Include="CThreadPool.cpp" />
+    <ClCompile Include="DlgDpc.cpp" />
+    <ClCompile Include="DlgFilterDriver.cpp" />
+    <ClCompile Include="DlgHalTable.cpp" />
+    <ClCompile Include="DlgMajorfunction.cpp" />
+    <ClCompile Include="DlgDriverModule.cpp" />
+    <ClCompile Include="DlgEnumFile.cpp" />
+    <ClCompile Include="DlgEnumRegistry.cpp" />
+    <ClCompile Include="DlgGdt.cpp" />
+    <ClCompile Include="DlgIdt.cpp" />
+    <ClCompile Include="DlgKernel.cpp" />
+    <ClCompile Include="DlgKernelCallBack.cpp" />
+    <ClCompile Include="DlgKernelHook.cpp" />
+    <ClCompile Include="DlgMiniFilterCallBack.cpp" />
+    <ClCompile Include="DlgObjectCallBack.cpp" />
+    <ClCompile Include="DlgProcess.cpp" />
+    <ClCompile Include="DlgProcessHandle.cpp" />
+    <ClCompile Include="DlgProcessModule.cpp" />
+    <ClCompile Include="DlgProcessMonitor.cpp" />
+    <ClCompile Include="DlgProcessThread.cpp" />
+    <ClCompile Include="DlgProcessVad.cpp" />
+    <ClCompile Include="DlgRWMemory.cpp" />
+    <ClCompile Include="DlgSetting.cpp" />
+    <ClCompile Include="DlgSsdt.cpp" />
+    <ClCompile Include="DlgSsdtShadow.cpp" />
+    <ClCompile Include="DlgWdf.cpp" />
+    <ClCompile Include="function.cpp" />
+    <ClCompile Include="include\Pdb\Pdb.cpp" />
+    <ClCompile Include="include\Pdb\SymLoader.cpp" />
+    <ClCompile Include="LoadPe.cpp" />
+    <ClCompile Include="MyPCHunter64.cpp" />
+    <ClCompile Include="MyPCHunter64Dlg.cpp" />
+    <ClCompile Include="pch.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Thread.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MyPCHunter64.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\MyPCHunter64.rc2" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\MyPCHunter64.ico" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
