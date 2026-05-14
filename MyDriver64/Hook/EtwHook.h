@@ -1,9 +1,9 @@
-#pragma once
+﻿#pragma once
 #include "../Head.h"
 #include "../DataStruct/CList.h"
 
 ////////////////////////////////////////////////////////////////////////
-// ETW��������
+// ETW操作类型
 typedef enum _trace_type
 {
 	start_trace = 1,
@@ -66,144 +66,144 @@ typedef struct _CKCL_TRACE_PROPERIES
 	UNICODE_STRING ProviderName;
 } CKCL_TRACE_PROPERTIES, * PCKCL_TRACE_PROPERTIES;
 
-//�洢Hook����������ֵ
+//存储Hook链表中最大的值
 #define ETW_HOOK_LEVEN_MAX_VALUE 0xFF
-//�洢Hook������ͷ�ڵ��ֵ
+//存储Hook链表中头节点的值
 #define ETW_HOOK_LEVEN_HEAD_VALUE 0x00
 
 typedef struct _EtwHook
 {
-	PCListNode ParentListNode;				//�洢���ڵ�ָ��
-	CList AttachList;						//���ӵ�����
-	PCList pCurList;						//��ǰ�ڵ����ڵ�����
+	PCListNode ParentListNode;				//存储父节点指针
+	CList AttachList;						//附加的链表
+	PCList pCurList;						//当前节点所在的链表
 	union
 	{
-		ULONG64 nFlags;						//��־
+		ULONG64 nFlags;						//标志
 		struct
 		{
-			ULONG64 nIsAttach : 1;			//�洢�Ƿ��б�Attach������ 0����û�� 1������
-			ULONG64 nInitAttachList : 1;	//�洢�Ƿ��ʼ����Attach���� 0����û�� 1������
-			ULONG64 nIsRootNode : 1;		//�ж��Ƿ��Ǹ��ڵ� ����ڵ�ֻ�����Լ��� ���ܸ���ɾ���������SSSDT��
-			ULONG64 nIsValid : 1;			//�ж��Ƿ���Ч ��Ϊ1ʱ��ʾ��Ч ��Ϊ0ʱ��ʾ��Ч
-			ULONG64 nIndex : 8;				//��ʾ�����������ǵڼ��� ���0xFF��
-			ULONG64 nIsMonitor : 1;			//�Ƿ����˼��
-			ULONG64 nLeven : 16;			//�㼶16λ ��8Ϊ����X ��8λ����Y
-			ULONG64 nMaxLeven : 16;			//��ǰ���㼶
+			ULONG64 nIsAttach : 1;			//存储是否有被Attach的数据 0代表没有 1代表有
+			ULONG64 nInitAttachList : 1;	//存储是否初始化了Attach链表 0代表没有 1代表有
+			ULONG64 nIsRootNode : 1;		//判断是否是根节点 这个节点只负责自己用 不能更改删除用来监控SSSDT表
+			ULONG64 nIsValid : 1;			//判断是否有效 当为1时表示有效 当为0时表示无效
+			ULONG64 nIndex : 8;				//表示这在链表中是第几个 最多0xFF个
+			ULONG64 nIsMonitor : 1;			//是否开启了监控
+			ULONG64 nLeven : 16;			//层级16位 高8为代表X 低8位代表Y
+			ULONG64 nMaxLeven : 16;			//当前最大层级
 		};
 	};
 
-	ULONG64 SrcAddr;						//��¼ҪHOOK��ԭ��ַ
-	ULONG64 CallAddr;						//��¼ҪCall�ĵ�ַ
+	ULONG64 SrcAddr;						//记录要HOOK的原地址
+	ULONG64 CallAddr;						//记录要Call的地址
 
 }CEtwHook, * PCEtwHook;
 
-//�����ص�ָ��
+//函数回调指针
 typedef void(__fastcall* fptr_call_back)(unsigned long ssdt_index, void** ssdt_address);
 
-EXTERN_C CList g_EtwHookList;												//�洢�޸ĵ�Ҳ�ڴ����Ե�ַ
-EXTERN_C ULONG g_IsOpenEtw;													//�洢��ǰ��Etw�Ƿ���
-EXTERN_C ULONG64 g_OldCpuClock;												//�洢��ǰ��GetCpuClock
-EXTERN_C ULONG64 g_pCpuClock;												//�洢GetCpuClock��ָ��
-EXTERN_C ULONG64 g_SyscallTable;											//�洢ϵͳ�����׵�ַ
-EXTERN_C ULONG64 g_OldHalpPerformanceCounter;								//�洢�ɵ�HalpPerformanceCounter
-//EXTERN_C ULONG64 HalPrivateDispatchTable;									//�洢Ntoskrnl��HalPrivateDispatchTableȫ�ֱ���
-EXTERN_C ULONG64 HalpPerformanceCounter;									//�洢HalpTimerQueryHostPerformanceCounter��ʹ�õ�ȫ�ֱ���HalpPerformanceCounter
-EXTERN_C fptr_call_back g_pEtwFunCallBack;									//�洢Ҫִ�еĺ���
+EXTERN_C CList g_EtwHookList;												//存储修改的也内存属性地址
+EXTERN_C ULONG g_IsOpenEtw;													//存储先前的Etw是否开启
+EXTERN_C ULONG64 g_OldCpuClock;												//存储先前的GetCpuClock
+EXTERN_C ULONG64 g_pCpuClock;												//存储GetCpuClock的指针
+EXTERN_C ULONG64 g_SyscallTable;											//存储系统掉用首地址
+EXTERN_C ULONG64 g_OldHalpPerformanceCounter;								//存储旧的HalpPerformanceCounter
+//EXTERN_C ULONG64 HalPrivateDispatchTable;									//存储Ntoskrnl中HalPrivateDispatchTable全局变量
+EXTERN_C ULONG64 HalpPerformanceCounter;									//存储HalpTimerQueryHostPerformanceCounter中使用的全局变量HalpPerformanceCounter
+EXTERN_C fptr_call_back g_pEtwFunCallBack;									//存储要执行的函数
 
-EXTERN_C ULONG64 g_MyHalpHvCounterQueryCounterAddr;							//�洢Ҫ���õĺ���ָ��
-EXTERN_C ULONG64 g_OldHalpPerformanceCounter;								//�洢�ɵ�HalpPerformanceCounter
-EXTERN_C ULONG64 g_circularKernelContextLogger;								//�洢ԭContext�ṹ���ַ
-EXTERN_C VOID checkLogger();												//ETW���庯��
+EXTERN_C ULONG64 g_MyHalpHvCounterQueryCounterAddr;							//存储要调用的函数指针
+EXTERN_C ULONG64 g_OldHalpPerformanceCounter;								//存储旧的HalpPerformanceCounter
+EXTERN_C ULONG64 g_circularKernelContextLogger;								//存储原Context结构体地址
+EXTERN_C VOID checkLogger();												//ETW跳板函数
 
-//��ַ�ȽϺ���,���ڴ��ݸ������ص� �Ƚ�ԭ������Ŀ�꺯����ַ
+//地址比较函数,用于传递给链表回调 比较原函数和目标函数地址
 DWORD EtwCmpSrcAndDstAddr(PCEtwHook SrcAddr, PCEtwHook DstAddr);
 
-//��ַ�ȽϺ���,���ڴ��ݸ������ص� ֻ�Ƚ�Դ������ַ
+//地址比较函数,用于传递给链表回调 只比较源函数地址
 DWORD EtwCmpSrcAddr(PCEtwHook SrcAddr, PCEtwHook DstAddr);
 
 ////////////////////////////////////////////////////////////////////////
-//����:��ʼ��ETW�����Ϣ
-//����һ:Ҫִ�еĺ�����ַ
-ULONG64 EtwInit(ULONG64 pFunCallBack);																								//��ʼ��Etw
+//功能:初始化ETW相关信息
+//参数一:要执行的函数地址
+ULONG64 EtwInit(ULONG64 pFunCallBack);																								//初始化Etw
 ////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////
-//����:����ETWHOOK
-ULONG64 EtwStart();																													//����Etw
+//功能:运行ETWHOOK
+ULONG64 EtwStart();																													//运行Etw
 ////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////
-//����:ֹͣ����ETWHOOK
-ULONG64 EtwStop();																													//ֹͣEtw
+//功能:停止运行ETWHOOK
+ULONG64 EtwStop();																													//停止Etw
 ////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////
-VOID keQueryPerformanceCounterHook(ULONG_PTR pStack);																				//�Լ��ĺ���
+VOID keQueryPerformanceCounterHook(ULONG_PTR pStack);																				//自己的函数
 ////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////
-ULONG64 self_get_cpu_clock();																										//��ȡ���ú�����ַλ��
+ULONG64 self_get_cpu_clock();																										//获取调用函数地址位置
 ////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////
-PVOID64 get_syscall_entry(ULONG64 ntoskrnl);																						//��ȡ���ñ�
+PVOID64 get_syscall_entry(ULONG64 ntoskrnl);																						//获取调用表
 ////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////
-ULONG64 get_image_address(ULONG64 addr, PCHAR name, PULONG32 size);																	//��ȡģ�����ַ
+ULONG64 get_image_address(ULONG64 addr, PCHAR name, PULONG32 size);																	//获取模块基地址
 ////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////
-//����:����ҪHook�ĵ�ַ								2024��8��24��19:23:08
-//����һ:ԭ������ַ
-//������:���õĵ�ַ
-//����ֵ:���ӳɹ�������,ʧ�ܷ��ؼ�
-PCEtwHook HookAddr(ULONG64 SrcAddr/*ԭ��ַ*/, ULONG64 CallAddt/*Ҫ�滻�ĵ�ַ*/, USHORT SrcLeven/*Ҫ����Ĳ㼶 0xFF00����X 0x00FF����Y*/);
+//功能:添加要Hook的地址								2024年8月24日19:23:08
+//参数一:原函数地址
+//参数二:调用的地址
+//返回值:添加成功返回真,失败返回假
+PCEtwHook HookAddr(ULONG64 SrcAddr/*原地址*/, ULONG64 CallAddt/*要替换的地址*/, USHORT SrcLeven/*要插入的层级 0xFF00代表X 0x00FF代表Y*/);
 ////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////
-//����:ж��Hook										2024��8��24��19:23:26
-//����һ:����HookAddr�����ķ���ֵ
-//����ֵ:�ɹ�������,ʧ�ܷ���FALSE
-ULONG64 UnHookAddr(PCEtwHook SrcAddr/*Ҫɾ���ĵ�ַ,ԭ������ַ*/);
+//功能:卸载Hook										2024年8月24日19:23:26
+//参数一:调用HookAddr函数的返回值
+//返回值:成功返回真,失败返回FALSE
+ULONG64 UnHookAddr(PCEtwHook SrcAddr/*要删除的地址,原函数地址*/);
 ////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////
-//����:���ҽڵ�										2024��8��24��19:23:20
-//����һ:Ҫ���ҵ����ݽṹ��,�˽ṹ���ڵ���HookAddr�������ص�
-//������:Ҫ�Աȷ�ʽ,�ڲ�����ô˲������жԱ�
-//������:�������� ��ѯ���ڵ��Ƿ��ؽڵ����ڵ�����
-//����ֵ:�ɹ����ز�ѯ���Ľڵ�,ʧ�ܷ���NULL
+//功能:查找节点										2024年8月24日19:23:20
+//参数一:要查找的数据结构体,此结构是在调用HookAddr函数返回的
+//参数二:要对比方式,内部会调用此参数进行对比
+//参数三:传出参数 查询到节点是返回节点所在的链表
+//返回值:成功返回查询到的节点,失败返回NULL
 PCListNode FindEtwHookData(PCEtwHook SrcData, CMPFUNPTRCALLBACK pfun, PCList* pOutList);
 ////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////
-//����:��ѯҪָ�������п��Բ����λ��					2024��8��24��19:23:32
-//����һ:Ҫ��ѯ������
-//������:Ҫ����Ĳ㼶
-//������:Ҫ���������
-//������:�������� ��ΪNULL ����ѯ���ڵ�֮��˲���������ֵΪ��ǰ�ڵ�����
-//������:�������� ��ΪNULL ��Ҫ���������Ϊ��������ʱ�����ô˲���
-//����ֵ:�ɹ�����Ҫ����ڵ��ǰһ���ڵ�,ʧ�ܷ���NULL
+//功能:查询要指定链表中可以插入的位置					2024年8月24日19:23:32
+//参数一:要查询的链表
+//参数二:要插入的层级
+//参数三:要插入的数据
+//参数四:传出参数 可为NULL 当查询到节点之后此参数将被赋值为当前节点链表
+//参数五:传出参数 可为NULL 当要插入的数据为附加链表时会设置此参数
+//返回值:成功返回要插入节点的前一个节点,失败返回NULL
 PCListNode FindInsertDataNode(PCList plist, USHORT SrcLeven, PCEtwHook SrcData, PCList* pOutList, PCListNode* pParentNode);
 ////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////
-//����:�޸�������Index��ֵȷ����������					2024��8��24��19:23:40
-//����һ:�����׵�ַ
-//����ֵ:��
+//功能:修复链表中Index的值确保是连续的					2024年8月24日19:23:40
+//参数一:链表首地址
+//返回值:无
 void RepairEtwData(PCList pList);
 ////////////////////////////////////////////////////////////////////////
 
 
 ////////////////////////////////////////////////////////////////////////
-//����:����EtwHook��ǰ���е�״̬						2024��9��1��000:444:40
-//����ֵ:���з���TRUE,ֹͣ����FALSE
+//功能:返回EtwHook当前运行的状态						2024年9月1日000:444:40
+//返回值:运行返回TRUE,停止返回FALSE
 UCHAR IsEtwHookRun();
 ////////////////////////////////////////////////////////////////////////
 
 
-//ZwTraceControl�ں˺�������
+//ZwTraceControl内核函数声明
 EXTERN_C NTSYSCALLAPI NTSTATUS NTAPI ZwTraceControl(
 	_In_ ULONG FunctionCode,
 	_In_reads_bytes_opt_(InBufferLen) PVOID InBuffer,

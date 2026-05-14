@@ -1,6 +1,7 @@
-#include "CLoadDriver.h"
+ï»¿#include "CLoadDriver.h"
 #include "../MyDriver64/Struct.h"
 #include "pch.h"
+#include "MyPCHunter64.h"
 #include <fltUser.h>
 #include <winsvc.h>
 #include "DlgMajorfunction.h"
@@ -13,7 +14,7 @@ _LoadDriver::_LoadDriver()
 	m_Port = NULL;
 	m_ThreadsRuning = FALSE;
 
-	//³õÊ¼»¯º¯ÊıÖ¸Õë
+	//åˆå§‹åŒ–å‡½æ•°æŒ‡é’ˆ
 	m_pUserCallBackFun[Um_UserCallBackType_UserEnumProcessInfo] = &_LoadDriver::UserEnumProcessInfo;
 	m_pUserCallBackFun[Um_UserCallBackType_UserKillProcess] = &_LoadDriver::UserKillProcess;
 	m_pUserCallBackFun[Um_UserCallBackType_UserEnumDriverInfo] = &_LoadDriver::UserEnumDriverInfo;
@@ -35,6 +36,7 @@ _LoadDriver::_LoadDriver()
 	m_pUserCallBackFun[Um_UserCallBackType_UserEnumHalTableInfo] = &_LoadDriver::UserEnumHalTableInfo;
 	m_pUserCallBackFun[Um_UserCallBackType_UserEnumWdfInfo] = &_LoadDriver::UserEnumWdfInfo;
 	m_pUserCallBackFun[Um_UserCallBackType_UserEnumDpcInfo] = &_LoadDriver::UserEnumDpcInfo;
+	m_pUserCallBackFun[Um_UserCallBackType_UserEnumWorkerThreadInfo] = &_LoadDriver::UserEnumWorkerThreadInfo;
 	m_pUserCallBackFun[Um_UserCallBackType_UserEnumDriverMajorFunctionInfo] = &_LoadDriver::UserEnumDriverMajorFunctionInfo;
 	m_pUserCallBackFun[Um_UserCallBackType_UserEnumIdtInfo] = &_LoadDriver::UserEnumIdtInfo;
 	m_pUserCallBackFun[Um_UserCallBackType_UserHookSsdtTable] = &_LoadDriver::UserHookSsdtTable;
@@ -53,38 +55,38 @@ _LoadDriver::_LoadDriver()
 _LoadDriver::~_LoadDriver()
 {
 
-	//ÊÍ·Å×ÊÔ´
+	//é‡Šæ”¾èµ„æº
 
-	//Ê×ÏÈ¶Ï¿ªÁ¬½Ó
+	//é¦–å…ˆæ–­å¼€è¿æ¥
 	if (m_Port != NULL)
 	{
 		CloseHandle(m_Port);
 		m_Port = NULL;
 	}
 
-	//ÉèÖÃÏß³ÌÔËĞĞ±êÖ¾
+	//è®¾ç½®çº¿ç¨‹è¿è¡Œæ ‡å¿—
 	m_ThreadsRuning = FALSE;
 
-	//Æä´ÎÊÍ·ÅµôÏß³Ì
+	//å…¶æ¬¡é‡Šæ”¾æ‰çº¿ç¨‹
 	if (!m_Threads.empty())
 	{
 		for (auto Lst : m_Threads)
 		{
-			//µÈ´ıÏß³Ì½áÊø
+			//ç­‰å¾…çº¿ç¨‹ç»“æŸ
 			Lst->join();
-			//MessageBox(NULL, TEXT("ÊÍ·ÅÏß³Ì!"), TEXT("²âÊÔ"), MB_OK);
+			//MessageBox(NULL, TEXT("é‡Šæ”¾çº¿ç¨‹!"), TEXT("æµ‹è¯•"), MB_OK);
 
-			//ÊÍ·ÅÏß³Ì×ÊÔ´
+			//é‡Šæ”¾çº¿ç¨‹èµ„æº
 			delete Lst;
 		}
 	}
 
-	//±éÀúÁ´±í ²éÕÒÊÇ·ñ»¹ÓĞÎ´±»È¡×ßµÄÊı¾İ ÊÍ·Å
+	//éå†é“¾è¡¨ æŸ¥æ‰¾æ˜¯å¦è¿˜æœ‰æœªè¢«å–èµ°çš„æ•°æ® é‡Šæ”¾
 	if (!m_FilterMessageQueue.empty())
 	{
 		for (auto Lst : m_FilterMessageQueue)
 		{
-			//Ö±½ÓÊÍ·Å×ÊÔ´
+			//ç›´æ¥é‡Šæ”¾èµ„æº
 			free(Lst);
 		}
 	}
@@ -97,15 +99,15 @@ ULONG64 _LoadDriver::ConnectDriver(CString Name)
 		return FALSE;
 	}
 
-	//³õÊ¼»¯Ïß³Ì
-	//²ÎÊı¶ş:FLT_PORT_FLAG_SYNC_HANDLE Í¬²½Ä£Ê½  0Òì²½Ä£Ê½
+	//åˆå§‹åŒ–çº¿ç¨‹
+	//å‚æ•°äºŒ:FLT_PORT_FLAG_SYNC_HANDLE åŒæ­¥æ¨¡å¼  0å¼‚æ­¥æ¨¡å¼
 	if (FilterConnectCommunicationPort(Name.GetString(), 0, NULL, 0, NULL, &m_Port) == S_OK)
 	{
-		//³õÊ¼»¯Ïß³Ì
+		//åˆå§‹åŒ–çº¿ç¨‹
 		ULONG64 ThreadNumber = CreateGetMessageThread(1);
 		if (ThreadNumber == NULL)
 		{
-			MessageBox(NULL, TEXT("´´½¨Ïß³Ì³ØÊ§°Ü!"), TEXT("¾¯¸æ"), MB_OK);
+			MessageBox(NULL, TEXT("åˆ›å»ºçº¿ç¨‹æ± å¤±è´¥!"), TEXT("è­¦å‘Š"), MB_OK);
 		}
 
 		return TRUE;
@@ -118,23 +120,23 @@ VOID _LoadDriver::SetFileNameAndPath(PWCHAR Driver_Name, PWCHAR Driver_Path)
 	if (Driver_Name != NULL && Driver_Path != NULL)
 	{
 		wcscpy_s(DriverName, MAX_PATH, Driver_Name);
-		GetFullPathNameW(Driver_Path, MAX_PATH, DriverFullNamePath, NULL); //»ñÈ¡µ±Ç°Â·¾¶
+		GetFullPathNameW(Driver_Path, MAX_PATH, DriverFullNamePath, NULL); //è·å–å½“å‰è·¯å¾„
 	}
 }
-BOOL _LoadDriver::LoadDriverFun() //¼ÓÔØÇı¶¯
+BOOL _LoadDriver::LoadDriverFun() //åŠ è½½é©±åŠ¨
 {
 
-	//ÏÈµ÷ÓÃĞ¶ÔØ
+	//å…ˆè°ƒç”¨å¸è½½
 	UnLoadDriverFun();
 
-	SC_HANDLE hServiceMgr = NULL; // SCM¹ÜÀíÆ÷¾ä±ú	
+	SC_HANDLE hServiceMgr = NULL; // SCMç®¡ç†å™¨å¥æŸ„	
 	hServiceMgr = OpenSCManagerW(NULL, NULL, SC_MANAGER_ALL_ACCESS);
 	if (hServiceMgr == NULL)
 	{
-		ErrorMessage(GetLastError(), TEXT("OpenSCManagerW´íÎóĞÅÏ¢:"));
+		ErrorMessage(GetLastError(), TEXT("OpenSCManagerWé”™è¯¯ä¿¡æ¯:"));
 		return FALSE;
 	}
-	SC_HANDLE hServiceDDK = NULL; // NTÇı¶¯³ÌĞò·şÎñ¾ä±ú
+	SC_HANDLE hServiceDDK = NULL; // NTé©±åŠ¨ç¨‹åºæœåŠ¡å¥æŸ„
 	hServiceDDK = CreateServiceW(
 		hServiceMgr,
 		DriverName,
@@ -154,19 +156,19 @@ BOOL _LoadDriver::LoadDriverFun() //¼ÓÔØÇı¶¯
 		DWORD dwErr = GetLastError();
 		if (dwErr != ERROR_IO_PENDING && dwErr != ERROR_SERVICE_EXISTS)
 		{
-			ErrorMessage(GetLastError(), TEXT("OpenSCManagerW´íÎóĞÅÏ¢:"));
+			ErrorMessage(GetLastError(), TEXT("OpenSCManagerWé”™è¯¯ä¿¡æ¯:"));
 			return FALSE;
 		}
 	}
 
-	// Çı¶¯·şÎñÒÑ¾­´´½¨£¬´ò¿ª·şÎñ
+	// é©±åŠ¨æœåŠ¡å·²ç»åˆ›å»ºï¼Œæ‰“å¼€æœåŠ¡
 	hServiceDDK = OpenServiceW(hServiceMgr, DriverName, SERVICE_ALL_ACCESS);
 	if (!StartService(hServiceDDK, NULL, NULL))
 	{
 		DWORD dwErr = GetLastError();
 		if (dwErr != ERROR_SERVICE_ALREADY_RUNNING)
 		{
-			ErrorMessage(GetLastError(), TEXT("ÔËĞĞÇı¶¯·şÎñÊ§°Ü! ´íÎóĞÅÏ¢:"));
+			ErrorMessage(GetLastError(), TEXT("è¿è¡Œé©±åŠ¨æœåŠ¡å¤±è´¥! é”™è¯¯ä¿¡æ¯:"));
 			return FALSE;
 		}
 	}
@@ -181,9 +183,9 @@ BOOL _LoadDriver::LoadDriverFun() //¼ÓÔØÇı¶¯
 	}
 	return TRUE;
 }
-BOOL _LoadDriver::UnLoadDriverFun()//Ğ¶ÔØÇı¶¯º¯Êı
+BOOL _LoadDriver::UnLoadDriverFun()//å¸è½½é©±åŠ¨å‡½æ•°
 {
-	//ÏÈ¹Ø±ÕÍ¨ĞÅ¾ä±ú
+	//å…ˆå…³é—­é€šä¿¡å¥æŸ„
 	if (m_Port != NULL)
 	{
 		CloseHandle(m_Port);
@@ -223,17 +225,22 @@ ULONG64 _LoadDriver::SendMsg(IN ULONG64 dqCmd, IN LPVOID ilpBuffer, OUT LPVOID* 
 
 	DWORD lpBytesReturned = 0;
 
-	//ÏòÇı¶¯·¢ËÍÏûÏ¢
+	DWORD ipc_t0 = GetTickCount();
+	//å‘é©±åŠ¨å‘é€æ¶ˆæ¯
 	ULONG64 nRet = FilterSendMessage(m_Port, &CmdInfo, sizeof(CCommunicationInfo), NULL, NULL, (LPDWORD)&lpBytesReturned);
 	if (S_OK != nRet)
 	{
+		LOGE("[ipc] cmd=0x%llX in=%p out=%p FilterSendMessage hr=0x%08X err=%lu",
+			(unsigned long long)dqCmd, ilpBuffer, OlpBuffer, (unsigned)nRet, GetLastError());
 		CString ErrorStr;
-		ErrorStr.Format(L"·¢ËÍÏûÏ¢Ê§°Ü!ÃüÁî:[%I64X]\n", dqCmd);
+		ErrorStr.Format(L"å‘é€æ¶ˆæ¯å¤±è´¥!å‘½ä»¤:[%I64X]\n", dqCmd);
 		ErrorMessage(GetLastError(), ErrorStr);
 		return MsgRet;
 	}
+	LOGI("[ipc] cmd=0x%llX ret=0x%llX bytes=%lu took=%lums",
+		(unsigned long long)dqCmd, (unsigned long long)MsgRet, lpBytesReturned, GetTickCount() - ipc_t0);
 
-	//½ÓÊÕ·µ»ØµÄ×Ö½Ú´óĞ¡
+	//æ¥æ”¶è¿”å›çš„å­—èŠ‚å¤§å°
 	if (NULL != nNumberOfBytesToWrite)
 	{
 		*nNumberOfBytesToWrite = lpBytesReturned;
@@ -241,7 +248,7 @@ ULONG64 _LoadDriver::SendMsg(IN ULONG64 dqCmd, IN LPVOID ilpBuffer, OUT LPVOID* 
 
 	return MsgRet;
 }
-ULONG64 _LoadDriver::BaseInterfaceFun(ULONG64 Index/*¹¦ÄÜºÅ*/, PVOID Pragma)
+ULONG64 _LoadDriver::BaseInterfaceFun(ULONG64 Index/*åŠŸèƒ½å·*/, PVOID Pragma)
 {
 	if (Index < MAX_USER_CALL_BACK_COUNT && m_pUserCallBackFun[Index] != NULL)
 	{
@@ -265,12 +272,12 @@ ULONG64 _LoadDriver::UserEnumProcessInfo(PVOID pDlgProcessInfo)
 		return FALSE;
 	}
 
-	//·¢ËÍÏûÏ¢»õÆÚ½ø³ÌĞÅÏ¢
+	//å‘é€æ¶ˆæ¯è´§æœŸè¿›ç¨‹ä¿¡æ¯
 	PCProcessInfo pInfo = NULL;
 	SendMsg(um_Cmd_Enum_Process_info, NULL, (LPVOID*)&pInfo);
 
 
-	//²åÈëµ½¿Ø¼şÖĞ
+	//æ’å…¥åˆ°æ§ä»¶ä¸­
 	((DlgProcess*)pDlgProcessInfo)->InsertCtrlListControl(pInfo);
 
 
@@ -284,7 +291,7 @@ ULONG64 _LoadDriver::UserKillProcess(PVOID pDlgProcessInfo)
 		return FALSE;
 	}
 
-	//²åÈëµ½¿Ø¼şÖĞ
+	//æ’å…¥åˆ°æ§ä»¶ä¸­
 	((DlgProcess*)pDlgProcessInfo)->ProcessKillprocess();
 
 
@@ -298,11 +305,11 @@ ULONG64 _LoadDriver::UserEnumDriverInfo(PVOID pDlgDriverInfo)
 		return FALSE;
 	}
 
-	//·¢ËÍÏûÏ¢»õÆÚ½ø³ÌĞÅÏ¢
+	//å‘é€æ¶ˆæ¯è´§æœŸè¿›ç¨‹ä¿¡æ¯
 	PCDriverInfo pInfo = NULL;
 	SendMsg(um_Cmd_Enum_Driver_info, NULL, (LPVOID*)&pInfo);
 
-	//²åÈëµ½¿Ø¼şÖĞ
+	//æ’å…¥åˆ°æ§ä»¶ä¸­
 	((DlgDriverModule*)pDlgDriverInfo)->InsertCtrlListControl(pInfo);
 
 
@@ -315,11 +322,11 @@ ULONG64 _LoadDriver::UserEnumProcessVadInfo(PVOID pDlgProcessVadInfo)
 		return FALSE;
 	}
 
-	//·¢ËÍÏûÏ¢»õÆÚ½ø³ÌĞÅÏ¢
+	//å‘é€æ¶ˆæ¯è´§æœŸè¿›ç¨‹ä¿¡æ¯
 	PCProcessVadInfo pInfo = NULL;
 	//__debugbreak();
 	SendMsg(um_Cmd_Enum_ProcessVad_info, (PVOID)_wcstoui64(((DlgProcessVad*)pDlgProcessVadInfo)->m_StrEprocess.GetBuffer(), 0, 16), (LPVOID*)&pInfo);
-	//²åÈëµ½¿Ø¼şÖĞ
+	//æ’å…¥åˆ°æ§ä»¶ä¸­
 	((DlgProcessVad*)pDlgProcessVadInfo)->InsertCtrlListControl(pInfo);
 
 	return TRUE;
@@ -331,12 +338,12 @@ ULONG64 _LoadDriver::UserEnumProcessThreadInfo(PVOID pDlgProcessThreadInfo)
 		return FALSE;
 	}
 
-	//·¢ËÍÏûÏ¢»õÆÚ½ø³ÌĞÅÏ¢
+	//å‘é€æ¶ˆæ¯è´§æœŸè¿›ç¨‹ä¿¡æ¯
 	PCProcessThreadInfo pInfo = NULL;
 	SendMsg(um_Cmd_Enum_ProcessThread_info, (PVOID)_wcstoui64(((DlgProcessThread*)pDlgProcessThreadInfo)->m_StrEprocess.GetBuffer(), 0, 16), (LPVOID*)&pInfo);
 
 
-	//²åÈëµ½¿Ø¼şÖĞ
+	//æ’å…¥åˆ°æ§ä»¶ä¸­
 	((DlgProcessThread*)pDlgProcessThreadInfo)->InsertCtrlListControl(pInfo);
 
 	return TRUE;
@@ -348,11 +355,11 @@ ULONG64 _LoadDriver::UserEnumProcessHandleInfo(PVOID pDlgProcessHandleInfo)
 		return FALSE;
 	}
 
-	//·¢ËÍÏûÏ¢»õÆÚ½ø³ÌĞÅÏ¢
+	//å‘é€æ¶ˆæ¯è´§æœŸè¿›ç¨‹ä¿¡æ¯
 	PCProcessHandleInfo pInfo = NULL;
 	SendMsg(um_Cmd_Enum_ProcessHandle_info, (PVOID)_wcstoui64(((DlgProcessHandle*)pDlgProcessHandleInfo)->m_StrEprocess.GetBuffer(), 0, 16), (LPVOID*)&pInfo);
 
-	//²åÈëµ½¿Ø¼şÖĞ
+	//æ’å…¥åˆ°æ§ä»¶ä¸­
 	((DlgProcessHandle*)pDlgProcessHandleInfo)->InsertCtrlListControl(pInfo);
 
 	return TRUE;
@@ -364,11 +371,11 @@ ULONG64 _LoadDriver::UserEnumProcessModuleInfo(PVOID pDlgProcessModuleInfo)
 		return FALSE;
 	}
 
-	//·¢ËÍÏûÏ¢»õÆÚ½ø³ÌĞÅÏ¢
+	//å‘é€æ¶ˆæ¯è´§æœŸè¿›ç¨‹ä¿¡æ¯
 	PCProcessModuleInfo pInfo = NULL;
 	SendMsg(um_Cmd_Enum_ProcessModule_info, (PVOID)_wcstoui64(((DlgProcessModule*)pDlgProcessModuleInfo)->m_StrEprocess.GetBuffer(), 0, 16), (LPVOID*)&pInfo);
 
-	//²åÈëµ½¿Ø¼şÖĞ
+	//æ’å…¥åˆ°æ§ä»¶ä¸­
 	((DlgProcessModule*)pDlgProcessModuleInfo)->InsertCtrlListControl(pInfo);
 
 	return TRUE;
@@ -431,7 +438,7 @@ ULONG64 _LoadDriver::UserEnumGdtInfo(PVOID pDlgGdtInfo)
 		return FALSE;
 	}
 
-	//·¢ËÍÏûÏ¢»õÆÚ½ø³ÌĞÅÏ¢
+	//å‘é€æ¶ˆæ¯è´§æœŸè¿›ç¨‹ä¿¡æ¯
 	PCGdtInfo pInfo = NULL;
 	SendMsg(um_Cmd_Enum_Gdt_info, NULL, (LPVOID*)&pInfo);
 
@@ -447,7 +454,7 @@ ULONG64 _LoadDriver::UserEnumIdtInfo(PVOID pDlgIdtInfo)
 		return FALSE;
 	}
 
-	//·¢ËÍÏûÏ¢»õÆÚ½ø³ÌĞÅÏ¢
+	//å‘é€æ¶ˆæ¯è´§æœŸè¿›ç¨‹ä¿¡æ¯
 	PCIdtInfo pInfo = NULL;
 	SendMsg(um_Cmd_Enum_Idt_info, NULL, (LPVOID*)&pInfo);
 
@@ -463,7 +470,7 @@ ULONG64 _LoadDriver::UserEnumSsdtInfo(PVOID pDlgSsdtInfo)
 		return FALSE;
 	}
 
-	//·¢ËÍÏûÏ¢»õÆÚ½ø³ÌĞÅÏ¢
+	//å‘é€æ¶ˆæ¯è´§æœŸè¿›ç¨‹ä¿¡æ¯
 	PCSsdtInfo pInfo = NULL;
 	SendMsg(um_Cmd_Enum_SSDT_info, NULL, (LPVOID*)&pInfo);
 
@@ -479,7 +486,7 @@ ULONG64 _LoadDriver::UserEnumSsdtShadowInfo(PVOID pDlgSsdtShadowInfo)
 		return FALSE;
 	}
 
-	//·¢ËÍÏûÏ¢»õÆÚ½ø³ÌĞÅÏ¢
+	//å‘é€æ¶ˆæ¯è´§æœŸè¿›ç¨‹ä¿¡æ¯
 	PCSsdtInfo pInfo = NULL;
 	SendMsg(um_Cmd_Enum_SSDTShadow_info, NULL, (LPVOID*)&pInfo);
 
@@ -495,7 +502,7 @@ ULONG64 _LoadDriver::UserEnumKernelCallBackInfo(PVOID pDlgKernelCallBackInfo)
 		return FALSE;
 	}
 
-	//·¢ËÍÏûÏ¢»õÆÚ½ø³ÌĞÅÏ¢
+	//å‘é€æ¶ˆæ¯è´§æœŸè¿›ç¨‹ä¿¡æ¯
 	PCKernelCallBackInfo pInfo = NULL;
 	SendMsg(um_Cmd_Enum_KernelCallBack_info, NULL, (LPVOID*)&pInfo);
 
@@ -511,7 +518,7 @@ ULONG64 _LoadDriver::UserEnumMiniFilterCallBackInfo(PVOID pDlgMiniFilterCallBack
 		return FALSE;
 	}
 
-	//°´µ±Ç°Ñ¡ÔñµÄÈ¥Ë¢ĞÂ
+	//æŒ‰å½“å‰é€‰æ‹©çš„å»åˆ·æ–°
 	switch (((DlgMiniFilterCallBack*)pDlgMiniFilterCallBackInfo)->nPerSel)
 	{
 	case DlgMiniFilterCallBack::um_FileSystemType_MiniPortFilter:
@@ -574,7 +581,7 @@ ULONG64 _LoadDriver::UserEnumObjectCallBackInfo(PVOID pDlgObjectCallBackInfo)
 	{
 	case DlgObjectCallBack::um_ObjectCallBack_Type:
 	{
-		//·¢ËÍÏûÏ¢»õÆÚ½ø³ÌĞÅÏ¢
+		//å‘é€æ¶ˆæ¯è´§æœŸè¿›ç¨‹ä¿¡æ¯
 		PCObjectTypeCallBackInfo pInfo = NULL;
 		SendMsg(um_Cmd_Enum_ObjectCallBack_info, NULL, (LPVOID*)&pInfo);
 
@@ -626,6 +633,21 @@ ULONG64 _LoadDriver::UserEnumDpcInfo(PVOID pDlgDpc)
 
 	return TRUE;
 }
+
+ULONG64 _LoadDriver::UserEnumWorkerThreadInfo(PVOID pDlgWorkerThread)
+{
+	if (pDlgWorkerThread == NULL)
+	{
+		return FALSE;
+	}
+
+	PCProcessThreadInfo pInfo = NULL;
+	SendMsg(um_Cmd_Enum_WorkerThread_info, NULL, (LPVOID*)&pInfo);
+
+	((DlgWorkerThread*)pDlgWorkerThread)->InsertCtrlListControl(pInfo);
+
+	return TRUE;
+}
 ULONG64 _LoadDriver::UserRWMemOryInfo(PVOID pDlgRWMemory)
 {
 	if (pDlgRWMemory == NULL)
@@ -660,7 +682,7 @@ ULONG64 _LoadDriver::UserEnumWdfInfo(PVOID pDlgWdf)
 	{
 	case DlgWdf::um_WdfDlgInfoType_Wdf01000Maj:
 	{
-		//·¢ËÍÏûÏ¢»õÆÚ½ø³ÌĞÅÏ¢
+		//å‘é€æ¶ˆæ¯è´§æœŸè¿›ç¨‹ä¿¡æ¯
 		PCWdfInfo pInfo = NULL;
 		SendMsg(um_Cmd_Enum_Wdf01000_info, NULL, (LPVOID*)&pInfo);
 
@@ -726,7 +748,7 @@ ULONG64 _LoadDriver::UserDebugFlags(PVOID pInfo)
 	{
 		CDebugFlagInfo pDebugFlagsInfo = { 0 };
 
-		pDebugFlagsInfo.UserOperate = USER_GET_DEBUG_FLAG; //ÉèÖÃÎª»ñÈ¡µ÷ÊÔ±êÖ¾
+		pDebugFlagsInfo.UserOperate = USER_GET_DEBUG_FLAG; //è®¾ç½®ä¸ºè·å–è°ƒè¯•æ ‡å¿—
 
 		if (SendMsg(um_Cmd_DebugFlags_info, NULL, (LPVOID*)&pDebugFlagsInfo))
 		{
@@ -764,34 +786,34 @@ typedef struct _SetProcessPortectionInfo
 
 ULONG64 _LoadDriver::CreateGetMessageThread(ULONG64 ThreadNumbers)
 {
-	//ÅĞ¶Ï¶Ë¿ÚÊÇ·ñÒÑÁ¬½Ó
+	//åˆ¤æ–­ç«¯å£æ˜¯å¦å·²è¿æ¥
 	if (m_Port == NULL)
 	{
 		return FALSE;
 	}
 
-	//ÑéÖ¤Ïß³ÌÊıÁ¿
+	//éªŒè¯çº¿ç¨‹æ•°é‡
 	if (ThreadNumbers == 0)
 	{
 		ThreadNumbers = std::thread::hardware_concurrency();
 	}
 
-	//ÉèÖÃ±êÖ¾Îª¿ÉÔËĞĞ×´Ì¬
+	//è®¾ç½®æ ‡å¿—ä¸ºå¯è¿è¡ŒçŠ¶æ€
 	m_ThreadsRuning = TRUE;
 
 	int i = 0;
-	//´´½¨Ïß³Ì
+	//åˆ›å»ºçº¿ç¨‹
 	for (i = 0; i < ThreadNumbers; i++) {
 
 		auto pThread = new std::thread(&_LoadDriver::WorkThread, this, i);
 
-		//µ±ÓĞÒ»¸ö´´½¨Ê§°ÜÊ±¾Í·µ»ØÓĞÒ»¸öÊÇÒ»¸ö
+		//å½“æœ‰ä¸€ä¸ªåˆ›å»ºå¤±è´¥æ—¶å°±è¿”å›æœ‰ä¸€ä¸ªæ˜¯ä¸€ä¸ª
 		if (pThread == NULL)
 		{
 			return i;
 		}
 
-		//²åÈëµ½Ïß³ÌÁ´±íÖĞ
+		//æ’å…¥åˆ°çº¿ç¨‹é“¾è¡¨ä¸­
 		m_Threads.push_back(pThread);
 	}
 	return i;
@@ -817,11 +839,11 @@ ULONG64 BuildSendKernelPack(FILTER_REPLY_HEADER* PackHeader, PVOID64 pData, DWOR
 	static int g_PackIndex = 0;
 #define STATUS_SUCCESS                   ((NTSTATUS)0x00000000L)								// ntsubauth
 
-	PCFilterUserGetMessageHeadInfo PackHead = (PCFilterUserGetMessageHeadInfo)pData;			//½«°üÍ·×ª»»Îª¶ÔÓ¦µÄ°üÍ·ÀàĞÍ
+	PCFilterUserGetMessageHeadInfo PackHead = (PCFilterUserGetMessageHeadInfo)pData;			//å°†åŒ…å¤´è½¬æ¢ä¸ºå¯¹åº”çš„åŒ…å¤´ç±»å‹
 
-	//°üµÄID±ØĞëÓëÊÕµ½°üµÄIDÒ»ÖÂ	·ñÔòÎŞ·¨»Ø¸´°ü
+	//åŒ…çš„IDå¿…é¡»ä¸æ”¶åˆ°åŒ…çš„IDä¸€è‡´	å¦åˆ™æ— æ³•å›å¤åŒ…
 	PackHeader->MessageId = PackHead->Header.MessageId;
-	PackHeader->Status = STATUS_SUCCESS;														//ÉèÖÃ×´Ì¬Îª³É¹¦
+	PackHeader->Status = STATUS_SUCCESS;														//è®¾ç½®çŠ¶æ€ä¸ºæˆåŠŸ
 
 	switch (Type)
 	{
@@ -830,10 +852,10 @@ ULONG64 BuildSendKernelPack(FILTER_REPLY_HEADER* PackHeader, PVOID64 pData, DWOR
 		PCFilterUserSendtMessageStructInfo pPackHeader = (PCFilterUserSendtMessageStructInfo)PackHeader;
 		PCFilterUserGetMessageStructInfo pStructInfo = (PCFilterUserGetMessageStructInfo)pData;
 
-		pPackHeader->Header.PackSize = PackSize;														//ÉèÖÃ°ü´óĞ¡
-		pPackHeader->Header.PackType = Type;															//ÉèÖÃ°üÀàĞÍ
+		pPackHeader->Header.PackSize = PackSize;														//è®¾ç½®åŒ…å¤§å°
+		pPackHeader->Header.PackType = Type;															//è®¾ç½®åŒ…ç±»å‹
 
-		memcpy(&pPackHeader->StructInfo, &pStructInfo->StructInfo, sizeof(CStructInfo));				//¿½±´Êı¾İ°ü
+		memcpy(&pPackHeader->StructInfo, &pStructInfo->StructInfo, sizeof(CStructInfo));				//æ‹·è´æ•°æ®åŒ…
 
 		return 1;
 	}
@@ -843,10 +865,10 @@ ULONG64 BuildSendKernelPack(FILTER_REPLY_HEADER* PackHeader, PVOID64 pData, DWOR
 		PCFilterUserSendtMessageStructSize pPackHeader = (PCFilterUserSendtMessageStructSize)PackHeader;
 		PCFilterUserGetMessageStructSize pStructInfo = (PCFilterUserGetMessageStructSize)pData;
 
-		pPackHeader->Header.PackSize = PackSize;														//ÉèÖÃ°ü´óĞ¡
-		pPackHeader->Header.PackType = Type;															//ÉèÖÃ°üÀàĞÍ
+		pPackHeader->Header.PackSize = PackSize;														//è®¾ç½®åŒ…å¤§å°
+		pPackHeader->Header.PackType = Type;															//è®¾ç½®åŒ…ç±»å‹
 
-		memcpy(&pPackHeader->StructInfo, &pStructInfo->StructInfo, sizeof(CStructSize));				//¿½±´Êı¾İ°ü
+		memcpy(&pPackHeader->StructInfo, &pStructInfo->StructInfo, sizeof(CStructSize));				//æ‹·è´æ•°æ®åŒ…
 
 		return 1;
 	}
@@ -856,10 +878,10 @@ ULONG64 BuildSendKernelPack(FILTER_REPLY_HEADER* PackHeader, PVOID64 pData, DWOR
 		PCFilterUserSendMessageGlobalVariables pPackHeader = (PCFilterUserSendMessageGlobalVariables)PackHeader;
 		PCFilterUserGetMessageGlobalVariables pStructInfo = (PCFilterUserGetMessageGlobalVariables)pData;
 
-		pPackHeader->Header.PackSize = PackSize;														//ÉèÖÃ°ü´óĞ¡
-		pPackHeader->Header.PackType = Type;															//ÉèÖÃ°üÀàĞÍ
+		pPackHeader->Header.PackSize = PackSize;														//è®¾ç½®åŒ…å¤§å°
+		pPackHeader->Header.PackType = Type;															//è®¾ç½®åŒ…ç±»å‹
 
-		memcpy(&pPackHeader->VarInfo, &pStructInfo->VarInfo, sizeof(CGlobalVariables));					//¿½±´Êı¾İ°ü
+		memcpy(&pPackHeader->VarInfo, &pStructInfo->VarInfo, sizeof(CGlobalVariables));					//æ‹·è´æ•°æ®åŒ…
 		return 1;
 	}
 
@@ -869,7 +891,7 @@ ULONG64 BuildSendKernelPack(FILTER_REPLY_HEADER* PackHeader, PVOID64 pData, DWOR
 	return 0;
 }
 
-PVOID _LoadDriver::WorkThread(_LoadDriver* pThis, uint32_t nIndex)								/*¹¤×÷Ïß³Ì*/
+PVOID _LoadDriver::WorkThread(_LoadDriver* pThis, uint32_t nIndex)								/*å·¥ä½œçº¿ç¨‹*/
 {
 #define FLT_MAX_BUFFER_SIZE (0x1000)
 
@@ -877,13 +899,13 @@ PVOID _LoadDriver::WorkThread(_LoadDriver* pThis, uint32_t nIndex)								/*¹¤×÷
 	//__debugbreak();
 	while (pThis->m_ThreadsRuning)
 	{
-		//»ñÈ¡ÏûÏ¢
+		//è·å–æ¶ˆæ¯
 		UCHAR pInfo[FLT_MAX_BUFFER_SIZE] = { 0 };
-		//»ñÈ¡ÏûÏ¢
+		//è·å–æ¶ˆæ¯
 		HRESULT hr = FilterGetMessage(pThis->m_Port,
 			(PFILTER_MESSAGE_HEADER)pInfo,
 			FLT_MAX_BUFFER_SIZE,
-			NULL  /*Ö±µ½ÓĞÏûÏ¢²Å·µ»ØÈÃÆäÒ»Ö±µÈ´ı*/);
+			NULL  /*ç›´åˆ°æœ‰æ¶ˆæ¯æ‰è¿”å›è®©å…¶ä¸€ç›´ç­‰å¾…*/);
 
 		if (hr == S_OK)
 		{
@@ -892,13 +914,13 @@ PVOID _LoadDriver::WorkThread(_LoadDriver* pThis, uint32_t nIndex)								/*¹¤×÷
 				continue;
 			}
 
-			PVOID64 pNewinfo = pThis->AllocPack((PCFilterUserGetMessageHeadInfo)pInfo);				//ÉêÇëÒ»¸ö°ü,²¢½«Êı¾İ¿½±´µ½ĞÂÉêÇëµÄ¿Õ¼äÖĞ
+			PVOID64 pNewinfo = pThis->AllocPack((PCFilterUserGetMessageHeadInfo)pInfo);				//ç”³è¯·ä¸€ä¸ªåŒ…,å¹¶å°†æ•°æ®æ‹·è´åˆ°æ–°ç”³è¯·çš„ç©ºé—´ä¸­
 			{
 				switch (((PCFilterUserGetMessageHeadInfo)pInfo)->PackType)
 				{
 				case um_FilterMessageDataType_HookSSDT:
 				{
-					//Ö±½Ó½«ÊÕµ½µÄ°üÌí¼Óµ½ÈÎÎñÖĞ
+					//ç›´æ¥å°†æ”¶åˆ°çš„åŒ…æ·»åŠ åˆ°ä»»åŠ¡ä¸­
 					//g_ThreadPool.AddTask(new _CThreadPack{ _LoadDriver::Um_UserCallBackType_UserInsertMonitorDlg, pNewinfo });
 
 					g_DlgProcessMonitor.PostMessage(wm_User_DlgProcessMonitor_Insert, (WPARAM)pNewinfo, NULL);
@@ -917,15 +939,15 @@ PVOID _LoadDriver::WorkThread(_LoadDriver* pThis, uint32_t nIndex)								/*¹¤×÷
 
 						if (wcscmp(pStructInfo->StructInfo.szModuleName, g_ModuleCall[i].szModuleName) == 0)
 						{
-							//»ñÈ¡Ö¸¶¨½á¹¹ÌåÖĞÖ¸¶¨³ÉÔ±µÄÆ«ÒÆÁ¿
+							//è·å–æŒ‡å®šç»“æ„ä½“ä¸­æŒ‡å®šæˆå‘˜çš„åç§»é‡
 							pStructInfo->StructInfo.nOffset = g_ModuleCall[i].m_PdbInfo->GetMemberOffset(pStructInfo->StructInfo.szClassType, pStructInfo->StructInfo.szmemberName);
 
 							CFilterUserSendtMessageStructInfo replyHeader = { 0 };
 
-							//Éú³É°ü
+							//ç”ŸæˆåŒ…
 							BuildSendKernelPack((FILTER_REPLY_HEADER*)&replyHeader, pStructInfo, um_FilterMessageDataType_GetStructOffset, sizeof(CFilterUserSendtMessageStructInfo));
 
-							//»Ø¸´kernel²ã ²»ĞèÒªÈ¥µôFILTER_REPLY_HEADERÍ·
+							//å›å¤kernelå±‚ ä¸éœ€è¦å»æ‰FILTER_REPLY_HEADERå¤´
 							FilterReplyMessage(pThis->m_Port, (FILTER_REPLY_HEADER*)&replyHeader, replyHeader.Header.PackSize);
 							break;
 						}
@@ -951,10 +973,10 @@ PVOID _LoadDriver::WorkThread(_LoadDriver* pThis, uint32_t nIndex)								/*¹¤×÷
 
 							CFilterUserSendtMessageStructSize replyHeader = { 0 };
 
-							//Éú³É°ü
+							//ç”ŸæˆåŒ…
 							BuildSendKernelPack((FILTER_REPLY_HEADER*)&replyHeader, pStructInfo, um_FilterMessageDataType_GetStructSize, sizeof(CFilterUserSendtMessageStructSize));
 
-							//»Ø¸´kernel²ã ²»ĞèÒªÈ¥µôFILTER_REPLY_HEADERÍ·
+							//å›å¤kernelå±‚ ä¸éœ€è¦å»æ‰FILTER_REPLY_HEADERå¤´
 							FilterReplyMessage(pThis->m_Port, (FILTER_REPLY_HEADER*)&replyHeader, replyHeader.Header.PackSize);
 							break;
 						}
@@ -979,10 +1001,10 @@ PVOID _LoadDriver::WorkThread(_LoadDriver* pThis, uint32_t nIndex)								/*¹¤×÷
 
 							CFilterUserGetMessageGlobalVariables replyHeader = { 0 };
 
-							//Éú³É°ü
+							//ç”ŸæˆåŒ…
 							BuildSendKernelPack((FILTER_REPLY_HEADER*)&replyHeader, pGlobalVariables, um_FilterMessageDataType_GetGlobalVariables, sizeof(CFilterUserGetMessageGlobalVariables));
 
-							//»Ø¸´kernel²ã ²»ĞèÒªÈ¥µôFILTER_REPLY_HEADERÍ·
+							//å›å¤kernelå±‚ ä¸éœ€è¦å»æ‰FILTER_REPLY_HEADERå¤´
 							FilterReplyMessage(pThis->m_Port, (FILTER_REPLY_HEADER*)&replyHeader, replyHeader.Header.PackSize);
 							break;
 						}

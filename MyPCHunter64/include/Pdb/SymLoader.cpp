@@ -1,4 +1,4 @@
-#include "SymLoader.h"
+﻿#include "SymLoader.h"
 
 #include <wininet.h>
 
@@ -300,9 +300,55 @@ bool MyPdb::InitPDB(PWSTR path)
 	const std::wstring symFolder = L"C:\\Symbols\\";
 	const std::wstring symFolderPath = symFolder + pdbInfo.pdbPath();
 
-	m_loader.SetFilePath(symFolderPath.c_str());
-	//�����ļ�
-	const bool downloadStatus = Pdb::SymLoader::download(url.c_str(), m_loader);
+	// 命中缓存判断：MS 符号服务器的目录布局是 <PdbName>\<GUID><Age>\<PdbName>，
+	// 路径本身就唯一标识版本。再用 SymSrvGetFileIndexInfoW 复核本地 PDB 的
+	// GUID/Age 是否与目标模块匹配，防止半下载或被替换的脏文件。
+	auto isLocalPdbUpToDate = [&]() -> bool
+	{
+		const DWORD attr = GetFileAttributesW(symFolderPath.c_str());
+		if (attr == INVALID_FILE_ATTRIBUTES || (attr & FILE_ATTRIBUTE_DIRECTORY))
+		{
+			return false;
+		}
+
+		// 至少要有内容，0 字节文件视为残留
+		WIN32_FILE_ATTRIBUTE_DATA fad{};
+		if (!GetFileAttributesExW(symFolderPath.c_str(), GetFileExInfoStandard, &fad))
+		{
+			return false;
+		}
+		if (fad.nFileSizeHigh == 0 && fad.nFileSizeLow == 0)
+		{
+			return false;
+		}
+
+		SYMSRV_INDEX_INFOW localInfo{};
+		localInfo.sizeofstruct = sizeof(localInfo);
+		if (!SymSrvGetFileIndexInfoW(symFolderPath.c_str(), &localInfo, 0))
+		{
+			return false;
+		}
+
+		const auto& want = pdbInfo.info();
+		if (localInfo.age != want.age)
+		{
+			return false;
+		}
+		// GUID 完全匹配才能确认是同一版本
+		return memcmp(&localInfo.guid, &want.guid, sizeof(GUID)) == 0;
+	};
+
+	bool downloadStatus = true;
+	if (isLocalPdbUpToDate())
+	{
+		// 已有匹配的 PDB，跳过下载
+	}
+	else
+	{
+		m_loader.SetFilePath(symFolderPath.c_str());
+		downloadStatus = Pdb::SymLoader::download(url.c_str(), m_loader);
+	}
+
 	if (!downloadStatus)
 	{
 		printf("Unable to download the symbols");

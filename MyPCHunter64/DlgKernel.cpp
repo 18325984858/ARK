@@ -63,6 +63,7 @@ void DlgKernel::OnSize(UINT nType, int cx, int cy)
 	m_DlgHalTable.MoveWindow(rect, TRUE);
 	m_DlgWdf.MoveWindow(rect, TRUE);
 	m_FilterDriver.MoveWindow(rect, TRUE);
+	m_DlgWorkerThread.MoveWindow(rect, TRUE);
 }
 
 
@@ -83,6 +84,7 @@ BOOL DlgKernel::OnInitDialog()
 	m_DlgDpc.Create(ID_DLG_DPC, &m_CTabCtrl);
 
 	m_CTabCtrl.InsertItem(KernelDlgType_WorkThread, TableTitleStr[KernelDlgType_WorkThread]);
+	m_DlgWorkerThread.Create(ID_DLG_DPC, &m_CTabCtrl);
 
 	m_CTabCtrl.InsertItem(KernelDlgType_Hal, TableTitleStr[KernelDlgType_Hal]);
 	m_DlgHalTable.Create(ID_DLG_HALTABLE, &m_CTabCtrl);
@@ -115,6 +117,7 @@ BOOL DlgKernel::OnInitDialog()
 	m_DlgDpc.MoveWindow(&TabRect);
 	m_DlgHalTable.MoveWindow(&TabRect);
 	m_DlgWdf.MoveWindow(&TabRect);
+	m_DlgWorkerThread.MoveWindow(&TabRect);
 
 	m_DlgKernelCallBack.ShowWindow(TRUE);
 	return TRUE;
@@ -133,6 +136,7 @@ void DlgKernel::OnNMClickKernelTab(NMHDR* pNMHDR, LRESULT* pResult)
 	m_DlgHalTable.ShowWindow(FALSE);
 	m_DlgWdf.ShowWindow(FALSE);
 	m_FilterDriver.ShowWindow(FALSE);
+	m_DlgWorkerThread.ShowWindow(FALSE);
 
 
 	switch (m_CTabCtrl.GetCurSel())
@@ -150,6 +154,8 @@ void DlgKernel::OnNMClickKernelTab(NMHDR* pNMHDR, LRESULT* pResult)
 		m_DlgDpc.OnDpcRefresh();
 		break;
 	case DlgKernel::KernelDlgType_WorkThread:
+		m_DlgWorkerThread.ShowWindow(TRUE);
+		m_DlgWorkerThread.OnWorkerThreadRefresh();
 		break;
 	case DlgKernel::KernelDlgType_Hal:
 		m_DlgHalTable.ShowWindow(TRUE);
@@ -191,6 +197,7 @@ void DlgKernel::OnDestroy()
 	m_DlgDpc.DestroyWindow();
 	m_DlgHalTable.DestroyWindow();
 	m_DlgWdf.DestroyWindow();
+	m_DlgWorkerThread.DestroyWindow();
 
 	// TODO: 在此处添加消息处理程序代码
 }

@@ -15,7 +15,7 @@
 #include "Pdb/SymLoader.h"
 
 #include "../include/capstone-5.0-Release/include/capstone/capstone.h"
-#pragma comment(lib,"C:\\Users\\user\\Desktop\\ARK\\MyPCHunter64\\include\\capstone-5.0-Release\\capstone.lib")
+#pragma comment(lib,"include/capstone-5.0-Release/capstone.lib")
 
 enum DlgType //窗口类型
 {

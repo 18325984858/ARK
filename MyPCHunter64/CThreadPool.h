@@ -1,9 +1,9 @@
-#pragma once
+ï»¿#pragma once
 #include <list>
 #include <mutex>
 #include <thread>
 #include <Windows.h>
-#include <condition_variable>  //Ìõ¼ş±äÁ¿ 
+#include <condition_variable>  //æ¡ä»¶å˜é‡ 
 
 
 class CTask
@@ -16,19 +16,19 @@ public:
 class CThreadPool
 {
 public:
-	CThreadPool(uint32_t nMaxThreadCount = std::thread::hardware_concurrency()	/*»ñÈ¡µ±Ç°CPUºËÊı*/);
+	CThreadPool(uint32_t nMaxThreadCount = std::thread::hardware_concurrency()	/*è·å–å½“å‰CPUæ ¸æ•°*/);
 	virtual ~CThreadPool();
 public:
-	static PVOID WorkThread(CThreadPool* pThis, uint32_t nIndex);				/*¹¤×÷Ïß³Ì*/
-	int32_t AddTask(CTask* pTask);												/*Ìí¼ÓÈÎÎñ*/
-	int32_t Wait();																/*µÈ´ıÏß³Ì*/
+	static PVOID WorkThread(CThreadPool* pThis, uint32_t nIndex);				/*å·¥ä½œçº¿ç¨‹*/
+	int32_t AddTask(CTask* pTask);												/*æ·»åŠ ä»»åŠ¡*/
+	int32_t Wait();																/*ç­‰å¾…çº¿ç¨‹*/
 private:
-	uint32_t					m_ThreadsRuning;								//Ïß³ÌÔËĞĞ×´Ì¬
-	std::atomic_int32_t			m_ActiveThreads;								//ÕıÔÚÔËĞĞµÄÏß³ÌÊı
-	std::mutex					m_TaskLock;										//Í¬²½ÈÎÎñ
-	std::condition_variable		m_CountLock;									//Í¨ÖªÈÎÎñ
-	std::list<CTask*>			m_TaskQueue;									//ÈÎÎñ¶ÓÁĞ
-	std::list<std::thread*>		m_Threads;										//´æ´¢Ïß³Ì
+	uint32_t					m_ThreadsRuning;								//çº¿ç¨‹è¿è¡ŒçŠ¶æ€
+	std::atomic_int32_t			m_ActiveThreads;								//æ­£åœ¨è¿è¡Œçš„çº¿ç¨‹æ•°
+	std::mutex					m_TaskLock;										//åŒæ­¥ä»»åŠ¡
+	std::condition_variable		m_CountLock;									//é€šçŸ¥ä»»åŠ¡
+	std::list<CTask*>			m_TaskQueue;									//ä»»åŠ¡é˜Ÿåˆ—
+	std::list<std::thread*>		m_Threads;										//å­˜å‚¨çº¿ç¨‹
 };
 
 EXTERN_C CThreadPool g_ThreadPool;

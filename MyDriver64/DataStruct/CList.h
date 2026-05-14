@@ -1,7 +1,7 @@
-#pragma once
-#include "../DefineArea.h" /*¹«¹²Í·ÎÄ¼ş*/
+ï»¿#pragma once
+#include "../DefineArea.h" /*å…¬å…±å¤´æ–‡ä»¶*/
 
-#define ElemType ULONG64															/*Êı¾İÀàĞÍ*/
+#define ElemType ULONG64															/*æ•°æ®ç±»å‹*/
 
 typedef struct CListNode CListNode, * PCListNode;
 typedef struct CList CList, * PCList;
@@ -10,46 +10,46 @@ typedef DWORD(_fastcall* CMPFUNPTRCALLBACK)(ULONG64, ULONG64);
 
 struct CListNode
 {
-	ElemType m_Data;																/*´æ´¢µ±Ç°Ö¸ÕëµÄÊı¾İ*/
-	CListNode* m_pFront;															/*´æ´¢µ±Ç°Ö¸ÕëµÄÇ°Ò»¸öÖ¸Õë*/
-	CListNode* m_pNext;																/*´æ´¢µ±Ç°Ö¸ÕëµÄºóÒ»¸öÖ¸Õë*/
+	ElemType m_Data;																/*å­˜å‚¨å½“å‰æŒ‡é’ˆçš„æ•°æ®*/
+	CListNode* m_pFront;															/*å­˜å‚¨å½“å‰æŒ‡é’ˆçš„å‰ä¸€ä¸ªæŒ‡é’ˆ*/
+	CListNode* m_pNext;																/*å­˜å‚¨å½“å‰æŒ‡é’ˆçš„åä¸€ä¸ªæŒ‡é’ˆ*/
 };
 
-struct CList																		/*Ë«ÏòÑ­»·Á´±í*/
+struct CList																		/*åŒå‘å¾ªç¯é“¾è¡¨*/
 {
-	PCListNode m_pHead;																/*´æ´¢Í·½áµã*/
-	PCListNode m_pTrail;															/*´æ´¢Î²½áµã*/
-	ULONG64 m_Size;																	/*´æ´¢±í´óĞ¡*/
+	PCListNode m_pHead;																/*å­˜å‚¨å¤´ç»“ç‚¹*/
+	PCListNode m_pTrail;															/*å­˜å‚¨å°¾ç»“ç‚¹*/
+	ULONG64 m_Size;																	/*å­˜å‚¨è¡¨å¤§å°*/
 };
 
-PCListNode _ByListNode(ElemType data);												/*ÉêÇë½Úµãº¯Êı*/
-int IsVerifyListNode(PCList plist, PCListNode pNode);								/*ÑéÖ¤½ÚµãÊÇ·ñ´æÔÚ*/
-int GetListSize(PCList plist);														/*·µ»Øµ±Ç°Á´±íµÄ´óĞ¡*/
-void InitDoubleLoopList(PCList plist);												/*³õÊ¼»¯Ë«ÏòÑ­»·Á´±í*/
-void InsertHeadDoubleLoopList(PCList plist, ElemType data);							/*Í·²åË«ÏòÑ­»·Á´±í*/
-PCListNode InsertTrailDoubleLoopList(PCList plist, ElemType data);						/*Î²²åË«ÏòÑ­»·Á´±í*/
-void InsertPosFrontDoubleLoopList(PCList plist, PCListNode pNode, ElemType data);	/*°´Ö¸¶¨Î»ÖÃÇ°Ãæ²åÈëË«ÏòÑ­»·Á´±íÖĞ*/
-void InsertPosNextDoubleLoopList(PCList plist, PCListNode pNode, ElemType data);	/*°´Ö¸¶¨Î»ÖÃºóÃæ²åÈëË«ÏòÑ­»·Á´±íÖĞ*/
+PCListNode _ByListNode(ElemType data);												/*ç”³è¯·èŠ‚ç‚¹å‡½æ•°*/
+int IsVerifyListNode(PCList plist, PCListNode pNode);								/*éªŒè¯èŠ‚ç‚¹æ˜¯å¦å­˜åœ¨*/
+int GetListSize(PCList plist);														/*è¿”å›å½“å‰é“¾è¡¨çš„å¤§å°*/
+void InitDoubleLoopList(PCList plist);												/*åˆå§‹åŒ–åŒå‘å¾ªç¯é“¾è¡¨*/
+void InsertHeadDoubleLoopList(PCList plist, ElemType data);							/*å¤´æ’åŒå‘å¾ªç¯é“¾è¡¨*/
+PCListNode InsertTrailDoubleLoopList(PCList plist, ElemType data);						/*å°¾æ’åŒå‘å¾ªç¯é“¾è¡¨*/
+void InsertPosFrontDoubleLoopList(PCList plist, PCListNode pNode, ElemType data);	/*æŒ‰æŒ‡å®šä½ç½®å‰é¢æ’å…¥åŒå‘å¾ªç¯é“¾è¡¨ä¸­*/
+void InsertPosNextDoubleLoopList(PCList plist, PCListNode pNode, ElemType data);	/*æŒ‰æŒ‡å®šä½ç½®åé¢æ’å…¥åŒå‘å¾ªç¯é“¾è¡¨ä¸­*/
 
-ElemType PopHeadDoubleLoopList(PCList plist);										/*·µ»ØÍ·²¿µÄÊı¾İ²¢É¾³ıÍ·²¿Êı¾İ*/
-ElemType PopTrailDoubleLoopList(PCList plist);										/*·µ»ØÎ²²¿µÄÊı¾İ²¢É¾³ıÎ²²¿Êı¾İ*/
+ElemType PopHeadDoubleLoopList(PCList plist);										/*è¿”å›å¤´éƒ¨çš„æ•°æ®å¹¶åˆ é™¤å¤´éƒ¨æ•°æ®*/
+ElemType PopTrailDoubleLoopList(PCList plist);										/*è¿”å›å°¾éƒ¨çš„æ•°æ®å¹¶åˆ é™¤å°¾éƒ¨æ•°æ®*/
 
-PCListNode FindListNode(PCList plist, ElemType data);								/*¸ù¾İÊı¾İ²éÕÒÁ´±í½Úµã,·µ»Ø½Úµã*/
+PCListNode FindListNode(PCList plist, ElemType data);								/*æ ¹æ®æ•°æ®æŸ¥æ‰¾é“¾è¡¨èŠ‚ç‚¹,è¿”å›èŠ‚ç‚¹*/
 
-ElemType DeleteHeadDoubleLoopList(PCList plist);										/*Í·²¿É¾³ı,·µ»ØÖµ½«·µ»ØDataÊı¾İ*/
-ElemType DeleteTrailDoubleLoopList(PCList plist);									/*Î²²¿É¾³ı,·µ»ØÖµ½«·µ»ØDataÊı¾İ*/
-ElemType DeletePosDoubleLoopList(PCList plist, PCListNode pNode);					/*°´Î»ÖÃÉ¾³ı,·µ»ØÖµ½«·µ»ØDataÊı¾İ*/
+ElemType DeleteHeadDoubleLoopList(PCList plist);										/*å¤´éƒ¨åˆ é™¤,è¿”å›å€¼å°†è¿”å›Dataæ•°æ®*/
+ElemType DeleteTrailDoubleLoopList(PCList plist);									/*å°¾éƒ¨åˆ é™¤,è¿”å›å€¼å°†è¿”å›Dataæ•°æ®*/
+ElemType DeletePosDoubleLoopList(PCList plist, PCListNode pNode);					/*æŒ‰ä½ç½®åˆ é™¤,è¿”å›å€¼å°†è¿”å›Dataæ•°æ®*/
 
-void PrintfDoubleLoopList(PCList plist);											/*´òÓ¡Ñ­»·Á´±í*/
+void PrintfDoubleLoopList(PCList plist);											/*æ‰“å°å¾ªç¯é“¾è¡¨*/
 
-PCListNode FindListNodeEx(PCList plist, ULONG64 nAddrType);							/*¸ù¾İÊı¾İ²éÕÒÁ´±í½Úµã,·µ»Ø½Úµã*/
+PCListNode FindListNodeEx(PCList plist, ULONG64 nAddrType);							/*æ ¹æ®æ•°æ®æŸ¥æ‰¾é“¾è¡¨èŠ‚ç‚¹,è¿”å›èŠ‚ç‚¹*/
 
-/*»Øµ÷º¯ÊıĞëÖª 0±íÊ¾Á½ÊıµÈÓÚ,1±íÊ¾´óÓÚ,-1±íÊ¾Ğ¡ÓÚ,ÆäÓà±íÊ¾ÎŞĞ§*/
-PCListNode FindListNodeEx1(PCList plist, ULONG64 nAddrType, CMPFUNPTRCALLBACK pfun);/*¸ù¾İÊı¾İ²éÕÒÁ´±í½Úµã,·µ»Ø½Úµã*/
+/*å›è°ƒå‡½æ•°é¡»çŸ¥ 0è¡¨ç¤ºä¸¤æ•°ç­‰äº,1è¡¨ç¤ºå¤§äº,-1è¡¨ç¤ºå°äº,å…¶ä½™è¡¨ç¤ºæ— æ•ˆ*/
+PCListNode FindListNodeEx1(PCList plist, ULONG64 nAddrType, CMPFUNPTRCALLBACK pfun);/*æ ¹æ®æ•°æ®æŸ¥æ‰¾é“¾è¡¨èŠ‚ç‚¹,è¿”å›èŠ‚ç‚¹*/
 
 typedef VOID(__fastcall* pDestroyListCallBack)(PVOID64);
 
 
-void DestroyList(PCList plist, pDestroyListCallBack pCall);														/*´İ»ÙÁ´±í*/
+void DestroyList(PCList plist, pDestroyListCallBack pCall);														/*æ‘§æ¯é“¾è¡¨*/
 
-//void ClearDoubleLoopList(PCList plist);											/*Çå¿ÕË«ÏòÑ­»·Á´±í*/
+//void ClearDoubleLoopList(PCList plist);											/*æ¸…ç©ºåŒå‘å¾ªç¯é“¾è¡¨*/

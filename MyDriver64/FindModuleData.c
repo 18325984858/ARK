@@ -1,4 +1,4 @@
-#include "Head.h"
+ï»¿#include "Head.h"
 #include "KernelStruct.h"
 #include "Hook/EtwHook.h"
 #include "CommunCation.h"
@@ -75,116 +75,116 @@ int g_Size_PEB = -1;
 int g_Offset_KPROCESS_AddressPolicy = -1;
 int g_Offset_EPROCESS_UniqueProcessId = -1;
 int g_Offset_EPROCESS_ActiveProcessLinks_Flink = -1;
-int g_Offset_EPROCESS_Token = -1;   						  // _EPROCESS_Token µÄÆ«ÒÆ
-int g_Offset_EPROCESS_InheritedFromUniqueProcessId = -1;    // _EPROCESS_InheritedFromUniqueProcessId µÄÆ«ÒÆ
-int g_Offset_EPROCESS_Peb = -1;                              // _EPROCESS_Peb µÄÆ«ÒÆ
-int g_Offset_EPROCESS_Session = -1;                          // _EPROCESS_Session µÄÆ«ÒÆ
-int g_Offset_EPROCESS_ObjectTable = -1;                       // _EPROCESS_ObjectTable µÄÆ«ÒÆ
-int g_Offset_EPROCESS_DebugPort = -1;                         // _EPROCESS_DebugPort µÄÆ«ÒÆ
-int g_Offset_EPROCESS_WoW64Process;                      // _EPROCESS_WoW64Process µÄÆ«ÒÆ
-int g_Offset_EPROCESS_ImageFilePointer = -1;                  // _EPROCESS_ImageFilePointer µÄÆ«ÒÆ
-int g_Offset_EPROCESS_ImageFileName = -1;                    // _EPROCESS_ImageFileName µÄÆ«ÒÆ
-int g_Offset_EPROCESS_SeAuditProcessCreationInfo = -1;        // _EPROCESS_SeAuditProcessCreationInfo µÄÆ«ÒÆ
-int g_Offset_EPROCESS_ThreadListHead = -1;                    // _EPROCESS_ThreadListHead µÄÆ«ÒÆ
-int g_Offset_EPROCESS_ActiveThreads = -1;                     // _EPROCESS_ActiveThreads µÄÆ«ÒÆ
-int g_Offset_EPROCESS_Vm = -1;                                // _EPROCESS_Vm µÄÆ«ÒÆ
-int g_Offset_EPROCESS_VadRoot = -1;                           // _EPROCESS_VadRoot µÄÆ«ÒÆ
-int g_Offset_EPROCESS_VadCount = -1;                          // _EPROCESS_VadCount µÄÆ«ÒÆ
-int g_Offset_EPROCESS_Protection = -1;                        // _EPROCESS_Protection µÄÆ«ÒÆ
-int g_Offset_EPROCESS_AddressPolicyFrozen = -1;               // _EPROCESS_AddressPolicyFrozen µÄÆ«ÒÆ
+int g_Offset_EPROCESS_Token = -1;   						  // _EPROCESS_Token çš„åç§»
+int g_Offset_EPROCESS_InheritedFromUniqueProcessId = -1;    // _EPROCESS_InheritedFromUniqueProcessId çš„åç§»
+int g_Offset_EPROCESS_Peb = -1;                              // _EPROCESS_Peb çš„åç§»
+int g_Offset_EPROCESS_Session = -1;                          // _EPROCESS_Session çš„åç§»
+int g_Offset_EPROCESS_ObjectTable = -1;                       // _EPROCESS_ObjectTable çš„åç§»
+int g_Offset_EPROCESS_DebugPort = -1;                         // _EPROCESS_DebugPort çš„åç§»
+int g_Offset_EPROCESS_WoW64Process;                      // _EPROCESS_WoW64Process çš„åç§»
+int g_Offset_EPROCESS_ImageFilePointer = -1;                  // _EPROCESS_ImageFilePointer çš„åç§»
+int g_Offset_EPROCESS_ImageFileName = -1;                    // _EPROCESS_ImageFileName çš„åç§»
+int g_Offset_EPROCESS_SeAuditProcessCreationInfo = -1;        // _EPROCESS_SeAuditProcessCreationInfo çš„åç§»
+int g_Offset_EPROCESS_ThreadListHead = -1;                    // _EPROCESS_ThreadListHead çš„åç§»
+int g_Offset_EPROCESS_ActiveThreads = -1;                     // _EPROCESS_ActiveThreads çš„åç§»
+int g_Offset_EPROCESS_Vm = -1;                                // _EPROCESS_Vm çš„åç§»
+int g_Offset_EPROCESS_VadRoot = -1;                           // _EPROCESS_VadRoot çš„åç§»
+int g_Offset_EPROCESS_VadCount = -1;                          // _EPROCESS_VadCount çš„åç§»
+int g_Offset_EPROCESS_Protection = -1;                        // _EPROCESS_Protection çš„åç§»
+int g_Offset_EPROCESS_AddressPolicyFrozen = -1;               // _EPROCESS_AddressPolicyFrozen çš„åç§»
 int g_Offset_EPROCESS_SystemProcess = -1;
-int g_Offset_KPRCB_CurrentThread = -1;      // _KPRCB_CurrentThread µÄÆ«ÒÆ
-int g_Offset_KPRCB_RspBase = -1;            // _KPRCB_RspBase µÄÆ«ÒÆ
-int g_Offset_KPCR_GdtBase = -1;            // _KPRCB_GdtBase µÄÆ«ÒÆ
-int g_Offset_KPCR_IdtBase = -1;            // _KPRCB_IdtBase µÄÆ«ÒÆ
-int g_Offset_KPRCB_TimerTable = -1;         // _KPRCB_TimerTable µÄÆ«ÒÆ
+int g_Offset_KPRCB_CurrentThread = -1;      // _KPRCB_CurrentThread çš„åç§»
+int g_Offset_KPRCB_RspBase = -1;            // _KPRCB_RspBase çš„åç§»
+int g_Offset_KPCR_GdtBase = -1;            // _KPRCB_GdtBase çš„åç§»
+int g_Offset_KPCR_IdtBase = -1;            // _KPRCB_IdtBase çš„åç§»
+int g_Offset_KPRCB_TimerTable = -1;         // _KPRCB_TimerTable çš„åç§»
 int g_Offset_MMSUPPORT_FULL_Shared = -1;
 int g_Offset_MMSUPPORT_SHARED_ShadowMapping = -1;
-int g_Offset_PEB_BeingDebugged = -1;                      // _PEB_BeingDebugged µÄÆ«ÒÆ
-int g_Offset_PEB_ImageBaseAddress = -1;                   // _PEB_ImageBaseAddress µÄÆ«ÒÆ
-int g_Offset_PEB_Ldr = -1;                                // _PEB_Ldr µÄÆ«ÒÆ
-int g_Offset_PEB_ProcessParameters = -1;                  // _PEB_ProcessParameters µÄÆ«ÒÆ
-int g_Offset_PEB_LDR_DATA_InLoadOrderModuleList = -1;     // _PEB_LDR_DATA_InLoadOrderModuleList µÄÆ«ÒÆ
-int g_Offset_LDR_DATA_TABLE_ENTRY_DllBase = -1;           // _LDR_DATA_TABLE_ENTRY_DllBase µÄÆ«ÒÆ
-int g_Offset_LDR_DATA_TABLE_ENTRY_SizeOfImage = -1;       // _LDR_DATA_TABLE_ENTRY_SizeOfImage µÄÆ«ÒÆ
-int g_Offset_LDR_DATA_TABLE_ENTRY_FullDllName = -1;       // _LDR_DATA_TABLE_ENTRY_FullDllName µÄÆ«ÒÆ
-int g_Offset_LDR_DATA_TABLE_ENTRY_BaseDllName = -1;       // _LDR_DATA_TABLE_ENTRY_BaseDllName µÄÆ«ÒÆ
-int g_Offset_RTL_USER_PROCESS_PARAMETERS_CommandLine = -1; // _RTL_USER_PROCESS_PARAMETERS_CommandLine µÄÆ«ÒÆ
-int g_Offset_MM_SESSION_SPACE_SessionId = -1;             // _MM_SESSION_SPACE_SessionId µÄÆ«ÒÆ
-int g_Offset_FILE_OBJECT_DeviceObject = -1;               // _FILE_OBJECT_DeviceObject µÄÆ«ÒÆ
-int g_Offset_FILE_OBJECT_FileName = -1;                   // _FILE_OBJECT_FileName µÄÆ«ÒÆ
-int g_Offset_DRIVER_OBJECT_DriverStart = -1;              // _DRIVER_OBJECT_DriverStart µÄÆ«ÒÆ
-int g_Offset_DRIVER_OBJECT_DriverSize = -1;               // _DRIVER_OBJECT_DriverSize µÄÆ«ÒÆ
-int g_Offset_DRIVER_OBJECT_DriverSection = -1;            // _DRIVER_OBJECT_DriverSection µÄÆ«ÒÆ
-int g_Offset_DRIVER_OBJECT_DriverExtension = -1;          // _DRIVER_OBJECT_DriverExtension µÄÆ«ÒÆ
-int g_Offset_DRIVER_OBJECT_DriverName = -1;               // _DRIVER_OBJECT_DriverName µÄÆ«ÒÆ
-int g_Offset_DRIVER_OBJECT_FastIoDispatch = -1;           // _DRIVER_OBJECT_FastIoDispatch µÄÆ«ÒÆ
-int g_Offset_DRIVER_OBJECT_MajorFunction = -1;            // _DRIVER_OBJECT_MajorFunction µÄÆ«ÒÆ
-int g_Offset_DRIVER_EXTENSION_DriverObject = -1;          // _DRIVER_EXTENSION_DriverObject µÄÆ«ÒÆ
-int g_Offset_DRIVER_EXTENSION_ServiceKeyName = -1;        // _DRIVER_EXTENSION_ServiceKeyName µÄÆ«ÒÆ
-int g_Offset_OBJECT_HEADER_PointerCount = -1;             // _OBJECT_HEADER_PointerCount µÄÆ«ÒÆ
-int g_Offset_OBJECT_HEADER_TypeIndex = -1;                // _OBJECT_HEADER_TypeIndex µÄÆ«ÒÆ
-int g_Offset_OBJECT_HEADER_InfoMask = -1;                 // _OBJECT_HEADER_InfoMask µÄÆ«ÒÆ
-int g_OBJECT_HEADER_SIZE = -1;                            // _OBJECT_HEADER µÄ´óĞ¡
-int g_Offset_DEVICE_OBJECT_Queue = -1;                    // _DEVICE_OBJECT_Queue µÄÆ«ÒÆ
-int g_Offset_HANDLE_TABLE_NextHandleNeedingPool = -1;     // _HANDLE_TABLE_NextHandleNeedingPool µÄÆ«ÒÆ
-int g_Offset_HANDLE_TABLE_TableCode = -1;                 // _HANDLE_TABLE_TableCode µÄÆ«ÒÆ
-int g_Offset_OBJECT_TYPE_Name = -1;                       // _OBJECT_TYPE_Name µÄÆ«ÒÆ
-int g_Offset_OBJECT_TYPE_Index = -1;                      // _OBJECT_TYPE_Index µÄÆ«ÒÆ
-int g_Offset_OBJECT_TYPE_TypeInfo = -1;                   // _OBJECT_TYPE_TypeInfo µÄÆ«ÒÆ
-int g_Offset_OBJECT_TYPE_CallbackList = -1;               // _OBJECT_TYPE_CallbackList µÄÆ«ÒÆ
-int g_Offset_OBJECT_TYPE_INITIALIZER_ValidAccessMask = -1; // _OBJECT_TYPE_INITIALIZER_ValidAccessMask µÄÆ«ÒÆ
-int g_Offset_OBJECT_TYPE_INITIALIZER_DumpProcedure = -1;  // _OBJECT_TYPE_INITIALIZER_DumpProcedure µÄÆ«ÒÆ
-int g_Offset_OBJECT_TYPE_INITIALIZER_OpenProcedure = -1;  // _OBJECT_TYPE_INITIALIZER_OpenProcedure µÄÆ«ÒÆ
-int g_Offset_OBJECT_TYPE_INITIALIZER_CloseProcedure = -1; // _OBJECT_TYPE_INITIALIZER_CloseProcedure µÄÆ«ÒÆ
-int g_Offset_OBJECT_TYPE_INITIALIZER_DeleteProcedure = -1; // _OBJECT_TYPE_INITIALIZER_DeleteProcedure µÄÆ«ÒÆ
-int g_Offset_OBJECT_TYPE_INITIALIZER_ParseProcedure = -1; // _OBJECT_TYPE_INITIALIZER_ParseProcedure µÄÆ«ÒÆ
-int g_Offset_OBJECT_TYPE_INITIALIZER_SecurityProcedure = -1; // _OBJECT_TYPE_INITIALIZER_SecurityProcedure µÄÆ«ÒÆ
-int g_Offset_OBJECT_TYPE_INITIALIZER_QueryNameProcedure = -1; // _OBJECT_TYPE_INITIALIZER_QueryNameProcedure µÄÆ«ÒÆ
-int g_Offset_OBJECT_TYPE_INITIALIZER_OkayToCloseProcedure = -1; // _OBJECT_TYPE_INITIALIZER_OkayToCloseProcedure µÄÆ«ÒÆ
-int g_Offset_TOKEN_LogonSession = -1;                    // _TOKEN_LogonSession µÄÆ«ÒÆ
-int g_Offset_MMVAD_Core = -1;                            // _MMVAD_Core µÄÆ«ÒÆ
-int g_Offset_MMVAD_Subsection = -1;                      // _MMVAD_Subsection µÄÆ«ÒÆ
-int g_Offset_SEP_LOGON_SESSION_REFERENCES_AccountName = -1; // _SEP_LOGON_SESSION_REFERENCES_AccountName µÄÆ«ÒÆ
-int g_Offset_MMVAD_SHORT_StartingVpn = -1;               // _MMVAD_SHORT_StartingVpn µÄÆ«ÒÆ
-int g_Offset_MMVAD_SHORT_EndingVpn = -1;                 // _MMVAD_SHORT_EndingVpn µÄÆ«ÒÆ
-int g_Offset_MMVAD_SHORT_StartingVpnHigh = -1;           // _MMVAD_SHORT_StartingVpnHigh µÄÆ«ÒÆ
-int g_Offset_MMVAD_SHORT_EndingVpnHigh = -1;             // _MMVAD_SHORT_EndingVpnHigh µÄÆ«ÒÆ
-int g_Offset_MMVAD_SHORT_u = -1;                         // _MMVAD_SHORT_u µÄÆ«ÒÆ
-int g_Offset_MMVAD_SHORT_u1 = -1;                        // _MMVAD_SHORT_u1 µÄÆ«ÒÆ
-int g_Offset_SUBSECTION_ControlArea = -1;                // _SUBSECTION_ControlArea µÄÆ«ÒÆ
-int g_Offset_CONTROL_AREA_FilePointer = -1;              // _CONTROL_AREA_FilePointer µÄÆ«ÒÆ
-int g_Offset_OBJECT_SYMBOLIC_LINK_LinkTarget = -1;       // _OBJECT_SYMBOLIC_LINK_LinkTarget µÄÆ«ÒÆ
-int g_Offset_ETW_SILODRIVERSTATE_EtwpLoggerContext = -1; // _ETW_SILODRIVERSTATE_EtwpLoggerContext µÄÆ«ÒÆ
-int g_Offset_WMI_LOGGER_CONTEXT_GetCpuClock = -1;        // _WMI_LOGGER_CONTEXT_GetCpuClock µÄÆ«ÒÆ
-int g_Offset_FLT_FILTER_Name = -1;                       // _FLT_FILTER_Name µÄÆ«ÒÆ
-int g_Offset_FLT_FILTER_DefaultAltitude = -1;            // _FLT_FILTER_DefaultAltitude µÄÆ«ÒÆ
-int g_Offset_FLT_FILTER_DriverObject = -1;               // _FLT_FILTER_DriverObject µÄÆ«ÒÆ
-int g_Offset_FLT_FILTER_Operations = -1;                 // _FLT_FILTER_Operations µÄÆ«ÒÆ
-int g_Offset_FLT_OBJECT_PointerCount = -1;               // _FLT_OBJECT_PointerCount µÄÆ«ÒÆ
-int g_Offset_FLT_OBJECT_PrimaryLink = -1;                // _FLT_OBJECT_PrimaryLink µÄÆ«ÒÆ
-int g_Offset_FLT_OBJECT_UniqueIdentifier = -1;           // _FLT_OBJECT_UniqueIdentifier µÄÆ«ÒÆ
-int g_Offset_EPARTITION_ExPartition = -1;                // _EPARTITION_ExPartition µÄÆ«ÒÆ
-int g_Offset_EX_PARTITION_WorkQueues = -1;               // _EX_PARTITION_WorkQueues µÄÆ«ÒÆ
-int g_Offset_EX_WORK_QUEUE_WorkPriQueue = -1;            // _EX_WORK_QUEUE_WorkPriQueue µÄÆ«ÒÆ
-int g_Offset_KPRIQUEUE_Header = -1;                      // _KPRIQUEUE_Header µÄÆ«ÒÆ
-int g_Offset_ENODE_Ncb = -1;                             // _ENODE_Ncb µÄÆ«ÒÆ
-int g_Offset_ENODE_HotAddProcessorWorkItem = -1;          // _ENODE_HotAddProcessorWorkItem µÄÆ«ÒÆ
-int g_Offset_KTHREAD_ApcState = -1;                      // _ETHREAD_ApcState µÄÆ«ÒÆ
-int g_Offset_KTHREAD_ThreadFlags = -1;                   // _ETHREAD_ThreadFlagsSpare µÄÆ«ÒÆ
-int g_Offset_KTHREAD_SystemCallNumber = -1;               // _ETHREAD_SystemCallNumber µÄÆ«ÒÆ
-int g_Offset_KTHREAD_Priority = -1;                       // _ETHREAD_Priority µÄÆ«ÒÆ
-int g_Offset_KTHREAD_Teb = -1;                            // _ETHREAD_Teb µÄÆ«ÒÆ
-int g_Offset_KTHREAD_ContextSwitches = -1;                // _ETHREAD_ContextSwitches µÄÆ«ÒÆ
-int g_Offset_KTHREAD_State = -1;                          // _ETHREAD_State µÄÆ«ÒÆ
-int g_Offset_KTHREAD_Process = -1;                        // _ETHREAD_Process µÄÆ«ÒÆ
-int g_Offset_KTHREAD_PreviousMode = -1;                   // _ETHREAD_PreviousMode µÄÆ«ÒÆ
-int g_Offset_ETHREAD_CreateTime = -1;                     // _ETHREAD_CreateTime µÄÆ«ÒÆ
-int g_Offset_ETHREAD_StartAddress = -1;                   // _ETHREAD_StartAddress µÄÆ«ÒÆ
-int g_Offset_KTHREAD_UniqueProcess = -1;                  // _ETHREAD_UniqueProcess µÄÆ«ÒÆ
-int g_Offset_KTHREAD_UniqueThread = -1;                   // _ETHREAD_UniqueThread µÄÆ«ÒÆ
-int g_Offset_ETHREAD_Win32StartAddress = -1;              // _ETHREAD_Win32StartAddress µÄÆ«ÒÆ
-int g_Offset_ETHREAD_ThreadListEntry = -1;                // _ETHREAD_ThreadListEntry_Flink µÄÆ«ÒÆ
+int g_Offset_PEB_BeingDebugged = -1;                      // _PEB_BeingDebugged çš„åç§»
+int g_Offset_PEB_ImageBaseAddress = -1;                   // _PEB_ImageBaseAddress çš„åç§»
+int g_Offset_PEB_Ldr = -1;                                // _PEB_Ldr çš„åç§»
+int g_Offset_PEB_ProcessParameters = -1;                  // _PEB_ProcessParameters çš„åç§»
+int g_Offset_PEB_LDR_DATA_InLoadOrderModuleList = -1;     // _PEB_LDR_DATA_InLoadOrderModuleList çš„åç§»
+int g_Offset_LDR_DATA_TABLE_ENTRY_DllBase = -1;           // _LDR_DATA_TABLE_ENTRY_DllBase çš„åç§»
+int g_Offset_LDR_DATA_TABLE_ENTRY_SizeOfImage = -1;       // _LDR_DATA_TABLE_ENTRY_SizeOfImage çš„åç§»
+int g_Offset_LDR_DATA_TABLE_ENTRY_FullDllName = -1;       // _LDR_DATA_TABLE_ENTRY_FullDllName çš„åç§»
+int g_Offset_LDR_DATA_TABLE_ENTRY_BaseDllName = -1;       // _LDR_DATA_TABLE_ENTRY_BaseDllName çš„åç§»
+int g_Offset_RTL_USER_PROCESS_PARAMETERS_CommandLine = -1; // _RTL_USER_PROCESS_PARAMETERS_CommandLine çš„åç§»
+int g_Offset_MM_SESSION_SPACE_SessionId = -1;             // _MM_SESSION_SPACE_SessionId çš„åç§»
+int g_Offset_FILE_OBJECT_DeviceObject = -1;               // _FILE_OBJECT_DeviceObject çš„åç§»
+int g_Offset_FILE_OBJECT_FileName = -1;                   // _FILE_OBJECT_FileName çš„åç§»
+int g_Offset_DRIVER_OBJECT_DriverStart = -1;              // _DRIVER_OBJECT_DriverStart çš„åç§»
+int g_Offset_DRIVER_OBJECT_DriverSize = -1;               // _DRIVER_OBJECT_DriverSize çš„åç§»
+int g_Offset_DRIVER_OBJECT_DriverSection = -1;            // _DRIVER_OBJECT_DriverSection çš„åç§»
+int g_Offset_DRIVER_OBJECT_DriverExtension = -1;          // _DRIVER_OBJECT_DriverExtension çš„åç§»
+int g_Offset_DRIVER_OBJECT_DriverName = -1;               // _DRIVER_OBJECT_DriverName çš„åç§»
+int g_Offset_DRIVER_OBJECT_FastIoDispatch = -1;           // _DRIVER_OBJECT_FastIoDispatch çš„åç§»
+int g_Offset_DRIVER_OBJECT_MajorFunction = -1;            // _DRIVER_OBJECT_MajorFunction çš„åç§»
+int g_Offset_DRIVER_EXTENSION_DriverObject = -1;          // _DRIVER_EXTENSION_DriverObject çš„åç§»
+int g_Offset_DRIVER_EXTENSION_ServiceKeyName = -1;        // _DRIVER_EXTENSION_ServiceKeyName çš„åç§»
+int g_Offset_OBJECT_HEADER_PointerCount = -1;             // _OBJECT_HEADER_PointerCount çš„åç§»
+int g_Offset_OBJECT_HEADER_TypeIndex = -1;                // _OBJECT_HEADER_TypeIndex çš„åç§»
+int g_Offset_OBJECT_HEADER_InfoMask = -1;                 // _OBJECT_HEADER_InfoMask çš„åç§»
+int g_OBJECT_HEADER_SIZE = -1;                            // _OBJECT_HEADER çš„å¤§å°
+int g_Offset_DEVICE_OBJECT_Queue = -1;                    // _DEVICE_OBJECT_Queue çš„åç§»
+int g_Offset_HANDLE_TABLE_NextHandleNeedingPool = -1;     // _HANDLE_TABLE_NextHandleNeedingPool çš„åç§»
+int g_Offset_HANDLE_TABLE_TableCode = -1;                 // _HANDLE_TABLE_TableCode çš„åç§»
+int g_Offset_OBJECT_TYPE_Name = -1;                       // _OBJECT_TYPE_Name çš„åç§»
+int g_Offset_OBJECT_TYPE_Index = -1;                      // _OBJECT_TYPE_Index çš„åç§»
+int g_Offset_OBJECT_TYPE_TypeInfo = -1;                   // _OBJECT_TYPE_TypeInfo çš„åç§»
+int g_Offset_OBJECT_TYPE_CallbackList = -1;               // _OBJECT_TYPE_CallbackList çš„åç§»
+int g_Offset_OBJECT_TYPE_INITIALIZER_ValidAccessMask = -1; // _OBJECT_TYPE_INITIALIZER_ValidAccessMask çš„åç§»
+int g_Offset_OBJECT_TYPE_INITIALIZER_DumpProcedure = -1;  // _OBJECT_TYPE_INITIALIZER_DumpProcedure çš„åç§»
+int g_Offset_OBJECT_TYPE_INITIALIZER_OpenProcedure = -1;  // _OBJECT_TYPE_INITIALIZER_OpenProcedure çš„åç§»
+int g_Offset_OBJECT_TYPE_INITIALIZER_CloseProcedure = -1; // _OBJECT_TYPE_INITIALIZER_CloseProcedure çš„åç§»
+int g_Offset_OBJECT_TYPE_INITIALIZER_DeleteProcedure = -1; // _OBJECT_TYPE_INITIALIZER_DeleteProcedure çš„åç§»
+int g_Offset_OBJECT_TYPE_INITIALIZER_ParseProcedure = -1; // _OBJECT_TYPE_INITIALIZER_ParseProcedure çš„åç§»
+int g_Offset_OBJECT_TYPE_INITIALIZER_SecurityProcedure = -1; // _OBJECT_TYPE_INITIALIZER_SecurityProcedure çš„åç§»
+int g_Offset_OBJECT_TYPE_INITIALIZER_QueryNameProcedure = -1; // _OBJECT_TYPE_INITIALIZER_QueryNameProcedure çš„åç§»
+int g_Offset_OBJECT_TYPE_INITIALIZER_OkayToCloseProcedure = -1; // _OBJECT_TYPE_INITIALIZER_OkayToCloseProcedure çš„åç§»
+int g_Offset_TOKEN_LogonSession = -1;                    // _TOKEN_LogonSession çš„åç§»
+int g_Offset_MMVAD_Core = -1;                            // _MMVAD_Core çš„åç§»
+int g_Offset_MMVAD_Subsection = -1;                      // _MMVAD_Subsection çš„åç§»
+int g_Offset_SEP_LOGON_SESSION_REFERENCES_AccountName = -1; // _SEP_LOGON_SESSION_REFERENCES_AccountName çš„åç§»
+int g_Offset_MMVAD_SHORT_StartingVpn = -1;               // _MMVAD_SHORT_StartingVpn çš„åç§»
+int g_Offset_MMVAD_SHORT_EndingVpn = -1;                 // _MMVAD_SHORT_EndingVpn çš„åç§»
+int g_Offset_MMVAD_SHORT_StartingVpnHigh = -1;           // _MMVAD_SHORT_StartingVpnHigh çš„åç§»
+int g_Offset_MMVAD_SHORT_EndingVpnHigh = -1;             // _MMVAD_SHORT_EndingVpnHigh çš„åç§»
+int g_Offset_MMVAD_SHORT_u = -1;                         // _MMVAD_SHORT_u çš„åç§»
+int g_Offset_MMVAD_SHORT_u1 = -1;                        // _MMVAD_SHORT_u1 çš„åç§»
+int g_Offset_SUBSECTION_ControlArea = -1;                // _SUBSECTION_ControlArea çš„åç§»
+int g_Offset_CONTROL_AREA_FilePointer = -1;              // _CONTROL_AREA_FilePointer çš„åç§»
+int g_Offset_OBJECT_SYMBOLIC_LINK_LinkTarget = -1;       // _OBJECT_SYMBOLIC_LINK_LinkTarget çš„åç§»
+int g_Offset_ETW_SILODRIVERSTATE_EtwpLoggerContext = -1; // _ETW_SILODRIVERSTATE_EtwpLoggerContext çš„åç§»
+int g_Offset_WMI_LOGGER_CONTEXT_GetCpuClock = -1;        // _WMI_LOGGER_CONTEXT_GetCpuClock çš„åç§»
+int g_Offset_FLT_FILTER_Name = -1;                       // _FLT_FILTER_Name çš„åç§»
+int g_Offset_FLT_FILTER_DefaultAltitude = -1;            // _FLT_FILTER_DefaultAltitude çš„åç§»
+int g_Offset_FLT_FILTER_DriverObject = -1;               // _FLT_FILTER_DriverObject çš„åç§»
+int g_Offset_FLT_FILTER_Operations = -1;                 // _FLT_FILTER_Operations çš„åç§»
+int g_Offset_FLT_OBJECT_PointerCount = -1;               // _FLT_OBJECT_PointerCount çš„åç§»
+int g_Offset_FLT_OBJECT_PrimaryLink = -1;                // _FLT_OBJECT_PrimaryLink çš„åç§»
+int g_Offset_FLT_OBJECT_UniqueIdentifier = -1;           // _FLT_OBJECT_UniqueIdentifier çš„åç§»
+int g_Offset_EPARTITION_ExPartition = -1;                // _EPARTITION_ExPartition çš„åç§»
+int g_Offset_EX_PARTITION_WorkQueues = -1;               // _EX_PARTITION_WorkQueues çš„åç§»
+int g_Offset_EX_WORK_QUEUE_WorkPriQueue = -1;            // _EX_WORK_QUEUE_WorkPriQueue çš„åç§»
+int g_Offset_KPRIQUEUE_Header = -1;                      // _KPRIQUEUE_Header çš„åç§»
+int g_Offset_ENODE_Ncb = -1;                             // _ENODE_Ncb çš„åç§»
+int g_Offset_ENODE_HotAddProcessorWorkItem = -1;          // _ENODE_HotAddProcessorWorkItem çš„åç§»
+int g_Offset_KTHREAD_ApcState = -1;                      // _ETHREAD_ApcState çš„åç§»
+int g_Offset_KTHREAD_ThreadFlags = -1;                   // _ETHREAD_ThreadFlagsSpare çš„åç§»
+int g_Offset_KTHREAD_SystemCallNumber = -1;               // _ETHREAD_SystemCallNumber çš„åç§»
+int g_Offset_KTHREAD_Priority = -1;                       // _ETHREAD_Priority çš„åç§»
+int g_Offset_KTHREAD_Teb = -1;                            // _ETHREAD_Teb çš„åç§»
+int g_Offset_KTHREAD_ContextSwitches = -1;                // _ETHREAD_ContextSwitches çš„åç§»
+int g_Offset_KTHREAD_State = -1;                          // _ETHREAD_State çš„åç§»
+int g_Offset_KTHREAD_Process = -1;                        // _ETHREAD_Process çš„åç§»
+int g_Offset_KTHREAD_PreviousMode = -1;                   // _ETHREAD_PreviousMode çš„åç§»
+int g_Offset_ETHREAD_CreateTime = -1;                     // _ETHREAD_CreateTime çš„åç§»
+int g_Offset_ETHREAD_StartAddress = -1;                   // _ETHREAD_StartAddress çš„åç§»
+int g_Offset_KTHREAD_UniqueProcess = -1;                  // _ETHREAD_UniqueProcess çš„åç§»
+int g_Offset_KTHREAD_UniqueThread = -1;                   // _ETHREAD_UniqueThread çš„åç§»
+int g_Offset_ETHREAD_Win32StartAddress = -1;              // _ETHREAD_Win32StartAddress çš„åç§»
+int g_Offset_ETHREAD_ThreadListEntry = -1;                // _ETHREAD_ThreadListEntry_Flink çš„åç§»
 
 int g_Offset_EPROCESS_CreateTime = -1;
 
@@ -203,14 +203,14 @@ UCHAR GetOffset()
 		g_Size_PEB = ToUserSendGetStructSizeMessgae(L"ntoskrnel.exe", L"_PEB");
 		if (g_Size_PEB == -1)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Size_PEB Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Size_PEB å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_KPROCESS_AddressPolicy = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_KPROCESS", L"AddressPolicy");
 		if (g_Offset_KPROCESS_AddressPolicy == -1)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_EPROCESS_AddressPolicy Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_EPROCESS_AddressPolicy å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 			//break;
 		}
@@ -218,7 +218,7 @@ UCHAR GetOffset()
 		g_Offset_EPROCESS_UniqueProcessId = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_EPROCESS", L"UniqueProcessId");
 		if (g_Offset_EPROCESS_UniqueProcessId == -1)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_EPROCESS_UniqueProcessId Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_EPROCESS_UniqueProcessId å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 			//break;
 
@@ -227,7 +227,7 @@ UCHAR GetOffset()
 		g_Offset_EPROCESS_ActiveProcessLinks_Flink = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_EPROCESS", L"ActiveProcessLinks");
 		if (g_Offset_EPROCESS_ActiveProcessLinks_Flink == -1)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_EPROCESS_ActiveProcessLinks_Flink Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_EPROCESS_ActiveProcessLinks_Flink å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 			//break;
 
@@ -236,7 +236,7 @@ UCHAR GetOffset()
 		g_Offset_EPROCESS_Token = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_EPROCESS", L"Token");
 		if (g_Offset_EPROCESS_Token == -1)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_EPROCESS_Token Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_EPROCESS_Token å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 			//break;
 
@@ -245,7 +245,7 @@ UCHAR GetOffset()
 		g_Offset_EPROCESS_InheritedFromUniqueProcessId = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_EPROCESS", L"InheritedFromUniqueProcessId");
 		if (g_Offset_EPROCESS_InheritedFromUniqueProcessId == -1)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_EPROCESS_InheritedFromUniqueProcessId Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_EPROCESS_InheritedFromUniqueProcessId å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 			//break;
 		}
@@ -253,7 +253,7 @@ UCHAR GetOffset()
 		g_Offset_EPROCESS_Peb = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_EPROCESS", L"Peb");
 		if (g_Offset_EPROCESS_Peb == -1)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_EPROCESS_Peb Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_EPROCESS_Peb å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 			//break;
 		}
@@ -261,7 +261,7 @@ UCHAR GetOffset()
 		g_Offset_EPROCESS_Session = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_EPROCESS", L"Session");
 		if (g_Offset_EPROCESS_Session == -1)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_EPROCESS_Session Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_EPROCESS_Session å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 			//break;
 		}
@@ -269,7 +269,7 @@ UCHAR GetOffset()
 		g_Offset_EPROCESS_ObjectTable = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_EPROCESS", L"ObjectTable");
 		if (g_Offset_EPROCESS_ObjectTable == -1)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_EPROCESS_ObjectTable Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_EPROCESS_ObjectTable å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 			//break;
 		}
@@ -277,7 +277,7 @@ UCHAR GetOffset()
 		g_Offset_EPROCESS_DebugPort = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_EPROCESS", L"DebugPort");
 		if (g_Offset_EPROCESS_DebugPort == -1)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_EPROCESS_DebugPort Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_EPROCESS_DebugPort å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 			//break;
 		}
@@ -285,7 +285,7 @@ UCHAR GetOffset()
 		g_Offset_EPROCESS_WoW64Process = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_EPROCESS", L"WoW64Process");
 		if (g_Offset_EPROCESS_WoW64Process == -1)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_EPROCESS_WoW64Process Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_EPROCESS_WoW64Process å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 			//break;
 		}
@@ -293,7 +293,7 @@ UCHAR GetOffset()
 		g_Offset_EPROCESS_ImageFilePointer = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_EPROCESS", L"ImageFilePointer");
 		if (g_Offset_EPROCESS_ImageFilePointer == -1)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_EPROCESS_ImageFilePointer Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_EPROCESS_ImageFilePointer å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 			//break;
 		}
@@ -301,7 +301,7 @@ UCHAR GetOffset()
 		g_Offset_EPROCESS_ImageFileName = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_EPROCESS", L"ImageFileName");
 		if (g_Offset_EPROCESS_ImageFileName == -1)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_EPROCESS_ImageFileName Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_EPROCESS_ImageFileName å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 			//break;
 		}
@@ -309,7 +309,7 @@ UCHAR GetOffset()
 		g_Offset_EPROCESS_SeAuditProcessCreationInfo = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_EPROCESS", L"SeAuditProcessCreationInfo");
 		if (g_Offset_EPROCESS_SeAuditProcessCreationInfo == -1)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_EPROCESS_SeAuditProcessCreationInfo Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_EPROCESS_SeAuditProcessCreationInfo å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 			//break;
 		}
@@ -317,7 +317,7 @@ UCHAR GetOffset()
 		g_Offset_EPROCESS_ThreadListHead = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_EPROCESS", L"ThreadListHead");
 		if (g_Offset_EPROCESS_ThreadListHead == -1)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_EPROCESS_ThreadListHead Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_EPROCESS_ThreadListHead å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 			//break;
 		}
@@ -325,7 +325,7 @@ UCHAR GetOffset()
 		g_Offset_EPROCESS_ActiveThreads = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_EPROCESS", L"ActiveThreads");
 		if (g_Offset_EPROCESS_ActiveThreads == -1)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_EPROCESS_ActiveThreads Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_EPROCESS_ActiveThreads å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 			//break;
 		}
@@ -333,7 +333,7 @@ UCHAR GetOffset()
 		g_Offset_EPROCESS_Vm = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_EPROCESS", L"Vm");
 		if (g_Offset_EPROCESS_Vm == -1)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_EPROCESS_Vm Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_EPROCESS_Vm å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 			//break;
 		}
@@ -341,7 +341,7 @@ UCHAR GetOffset()
 		g_Offset_EPROCESS_VadRoot = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_EPROCESS", L"VadRoot");
 		if (g_Offset_EPROCESS_VadRoot == -1)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_EPROCESS_VadRoot Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_EPROCESS_VadRoot å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 			//break;
 		}
@@ -349,7 +349,7 @@ UCHAR GetOffset()
 		g_Offset_EPROCESS_VadCount = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_EPROCESS", L"VadCount");
 		if (g_Offset_EPROCESS_VadCount == -1)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_EPROCESS_VadCount Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_EPROCESS_VadCount å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 			//break;
 		}
@@ -357,7 +357,7 @@ UCHAR GetOffset()
 		g_Offset_EPROCESS_Protection = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_EPROCESS", L"Protection");
 		if (g_Offset_EPROCESS_Protection == -1)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_EPROCESS_Protection Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_EPROCESS_Protection å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 			//break;
 		}
@@ -365,7 +365,7 @@ UCHAR GetOffset()
 		g_Offset_EPROCESS_CreateTime = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_EPROCESS", L"CreateTime");
 		if (g_Offset_EPROCESS_CreateTime == -1)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_EPROCESS_CreateTime Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_EPROCESS_CreateTime å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 			//break;
 		}
@@ -373,7 +373,7 @@ UCHAR GetOffset()
 		g_Offset_EPROCESS_AddressPolicyFrozen = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_EPROCESS", L"Flags3");
 		if (g_Offset_EPROCESS_AddressPolicyFrozen == -1)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_EPROCESS_AddressPolicyFrozen Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_EPROCESS_AddressPolicyFrozen å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 			//break;
 		}
@@ -381,7 +381,7 @@ UCHAR GetOffset()
 		g_Offset_EPROCESS_SystemProcess = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_EPROCESS", L"Flags3");
 		if (g_Offset_EPROCESS_SystemProcess == -1)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_EPROCESS_SystemProcess Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_EPROCESS_SystemProcess å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 			//break;
 		}
@@ -389,7 +389,7 @@ UCHAR GetOffset()
 		g_Offset_KPRCB_CurrentThread = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_KPRCB", L"CurrentThread");
 		if (g_Offset_KPRCB_CurrentThread == -1)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_KPRCB_CurrentThread Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_KPRCB_CurrentThread å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 			//break;
 		}
@@ -398,7 +398,7 @@ UCHAR GetOffset()
 		g_Offset_KPRCB_RspBase = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_KPRCB", L"RspBase");
 		if (g_Offset_KPRCB_RspBase == -1)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_KPRCB_RspBase Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_KPRCB_RspBase å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 			//break;
 		}
@@ -406,7 +406,7 @@ UCHAR GetOffset()
 		g_Offset_KPCR_GdtBase = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_KPCR", L"GdtBase");
 		if (g_Offset_KPCR_GdtBase == -1)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_KPCR_GdtBase Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_KPCR_GdtBase å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 			//break;
 		}
@@ -414,7 +414,7 @@ UCHAR GetOffset()
 		g_Offset_KPCR_IdtBase = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_KPCR", L"IdtBase");
 		if (g_Offset_KPCR_IdtBase == -1)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_KPCR_IdtBase Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_KPCR_IdtBase å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 			//break;
 		}
@@ -422,7 +422,7 @@ UCHAR GetOffset()
 		g_Offset_KPRCB_TimerTable = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_KPRCB", L"TimerTable");
 		if (g_Offset_KPRCB_TimerTable == -1)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_KPRCB_TimerTable Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_KPRCB_TimerTable å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 			//break;
 		}
@@ -430,7 +430,7 @@ UCHAR GetOffset()
 		g_Offset_KAPC_STATE_Process = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_KAPC_STATE", L"Process");
 		if (g_Offset_KAPC_STATE_Process == -1)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_KAPC_STATE_Process Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_KAPC_STATE_Process å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 			//break;
 		}
@@ -438,7 +438,7 @@ UCHAR GetOffset()
 		g_Offset_MMSUPPORT_FULL_Shared = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_MMSUPPORT_FULL", L"Shared");
 		if (g_Offset_MMSUPPORT_FULL_Shared == -1)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_MMSUPPORT_FULL_Shared Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_MMSUPPORT_FULL_Shared å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 			//break;
 		}
@@ -446,555 +446,555 @@ UCHAR GetOffset()
 		g_Offset_MMSUPPORT_SHARED_ShadowMapping = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_MMSUPPORT_SHARED", L"ShadowMapping");
 		if (g_Offset_MMSUPPORT_SHARED_ShadowMapping == -1)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_MMSUPPORT_SHARED_ShadowMapping Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_MMSUPPORT_SHARED_ShadowMapping å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 			//break;
 		}
 
-		// _PEB Ïà¹ØÆ«ÒÆ
+		// _PEB ç›¸å…³åç§»
 		g_Offset_PEB_BeingDebugged = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_PEB", L"BeingDebugged");
 		if (g_Offset_PEB_BeingDebugged == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_PEB_BeingDebugged Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_PEB_BeingDebugged å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_PEB_ImageBaseAddress = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_PEB", L"ImageBaseAddress");
 		if (g_Offset_PEB_ImageBaseAddress == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_PEB_ImageBaseAddress Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_PEB_ImageBaseAddress å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_PEB_Ldr = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_PEB", L"Ldr");
 		if (g_Offset_PEB_Ldr == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_PEB_Ldr Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_PEB_Ldr å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_PEB_ProcessParameters = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_PEB", L"ProcessParameters");
 		if (g_Offset_PEB_ProcessParameters == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_PEB_ProcessParameters Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_PEB_ProcessParameters å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
-		// _PEB_LDR_DATA Ïà¹ØÆ«ÒÆ
+		// _PEB_LDR_DATA ç›¸å…³åç§»
 		g_Offset_PEB_LDR_DATA_InLoadOrderModuleList = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_PEB_LDR_DATA", L"InLoadOrderModuleList");
 		if (g_Offset_PEB_LDR_DATA_InLoadOrderModuleList == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_PEB_LDR_DATA_InLoadOrderModuleList Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_PEB_LDR_DATA_InLoadOrderModuleList å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
-		// _LDR_DATA_TABLE_ENTRY Ïà¹ØÆ«ÒÆ
+		// _LDR_DATA_TABLE_ENTRY ç›¸å…³åç§»
 		g_Offset_LDR_DATA_TABLE_ENTRY_DllBase = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_LDR_DATA_TABLE_ENTRY", L"DllBase");
 		if (g_Offset_LDR_DATA_TABLE_ENTRY_DllBase == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_LDR_DATA_TABLE_ENTRY_DllBase Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_LDR_DATA_TABLE_ENTRY_DllBase å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_LDR_DATA_TABLE_ENTRY_SizeOfImage = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_LDR_DATA_TABLE_ENTRY", L"SizeOfImage");
 		if (g_Offset_LDR_DATA_TABLE_ENTRY_SizeOfImage == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_LDR_DATA_TABLE_ENTRY_SizeOfImage Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_LDR_DATA_TABLE_ENTRY_SizeOfImage å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_LDR_DATA_TABLE_ENTRY_FullDllName = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_LDR_DATA_TABLE_ENTRY", L"FullDllName");
 		if (g_Offset_LDR_DATA_TABLE_ENTRY_FullDllName == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_LDR_DATA_TABLE_ENTRY_FullDllName Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_LDR_DATA_TABLE_ENTRY_FullDllName å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_LDR_DATA_TABLE_ENTRY_BaseDllName = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_LDR_DATA_TABLE_ENTRY", L"BaseDllName");
 		if (g_Offset_LDR_DATA_TABLE_ENTRY_BaseDllName == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_LDR_DATA_TABLE_ENTRY_BaseDllName Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_LDR_DATA_TABLE_ENTRY_BaseDllName å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
-		// _RTL_USER_PROCESS_PARAMETERS Ïà¹ØÆ«ÒÆ
+		// _RTL_USER_PROCESS_PARAMETERS ç›¸å…³åç§»
 		g_Offset_RTL_USER_PROCESS_PARAMETERS_CommandLine = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_RTL_USER_PROCESS_PARAMETERS", L"CommandLine");
 		if (g_Offset_RTL_USER_PROCESS_PARAMETERS_CommandLine == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_RTL_USER_PROCESS_PARAMETERS_CommandLine Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_RTL_USER_PROCESS_PARAMETERS_CommandLine å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
-		// _MM_SESSION_SPACE Ïà¹ØÆ«ÒÆ
+		// _MM_SESSION_SPACE ç›¸å…³åç§»
 		g_Offset_MM_SESSION_SPACE_SessionId = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_MM_SESSION_SPACE", L"SessionId");
 		if (g_Offset_MM_SESSION_SPACE_SessionId == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_MM_SESSION_SPACE_SessionId Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_MM_SESSION_SPACE_SessionId å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
-		// _FILE_OBJECT Ïà¹ØÆ«ÒÆ
+		// _FILE_OBJECT ç›¸å…³åç§»
 		g_Offset_FILE_OBJECT_DeviceObject = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_FILE_OBJECT", L"DeviceObject");
 		if (g_Offset_FILE_OBJECT_DeviceObject == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_FILE_OBJECT_DeviceObject Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_FILE_OBJECT_DeviceObject å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_FILE_OBJECT_FileName = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_FILE_OBJECT", L"FileName");
 		if (g_Offset_FILE_OBJECT_FileName == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_FILE_OBJECT_FileName Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_FILE_OBJECT_FileName å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
-		// _DRIVER_OBJECT Ïà¹ØÆ«ÒÆ
+		// _DRIVER_OBJECT ç›¸å…³åç§»
 		g_Offset_DRIVER_OBJECT_DriverStart = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_DRIVER_OBJECT", L"DriverStart");
 		if (g_Offset_DRIVER_OBJECT_DriverStart == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_DRIVER_OBJECT_DriverStart Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_DRIVER_OBJECT_DriverStart å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_DRIVER_OBJECT_DriverSize = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_DRIVER_OBJECT", L"DriverSize");
 		if (g_Offset_DRIVER_OBJECT_DriverSize == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_DRIVER_OBJECT_DriverSize Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_DRIVER_OBJECT_DriverSize å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_DRIVER_OBJECT_DriverSection = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_DRIVER_OBJECT", L"DriverSection");
 		if (g_Offset_DRIVER_OBJECT_DriverSection == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_DRIVER_OBJECT_DriverSection Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_DRIVER_OBJECT_DriverSection å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_DRIVER_OBJECT_DriverExtension = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_DRIVER_OBJECT", L"DriverExtension");
 		if (g_Offset_DRIVER_OBJECT_DriverExtension == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_DRIVER_OBJECT_DriverExtension Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_DRIVER_OBJECT_DriverExtension å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_DRIVER_OBJECT_DriverName = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_DRIVER_OBJECT", L"DriverName");
 		if (g_Offset_DRIVER_OBJECT_DriverName == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_DRIVER_OBJECT_DriverName Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_DRIVER_OBJECT_DriverName å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_DRIVER_OBJECT_FastIoDispatch = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_DRIVER_OBJECT", L"FastIoDispatch");
 		if (g_Offset_DRIVER_OBJECT_FastIoDispatch == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_DRIVER_OBJECT_FastIoDispatch Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_DRIVER_OBJECT_FastIoDispatch å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_DRIVER_OBJECT_MajorFunction = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_DRIVER_OBJECT", L"MajorFunction");
 		if (g_Offset_DRIVER_OBJECT_MajorFunction == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_DRIVER_OBJECT_MajorFunction Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_DRIVER_OBJECT_MajorFunction å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
-		// _DRIVER_EXTENSION Ïà¹ØÆ«ÒÆ
+		// _DRIVER_EXTENSION ç›¸å…³åç§»
 		g_Offset_DRIVER_EXTENSION_DriverObject = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_DRIVER_EXTENSION", L"DriverObject");
 		if (g_Offset_DRIVER_EXTENSION_DriverObject == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_DRIVER_EXTENSION_DriverObject Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_DRIVER_EXTENSION_DriverObject å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_DRIVER_EXTENSION_ServiceKeyName = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_DRIVER_EXTENSION", L"ServiceKeyName");
 		if (g_Offset_DRIVER_EXTENSION_ServiceKeyName == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_DRIVER_EXTENSION_ServiceKeyName Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_DRIVER_EXTENSION_ServiceKeyName å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
-		// _OBJECT_HEADER Ïà¹ØÆ«ÒÆ
+		// _OBJECT_HEADER ç›¸å…³åç§»
 		g_Offset_OBJECT_HEADER_PointerCount = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_OBJECT_HEADER", L"PointerCount");
 		if (g_Offset_OBJECT_HEADER_PointerCount == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_OBJECT_HEADER_PointerCount Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_OBJECT_HEADER_PointerCount å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_OBJECT_HEADER_TypeIndex = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_OBJECT_HEADER", L"TypeIndex");
 		if (g_Offset_OBJECT_HEADER_TypeIndex == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_OBJECT_HEADER_TypeIndex Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_OBJECT_HEADER_TypeIndex å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_OBJECT_HEADER_InfoMask = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_OBJECT_HEADER", L"InfoMask");
 		if (g_Offset_OBJECT_HEADER_InfoMask == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_OBJECT_HEADER_InfoMask Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_OBJECT_HEADER_InfoMask å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_OBJECT_HEADER_SIZE = ToUserSendGetStructSizeMessgae(L"ntoskrnel.exe", L"_OBJECT_HEADER") - ToUserSendGetStructSizeMessgae(L"ntoskrnel.exe", L"_QUAD");
 		if (g_OBJECT_HEADER_SIZE == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_OBJECT_HEADER_SIZE Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_OBJECT_HEADER_SIZE å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
-		// _DEVICE_OBJECT Ïà¹ØÆ«ÒÆ
+		// _DEVICE_OBJECT ç›¸å…³åç§»
 		g_Offset_DEVICE_OBJECT_Queue = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_DEVICE_OBJECT", L"Queue");
 		if (g_Offset_DEVICE_OBJECT_Queue == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_DEVICE_OBJECT_Queue Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_DEVICE_OBJECT_Queue å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
-		// _HANDLE_TABLE Ïà¹ØÆ«ÒÆ
+		// _HANDLE_TABLE ç›¸å…³åç§»
 		g_Offset_HANDLE_TABLE_NextHandleNeedingPool = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_HANDLE_TABLE", L"NextHandleNeedingPool");
 		if (g_Offset_HANDLE_TABLE_NextHandleNeedingPool == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_HANDLE_TABLE_NextHandleNeedingPool Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_HANDLE_TABLE_NextHandleNeedingPool å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_HANDLE_TABLE_TableCode = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_HANDLE_TABLE", L"TableCode");
 		if (g_Offset_HANDLE_TABLE_TableCode == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_HANDLE_TABLE_TableCode Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_HANDLE_TABLE_TableCode å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
-		// _OBJECT_TYPE Ïà¹ØÆ«ÒÆ
+		// _OBJECT_TYPE ç›¸å…³åç§»
 		g_Offset_OBJECT_TYPE_Name = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_OBJECT_TYPE", L"Name");
 		if (g_Offset_OBJECT_TYPE_Name == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_OBJECT_TYPE_Name Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_OBJECT_TYPE_Name å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_OBJECT_TYPE_Index = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_OBJECT_TYPE", L"Index");
 		if (g_Offset_OBJECT_TYPE_Index == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_OBJECT_TYPE_Index Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_OBJECT_TYPE_Index å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_OBJECT_TYPE_TypeInfo = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_OBJECT_TYPE", L"TypeInfo");
 		if (g_Offset_OBJECT_TYPE_TypeInfo == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_OBJECT_TYPE_TypeInfo Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_OBJECT_TYPE_TypeInfo å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_OBJECT_TYPE_CallbackList = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_OBJECT_TYPE", L"CallbackList");
 		if (g_Offset_OBJECT_TYPE_CallbackList == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_OBJECT_TYPE_CallbackList Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_OBJECT_TYPE_CallbackList å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
-		// _OBJECT_TYPE_INITIALIZER Ïà¹ØÆ«ÒÆ
+		// _OBJECT_TYPE_INITIALIZER ç›¸å…³åç§»
 		g_Offset_OBJECT_TYPE_INITIALIZER_ValidAccessMask = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_OBJECT_TYPE_INITIALIZER", L"ValidAccessMask");
 		if (g_Offset_OBJECT_TYPE_INITIALIZER_ValidAccessMask == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_OBJECT_TYPE_INITIALIZER_ValidAccessMask Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_OBJECT_TYPE_INITIALIZER_ValidAccessMask å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_OBJECT_TYPE_INITIALIZER_DumpProcedure = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_OBJECT_TYPE_INITIALIZER", L"DumpProcedure");
 		if (g_Offset_OBJECT_TYPE_INITIALIZER_DumpProcedure == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_OBJECT_TYPE_INITIALIZER_DumpProcedure Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_OBJECT_TYPE_INITIALIZER_DumpProcedure å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_OBJECT_TYPE_INITIALIZER_OpenProcedure = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_OBJECT_TYPE_INITIALIZER", L"OpenProcedure");
 		if (g_Offset_OBJECT_TYPE_INITIALIZER_OpenProcedure == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_OBJECT_TYPE_INITIALIZER_OpenProcedure Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_OBJECT_TYPE_INITIALIZER_OpenProcedure å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_OBJECT_TYPE_INITIALIZER_CloseProcedure = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_OBJECT_TYPE_INITIALIZER", L"CloseProcedure");
 		if (g_Offset_OBJECT_TYPE_INITIALIZER_CloseProcedure == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_OBJECT_TYPE_INITIALIZER_CloseProcedure Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_OBJECT_TYPE_INITIALIZER_CloseProcedure å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_OBJECT_TYPE_INITIALIZER_DeleteProcedure = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_OBJECT_TYPE_INITIALIZER", L"DeleteProcedure");
 		if (g_Offset_OBJECT_TYPE_INITIALIZER_DeleteProcedure == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_OBJECT_TYPE_INITIALIZER_DeleteProcedure Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_OBJECT_TYPE_INITIALIZER_DeleteProcedure å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_OBJECT_TYPE_INITIALIZER_ParseProcedure = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_OBJECT_TYPE_INITIALIZER", L"ParseProcedure");
 		if (g_Offset_OBJECT_TYPE_INITIALIZER_ParseProcedure == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_OBJECT_TYPE_INITIALIZER_ParseProcedure Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_OBJECT_TYPE_INITIALIZER_ParseProcedure å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_OBJECT_TYPE_INITIALIZER_SecurityProcedure = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_OBJECT_TYPE_INITIALIZER", L"SecurityProcedure");
 		if (g_Offset_OBJECT_TYPE_INITIALIZER_SecurityProcedure == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_OBJECT_TYPE_INITIALIZER_SecurityProcedure Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_OBJECT_TYPE_INITIALIZER_SecurityProcedure å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_OBJECT_TYPE_INITIALIZER_QueryNameProcedure = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_OBJECT_TYPE_INITIALIZER", L"QueryNameProcedure");
 		if (g_Offset_OBJECT_TYPE_INITIALIZER_QueryNameProcedure == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_OBJECT_TYPE_INITIALIZER_QueryNameProcedure Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_OBJECT_TYPE_INITIALIZER_QueryNameProcedure å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_OBJECT_TYPE_INITIALIZER_OkayToCloseProcedure = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_OBJECT_TYPE_INITIALIZER", L"OkayToCloseProcedure");
 		if (g_Offset_OBJECT_TYPE_INITIALIZER_OkayToCloseProcedure == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_OBJECT_TYPE_INITIALIZER_OkayToCloseProcedure Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_OBJECT_TYPE_INITIALIZER_OkayToCloseProcedure å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
-		// _TOKEN Ïà¹ØÆ«ÒÆ
+		// _TOKEN ç›¸å…³åç§»
 		g_Offset_TOKEN_LogonSession = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_TOKEN", L"LogonSession");
 		if (g_Offset_TOKEN_LogonSession == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_TOKEN_LogonSession Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_TOKEN_LogonSession å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
-		// _MMVAD Ïà¹ØÆ«ÒÆ
+		// _MMVAD ç›¸å…³åç§»
 		g_Offset_MMVAD_Core = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_MMVAD", L"Core");
 		if (g_Offset_MMVAD_Core == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_MMVAD_Core Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_MMVAD_Core å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_MMVAD_Subsection = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_MMVAD", L"Subsection");
 		if (g_Offset_MMVAD_Subsection == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_MMVAD_Subsection Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_MMVAD_Subsection å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
-		// _SEP_LOGON_SESSION_REFERENCES Ïà¹ØÆ«ÒÆ
+		// _SEP_LOGON_SESSION_REFERENCES ç›¸å…³åç§»
 		g_Offset_SEP_LOGON_SESSION_REFERENCES_AccountName = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_SEP_LOGON_SESSION_REFERENCES", L"AccountName");
 		if (g_Offset_SEP_LOGON_SESSION_REFERENCES_AccountName == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_SEP_LOGON_SESSION_REFERENCES_AccountName Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_SEP_LOGON_SESSION_REFERENCES_AccountName å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
-		// _MMVAD_SHORT Ïà¹ØÆ«ÒÆ
+		// _MMVAD_SHORT ç›¸å…³åç§»
 		g_Offset_MMVAD_SHORT_StartingVpn = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_MMVAD_SHORT", L"StartingVpn");
 		if (g_Offset_MMVAD_SHORT_StartingVpn == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_MMVAD_SHORT_StartingVpn Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_MMVAD_SHORT_StartingVpn å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_MMVAD_SHORT_EndingVpn = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_MMVAD_SHORT", L"EndingVpn");
 		if (g_Offset_MMVAD_SHORT_EndingVpn == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_MMVAD_SHORT_EndingVpn Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_MMVAD_SHORT_EndingVpn å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_MMVAD_SHORT_StartingVpnHigh = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_MMVAD_SHORT", L"StartingVpnHigh");
 		if (g_Offset_MMVAD_SHORT_StartingVpnHigh == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_MMVAD_SHORT_StartingVpnHigh Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_MMVAD_SHORT_StartingVpnHigh å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_MMVAD_SHORT_EndingVpnHigh = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_MMVAD_SHORT", L"EndingVpnHigh");
 		if (g_Offset_MMVAD_SHORT_EndingVpnHigh == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_MMVAD_SHORT_EndingVpnHigh Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_MMVAD_SHORT_EndingVpnHigh å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_MMVAD_SHORT_u = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_MMVAD_SHORT", L"u");
 		if (g_Offset_MMVAD_SHORT_u == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_MMVAD_SHORT_u Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_MMVAD_SHORT_u å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_MMVAD_SHORT_u1 = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_MMVAD_SHORT", L"u1");
 		if (g_Offset_MMVAD_SHORT_u1 == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_MMVAD_SHORT_u1 Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_MMVAD_SHORT_u1 å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
-		// _SUBSECTION Ïà¹ØÆ«ÒÆ
+		// _SUBSECTION ç›¸å…³åç§»
 		g_Offset_SUBSECTION_ControlArea = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_SUBSECTION", L"ControlArea");
 		if (g_Offset_SUBSECTION_ControlArea == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_SUBSECTION_ControlArea Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_SUBSECTION_ControlArea å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
-		// _CONTROL_AREA Ïà¹ØÆ«ÒÆ
+		// _CONTROL_AREA ç›¸å…³åç§»
 		g_Offset_CONTROL_AREA_FilePointer = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_CONTROL_AREA", L"FilePointer");
 		if (g_Offset_CONTROL_AREA_FilePointer == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_CONTROL_AREA_FilePointer Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_CONTROL_AREA_FilePointer å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
-		// _OBJECT_SYMBOLIC_LINK Ïà¹ØÆ«ÒÆ
+		// _OBJECT_SYMBOLIC_LINK ç›¸å…³åç§»
 		g_Offset_OBJECT_SYMBOLIC_LINK_LinkTarget = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_OBJECT_SYMBOLIC_LINK", L"LinkTarget");
 		if (g_Offset_OBJECT_SYMBOLIC_LINK_LinkTarget == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_OBJECT_SYMBOLIC_LINK_LinkTarget Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_OBJECT_SYMBOLIC_LINK_LinkTarget å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
-		// _ETW_SILODRIVERSTATE Ïà¹ØÆ«ÒÆ
+		// _ETW_SILODRIVERSTATE ç›¸å…³åç§»
 		g_Offset_ETW_SILODRIVERSTATE_EtwpLoggerContext = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_ETW_SILODRIVERSTATE", L"EtwpLoggerContext");
 		if (g_Offset_ETW_SILODRIVERSTATE_EtwpLoggerContext == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_ETW_SILODRIVERSTATE_EtwpLoggerContext Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_ETW_SILODRIVERSTATE_EtwpLoggerContext å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
-		// _WMI_LOGGER_CONTEXT Ïà¹ØÆ«ÒÆ
+		// _WMI_LOGGER_CONTEXT ç›¸å…³åç§»
 		g_Offset_WMI_LOGGER_CONTEXT_GetCpuClock = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_WMI_LOGGER_CONTEXT", L"GetCpuClock");
 		if (g_Offset_WMI_LOGGER_CONTEXT_GetCpuClock == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_WMI_LOGGER_CONTEXT_GetCpuClock Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_WMI_LOGGER_CONTEXT_GetCpuClock å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
-		// _FLT_FILTER Ïà¹ØÆ«ÒÆ
+		// _FLT_FILTER ç›¸å…³åç§»
 		g_Offset_FLT_FILTER_Name = ToUserSendGetStructInfoMessgae(L"fltmgr.sys", L"_FLT_FILTER", L"Name");
 		if (g_Offset_FLT_FILTER_Name == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_FLT_FILTER_Name Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_FLT_FILTER_Name å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_FLT_FILTER_DefaultAltitude = ToUserSendGetStructInfoMessgae(L"fltmgr.sys", L"_FLT_FILTER", L"DefaultAltitude");
 		if (g_Offset_FLT_FILTER_DefaultAltitude == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_FLT_FILTER_DefaultAltitude Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_FLT_FILTER_DefaultAltitude å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_FLT_FILTER_DriverObject = ToUserSendGetStructInfoMessgae(L"fltmgr.sys", L"_FLT_FILTER", L"DriverObject");
 		if (g_Offset_FLT_FILTER_DriverObject == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_FLT_FILTER_DriverObject Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_FLT_FILTER_DriverObject å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_FLT_FILTER_Operations = ToUserSendGetStructInfoMessgae(L"fltmgr.sys", L"_FLT_FILTER", L"Operations");
 		if (g_Offset_FLT_FILTER_Operations == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_FLT_FILTER_Operations Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_FLT_FILTER_Operations å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
-		// _FLT_OBJECT Ïà¹ØÆ«ÒÆ
+		// _FLT_OBJECT ç›¸å…³åç§»
 		g_Offset_FLT_OBJECT_PointerCount = ToUserSendGetStructInfoMessgae(L"fltmgr.sys", L"_FLT_OBJECT", L"PointerCount");
 		if (g_Offset_FLT_OBJECT_PointerCount == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_FLT_OBJECT_PointerCount Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_FLT_OBJECT_PointerCount å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_FLT_OBJECT_PrimaryLink = ToUserSendGetStructInfoMessgae(L"fltmgr.sys", L"_FLT_OBJECT", L"PrimaryLink");
 		if (g_Offset_FLT_OBJECT_PrimaryLink == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_FLT_OBJECT_PrimaryLink Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_FLT_OBJECT_PrimaryLink å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_FLT_OBJECT_UniqueIdentifier = ToUserSendGetStructInfoMessgae(L"fltmgr.sys", L"_FLT_OBJECT", L"UniqueIdentifier");
 		if (g_Offset_FLT_OBJECT_UniqueIdentifier == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_FLT_OBJECT_UniqueIdentifier Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_FLT_OBJECT_UniqueIdentifier å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
-		// _EPARTITION Ïà¹ØÆ«ÒÆ
+		// _EPARTITION ç›¸å…³åç§»
 		g_Offset_EPARTITION_ExPartition = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_EPARTITION", L"ExPartition");
 		if (g_Offset_EPARTITION_ExPartition == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_EPARTITION_ExPartition Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_EPARTITION_ExPartition å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
-		// _EX_PARTITION Ïà¹ØÆ«ÒÆ
+		// _EX_PARTITION ç›¸å…³åç§»
 		g_Offset_EX_PARTITION_WorkQueues = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_EX_PARTITION", L"WorkQueues");
 		if (g_Offset_EX_PARTITION_WorkQueues == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_EX_PARTITION_WorkQueues Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_EX_PARTITION_WorkQueues å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
-		// _EX_WORK_QUEUE Ïà¹ØÆ«ÒÆ
+		// _EX_WORK_QUEUE ç›¸å…³åç§»
 		g_Offset_EX_WORK_QUEUE_WorkPriQueue = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_EX_WORK_QUEUE", L"WorkPriQueue");
 		if (g_Offset_EX_WORK_QUEUE_WorkPriQueue == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_EX_WORK_QUEUE_WorkPriQueue Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_EX_WORK_QUEUE_WorkPriQueue å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
-		// _KPRIQUEUE Ïà¹ØÆ«ÒÆ
+		// _KPRIQUEUE ç›¸å…³åç§»
 		g_Offset_KPRIQUEUE_Header = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_KPRIQUEUE", L"Header");
 		if (g_Offset_KPRIQUEUE_Header == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_KPRIQUEUE_Header Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_KPRIQUEUE_Header å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
-		// _ENODE Ïà¹ØÆ«ÒÆ
+		// _ENODE ç›¸å…³åç§»
 		g_Offset_ENODE_Ncb = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_ENODE", L"Ncb");
 		if (g_Offset_ENODE_Ncb == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_ENODE_Ncb Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_ENODE_Ncb å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_ENODE_HotAddProcessorWorkItem = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_ENODE", L"HotAddProcessorWorkItem");
 		if (g_Offset_ENODE_HotAddProcessorWorkItem == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_ENODE_HotAddProcessorWorkItem Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_ENODE_HotAddProcessorWorkItem å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_KTHREAD_ApcState = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_KTHREAD", L"ApcState");
 		if (g_Offset_KTHREAD_ApcState == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_KTHREAD_ApcState Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_KTHREAD_ApcState å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_KTHREAD_ThreadFlags = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_KTHREAD", L"ThreadFlags");
 		if (g_Offset_KTHREAD_ThreadFlags == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_KTHREAD_ThreadFlags Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_KTHREAD_ThreadFlags å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_KTHREAD_SystemCallNumber = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_KTHREAD", L"SystemCallNumber");
 		if (g_Offset_KTHREAD_SystemCallNumber == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_KTHREAD_SystemCallNumber Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_KTHREAD_SystemCallNumber å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_KTHREAD_Priority = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_KTHREAD", L"Priority");
 		if (g_Offset_KTHREAD_Priority == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_KTHREAD_Priority Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_KTHREAD_Priority å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_KTHREAD_Teb = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_KTHREAD", L"Teb");
 		if (g_Offset_KTHREAD_Teb == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_KTHREAD_Teb Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_KTHREAD_Teb å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_KTHREAD_ContextSwitches = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_KTHREAD", L"ContextSwitches");
 		if (g_Offset_KTHREAD_ContextSwitches == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_KTHREAD_ContextSwitches Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_KTHREAD_ContextSwitches å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_KTHREAD_State = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_KTHREAD", L"State");
 		if (g_Offset_KTHREAD_State == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_KTHREAD_State Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_KTHREAD_State å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_KTHREAD_Process = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_KTHREAD", L"Process");
 		if (g_Offset_KTHREAD_Process == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_KTHREAD_Process Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_KTHREAD_Process å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_KTHREAD_PreviousMode = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_KTHREAD", L"PreviousMode");
 		if (g_Offset_KTHREAD_PreviousMode == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_KTHREAD_PreviousMode Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_KTHREAD_PreviousMode å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_ETHREAD_CreateTime = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_ETHREAD", L"CreateTime");
 		if (g_Offset_ETHREAD_CreateTime == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_ETHREAD_CreateTime Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_ETHREAD_CreateTime å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_ETHREAD_StartAddress = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_ETHREAD", L"StartAddress");
 		if (g_Offset_ETHREAD_StartAddress == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_ETHREAD_StartAddress Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_ETHREAD_StartAddress å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		ULONG64 OffsetCID = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_ETHREAD", L"Cid");
 		g_Offset_KTHREAD_UniqueProcess = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_CLIENT_ID", L"UniqueProcess") + OffsetCID;
 		if (g_Offset_KTHREAD_UniqueProcess == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_KTHREAD_UniqueProcess Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_KTHREAD_UniqueProcess å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_KTHREAD_UniqueThread = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_CLIENT_ID", L"UniqueThread") + OffsetCID;
 		if (g_Offset_KTHREAD_UniqueThread == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_KTHREAD_UniqueThread Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_KTHREAD_UniqueThread å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_ETHREAD_Win32StartAddress = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_ETHREAD", L"Win32StartAddress");
 		if (g_Offset_ETHREAD_Win32StartAddress == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_ETHREAD_Win32StartAddress Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_ETHREAD_Win32StartAddress å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		g_Offset_ETHREAD_ThreadListEntry = ToUserSendGetStructInfoMessgae(L"ntoskrnel.exe", L"_ETHREAD", L"ThreadListEntry");
 		if (g_Offset_ETHREAD_ThreadListEntry == -1) {
-			MyDbgPrintfEx("[%s] »ñÈ¡ g_Offset_ETHREAD_ThreadListEntry Ê§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å– g_Offset_ETHREAD_ThreadListEntry å¤±è´¥ï¼\n", __FUNCTION__);
 			nRet = FALSE;
 		}
 
 		PsLoadedModuleList = ToUserSendGetGlobalVariablesMessgae(L"ntoskrnel.exe", L"PsLoadedModuleList") + g_NtoskrnlAddr;
 		if (!PsLoadedModuleList)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡PsLoadedModuleList±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, PsLoadedModuleList);
+			MyDbgPrintfEx("[%s] è·å–PsLoadedModuleListå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, PsLoadedModuleList);
 			nRet = FALSE;
 		}
 
@@ -1002,20 +1002,20 @@ UCHAR GetOffset()
 		KdPitchDebugger = ToUserSendGetGlobalVariablesMessgae(L"ntoskrnel.exe", L"KdPitchDebugger") + g_NtoskrnlAddr;
 		if (!KdPitchDebugger)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡KdPitchDebugger±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, KdPitchDebugger);
+			MyDbgPrintfEx("[%s] è·å–KdPitchDebuggerå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, KdPitchDebugger);
 			nRet = FALSE;
 		}
 	/*
 		KdDebuggerEnabled = ToUserSendGetGlobalVariablesMessgae(L"ntoskrnel.exe", L"KdDebuggerEnabled") + g_NtoskrnlAddr;
 		if (!KdDebuggerEnabled)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡KdDebuggerEnabled±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, KdDebuggerEnabled);
+			MyDbgPrintfEx("[%s] è·å–KdDebuggerEnabledå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, KdDebuggerEnabled);
 			nRet = FALSE;
 		}
 		KdDebuggerNotPresent = ToUserSendGetGlobalVariablesMessgae(L"ntoskrnel.exe", L"KdDebuggerNotPresent") + g_NtoskrnlAddr;
 		if (!KdDebuggerNotPresent)
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡KdDebuggerNotPresent±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, KdDebuggerNotPresent);
+			MyDbgPrintfEx("[%s] è·å–KdDebuggerNotPresentå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, KdDebuggerNotPresent);
 			nRet = FALSE;
 		}
 		*/
@@ -1040,171 +1040,171 @@ UCHAR InitGlobalVariable(PDRIVER_OBJECT pDriverObject)
 		RtlInitUnicodeString(&g_RootFileSystemName, L"FileSystem");
 		RtlInitUnicodeString(&g_RootSymbolicLinkName, L"SymbolicLink");
 
-		//³õÊ¼»¯ÏµÍ³µØÖ·Base PTE PDE PPE PDPTE 
+		//åˆå§‹åŒ–ç³»ç»Ÿåœ°å€Base PTE PDE PPE PDPTE 
 		if (!InitSystemPteBase())
 		{
-			MyDbgPrintfEx("[%s] InitSystemAddrBaseº¯Êıµ÷ÓÃÊ§°Ü!\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] InitSystemAddrBaseå‡½æ•°è°ƒç”¨å¤±è´¥!\n", __FUNCTION__);
 			Ret = FALSE;
 		}
 
 		//MyDbgPrintfEx("Pte:%I64X Pde:%I64X Pxe:%I64X Ppe:%I64X\n",g_SystemAddrBase.PteBase, g_SystemAddrBase.PdeBase, g_SystemAddrBase.PxeBase, g_SystemAddrBase.PpeBase);
 
-		//»ñÈ¡ ÄÚºËÄ£¿éµØÖ· ´óĞ¡
+		//è·å– å†…æ ¸æ¨¡å—åœ°å€ å¤§å°
 		if (!GetNtoskrnlMoudleBaseAddr(pDriverObject, L"ntoskrnl.exe", &g_NtoskrnlAddr, &g_NtoskrnlSize))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡NtoskrnlAddrºÍ´óĞ¡Ê§°Ü!\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å–NtoskrnlAddrå’Œå¤§å°å¤±è´¥!\n", __FUNCTION__);
 			Ret = FALSE;
 		}
-		//MyDbgPrintfEx("[%s] »ñÈ¡g_NtoskrnlAddr:%I64X Size:%X\n", __FUNCTION__, g_NtoskrnlAddr, g_NtoskrnlSize);
+		//MyDbgPrintfEx("[%s] è·å–g_NtoskrnlAddr:%I64X Size:%X\n", __FUNCTION__, g_NtoskrnlAddr, g_NtoskrnlSize);
 
 
-		//»ñÈ¡ ÄÚºËÄ£¿éµØÖ· ´óĞ¡
+		//è·å– å†…æ ¸æ¨¡å—åœ°å€ å¤§å°
 		if (!GetNtoskrnlMoudleBaseAddr(pDriverObject, L"win32k.sys", &g_Win32kAddr, &g_Win32kSize))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡Win32kºÍ´óĞ¡Ê§°Ü!\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] è·å–Win32kå’Œå¤§å°å¤±è´¥!\n", __FUNCTION__);
 			Ret = FALSE;
 		}
-		//MyDbgPrintfEx("[%s] »ñÈ¡g_Win32kAddr:%I64X Size:%X\n", __FUNCTION__, g_Win32kAddr, g_Win32kSize);
+		//MyDbgPrintfEx("[%s] è·å–g_Win32kAddr:%I64X Size:%X\n", __FUNCTION__, g_Win32kAddr, g_Win32kSize);
 
 
-		//³õÊ¼»¯È«¾Ö¾ä±ú±í±äÁ¿
+		//åˆå§‹åŒ–å…¨å±€å¥æŸ„è¡¨å˜é‡
 		PspCidTable = GetPspCidTable();
 		if (!MmIsAddressValid(PspCidTable))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡PspCidTable±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, PspCidTable);
+			MyDbgPrintfEx("[%s] è·å–PspCidTableå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, PspCidTable);
 			Ret = FALSE;
 		}
 
 		ObHeaderCookie = GetObHeaderCookie();
 		if (!MmIsAddressValid(ObHeaderCookie))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ObHeaderCookie±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, ObHeaderCookie);
+			MyDbgPrintfEx("[%s] è·å–ObHeaderCookieå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, ObHeaderCookie);
 			Ret = FALSE;
 		}
 
 		ObTypeIndexTable = GetObTypeIndexTable();
 		if (!MmIsAddressValid(ObTypeIndexTable))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ObTypeIndexTable±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, ObTypeIndexTable);
+			MyDbgPrintfEx("[%s] è·å–ObTypeIndexTableå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, ObTypeIndexTable);
 			Ret = FALSE;
 		}
 
 		ObpInfoMaskToOffset = GetObpInfoMaskToOffset();
 		if (!MmIsAddressValid(ObpInfoMaskToOffset))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ObpInfoMaskToOffset±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, ObpInfoMaskToOffset);
+			MyDbgPrintfEx("[%s] è·å–ObpInfoMaskToOffsetå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, ObpInfoMaskToOffset);
 			Ret = FALSE;
 		}
 
 		ObpRootDirectoryObject = GetObpRootDirectoryObject();
 		if (!MmIsAddressValid(ObpRootDirectoryObject))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡ObpRootDirectoryObject±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, ObpRootDirectoryObject);
+			MyDbgPrintfEx("[%s] è·å–ObpRootDirectoryObjectå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, ObpRootDirectoryObject);
 			Ret = FALSE;
 		}
 
 		KeServiceDescriptorTable = GetKeServiceDescriptorTable();
 		if (!MmIsAddressValid(KeServiceDescriptorTable))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡KeServiceDescriptorTable±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, KeServiceDescriptorTable);
+			MyDbgPrintfEx("[%s] è·å–KeServiceDescriptorTableå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, KeServiceDescriptorTable);
 			Ret = FALSE;
 		}
 
 		KeServiceDescriptorTableShadow = GetKeServiceDescriptorTableShadow();
 		if (!MmIsAddressValid(KeServiceDescriptorTableShadow))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡KeServiceDescriptorTableShadow±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, KeServiceDescriptorTableShadow);
+			MyDbgPrintfEx("[%s] è·å–KeServiceDescriptorTableShadowå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, KeServiceDescriptorTableShadow);
 			Ret = FALSE;
 		}
 
 		PspCreateProcessNotifyRoutine = GetPspCreateProcessNotifyRoutine();
 		if (!MmIsAddressValid(PspCreateProcessNotifyRoutine))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡PspCreateProcessNotifyRoutine±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, PspCreateProcessNotifyRoutine);
+			MyDbgPrintfEx("[%s] è·å–PspCreateProcessNotifyRoutineå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, PspCreateProcessNotifyRoutine);
 			Ret = FALSE;
 		}
 
 		PspCreateProcessNotifyRoutineExCount = GetPspCreateProcessNotifyRoutineExCount();
 		if (!MmIsAddressValid(PspCreateProcessNotifyRoutineExCount))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡PspCreateProcessNotifyRoutineExCount±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, PspCreateProcessNotifyRoutineExCount);
+			MyDbgPrintfEx("[%s] è·å–PspCreateProcessNotifyRoutineExCountå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, PspCreateProcessNotifyRoutineExCount);
 			Ret = FALSE;
 		}
 
 		PspCreateProcessNotifyRoutineCount = GetPspCreateProcessNotifyRoutineCount();
 		if (!MmIsAddressValid(PspCreateProcessNotifyRoutineCount))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡PspCreateProcessNotifyRoutineCount±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, PspCreateProcessNotifyRoutineCount);
+			MyDbgPrintfEx("[%s] è·å–PspCreateProcessNotifyRoutineCountå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, PspCreateProcessNotifyRoutineCount);
 			Ret = FALSE;
 		}
 
 		PspLoadImageNotifyRoutine = GetPspLoadImageNotifyRoutine();
 		if (!MmIsAddressValid(PspLoadImageNotifyRoutine))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡PspLoadImageNotifyRoutine±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, PspLoadImageNotifyRoutine);
+			MyDbgPrintfEx("[%s] è·å–PspLoadImageNotifyRoutineå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, PspLoadImageNotifyRoutine);
 			Ret = FALSE;
 		}
 
 		PspLoadImageNotifyRoutineCount = GetPspLoadImageNotifyRoutineCount();
 		if (!MmIsAddressValid(PspLoadImageNotifyRoutineCount))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡PspLoadImageNotifyRoutine±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, PspLoadImageNotifyRoutine);
+			MyDbgPrintfEx("[%s] è·å–PspLoadImageNotifyRoutineå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, PspLoadImageNotifyRoutine);
 			Ret = FALSE;
 		}
 
 		PspCreateThreadNotifyRoutine = GetPspCreateThreadNotifyRoutine();
 		if (!MmIsAddressValid(PspCreateThreadNotifyRoutine))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡PspCreateThreadNotifyRoutine±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, PspCreateThreadNotifyRoutine);
+			MyDbgPrintfEx("[%s] è·å–PspCreateThreadNotifyRoutineå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, PspCreateThreadNotifyRoutine);
 			Ret = FALSE;
 		}
 
 		PspCreateThreadNotifyRoutineNonSystemCount = GetPspCreateThreadNotifyRoutineNonSystemCount();
 		if (!MmIsAddressValid(PspCreateThreadNotifyRoutineNonSystemCount))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡PspCreateThreadNotifyRoutineNonSystemCount±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, PspCreateThreadNotifyRoutineNonSystemCount);
+			MyDbgPrintfEx("[%s] è·å–PspCreateThreadNotifyRoutineNonSystemCountå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, PspCreateThreadNotifyRoutineNonSystemCount);
 			Ret = FALSE;
 		}
 
 		PspCreateThreadNotifyRoutineCount = GetPspCreateThreadNotifyRoutineCount();
 		if (!MmIsAddressValid(PspCreateThreadNotifyRoutineCount))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡PspCreateThreadNotifyRoutineCount±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, PspCreateThreadNotifyRoutineCount);
+			MyDbgPrintfEx("[%s] è·å–PspCreateThreadNotifyRoutineCountå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, PspCreateThreadNotifyRoutineCount);
 			Ret = FALSE;
 		}
 
 		IopNotifyShutdownQueueHead = GetIopNotifyShutdownQueueHead();
 		if (!MmIsAddressValid(IopNotifyShutdownQueueHead))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡IopNotifyShutdownQueueHead±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, IopNotifyShutdownQueueHead);
+			MyDbgPrintfEx("[%s] è·å–IopNotifyShutdownQueueHeadå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, IopNotifyShutdownQueueHead);
 			Ret = FALSE;
 		}
 
 		KeBugCheckCallbackListHead = GetKeBugCheckCallbackListHead();
 		if (!MmIsAddressValid(KeBugCheckCallbackListHead))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡KeBugCheckCallbackListHead±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, KeBugCheckCallbackListHead);
+			MyDbgPrintfEx("[%s] è·å–KeBugCheckCallbackListHeadå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, KeBugCheckCallbackListHead);
 			Ret = FALSE;
 		}
 
 		PnpDeviceClassNotifyList = GetPnpDeviceClassNotifyList();
 		if (!MmIsAddressValid(PnpDeviceClassNotifyList))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡PnpDeviceClassNotifyList±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, PnpDeviceClassNotifyList);
+			MyDbgPrintfEx("[%s] è·å–PnpDeviceClassNotifyListå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, PnpDeviceClassNotifyList);
 			Ret = FALSE;
 		}
 
 		PnpDeferredRegistrationList = GetPnpDeferredRegistrationList();
 		if (!MmIsAddressValid(PnpDeferredRegistrationList))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡PnpDeferredRegistrationList±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, PnpDeferredRegistrationList);
+			MyDbgPrintfEx("[%s] è·å–PnpDeferredRegistrationListå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, PnpDeferredRegistrationList);
 			Ret = FALSE;
 		}
 
 		PnpProfileNotifyList = GetPnpProfileNotifyList();
 		if (!MmIsAddressValid(PnpProfileNotifyList))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡PnpProfileNotifyList±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, PnpProfileNotifyList);
+			MyDbgPrintfEx("[%s] è·å–PnpProfileNotifyListå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, PnpProfileNotifyList);
 			Ret = FALSE;
 		}
 
@@ -1212,70 +1212,70 @@ UCHAR InitGlobalVariable(PDRIVER_OBJECT pDriverObject)
 		CallbackListHead = GetCallbackListHead();
 		if (!MmIsAddressValid(CallbackListHead))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡CallbackListHead±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, CallbackListHead);
+			MyDbgPrintfEx("[%s] è·å–CallbackListHeadå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, CallbackListHead);
 			Ret = FALSE;
 		}
 
 		EtwpHostSiloState = GetEtwpHostSiloState();
 		if (!MmIsAddressValid(EtwpHostSiloState))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡EtwpHostSiloState±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, EtwpHostSiloState);
+			MyDbgPrintfEx("[%s] è·å–EtwpHostSiloStateå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, EtwpHostSiloState);
 			Ret = FALSE;
 		}
 
 		EtwpDebuggerData = GetEtwpDebuggerData();
 		if (!MmIsAddressValid(EtwpDebuggerData))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡EtwpDebuggerData±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, EtwpDebuggerData);
+			MyDbgPrintfEx("[%s] è·å–EtwpDebuggerDataå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, EtwpDebuggerData);
 			Ret = FALSE;
 		}
 
 		PerfGlobalGroupMask = GetPerfGlobalGroupMask();
 		if (!MmIsAddressValid(PerfGlobalGroupMask))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡PerfGlobalGroupMask±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, PerfGlobalGroupMask);
+			MyDbgPrintfEx("[%s] è·å–PerfGlobalGroupMaskå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, PerfGlobalGroupMask);
 			Ret = FALSE;
 		}
 
 		HalpPerformanceCounter = GetHalpPerformanceCounter();
 		if (!MmIsAddressValid(HalpPerformanceCounter))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡HalpPerformanceCounter±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, HalpPerformanceCounter);
+			MyDbgPrintfEx("[%s] è·å–HalpPerformanceCounterå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, HalpPerformanceCounter);
 			Ret = FALSE;
 		}
 
 		MiFlags = GetMiFlags();
 		if (!MmIsAddressValid(MiFlags))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡MiFlags±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, MiFlags);
+			MyDbgPrintfEx("[%s] è·å–MiFlagså˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, MiFlags);
 			Ret = FALSE;
 		}
 
 		IopTimerQueueHead = (PLIST_ENTRY)GetIopTimerQueueHead();
 		if (!MmIsAddressValid(IopTimerQueueHead))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡IopTimerQueueHead±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, IopTimerQueueHead);
+			MyDbgPrintfEx("[%s] è·å–IopTimerQueueHeadå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, IopTimerQueueHead);
 			Ret = FALSE;
 		}
 
 		KiProcessorBlock = GetKiProcessorBlock();
 		if (!MmIsAddressValid(KiProcessorBlock))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡KiProcessorBlock±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, KiProcessorBlock);
+			MyDbgPrintfEx("[%s] è·å–KiProcessorBlockå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, KiProcessorBlock);
 			Ret = FALSE;
 		}
 
 		KiWaitNever = GetKiWaitNever();
 		if (!MmIsAddressValid(KiWaitNever))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡KiWaitNever±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, KiWaitNever);
+			MyDbgPrintfEx("[%s] è·å–KiWaitNeverå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, KiWaitNever);
 			Ret = FALSE;
 		}
 
 		KiWaitAlways = GetKiWaitAlways();
 		if (!MmIsAddressValid(KiWaitAlways))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡KiWaitAlways±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, KiWaitAlways);
+			MyDbgPrintfEx("[%s] è·å–KiWaitAlwayså˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, KiWaitAlways);
 			Ret = FALSE;
 		}
 		/*
@@ -1283,7 +1283,7 @@ UCHAR InitGlobalVariable(PDRIVER_OBJECT pDriverObject)
 				g_PspNotifyEnableMaskInfo.pSrcMask = GetPspNotifyEnableMask();
 				if (!MmIsAddressValid(g_PspNotifyEnableMaskInfo.pSrcMask))
 				{
-					MyDbgPrintfEx("[%s] »ñÈ¡PspNotifyEnableMask±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, g_PspNotifyEnableMaskInfo.pSrcMask);
+					MyDbgPrintfEx("[%s] è·å–PspNotifyEnableMaskå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, g_PspNotifyEnableMaskInfo.pSrcMask);
 					Ret = FALSE;
 					break;
 				}
@@ -1291,49 +1291,49 @@ UCHAR InitGlobalVariable(PDRIVER_OBJECT pDriverObject)
 		PspSystemPartition = GetPspSystemPartition();
 		if (!MmIsAddressValid(PspSystemPartition))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡PspSystemPartition±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, PspSystemPartition);
+			MyDbgPrintfEx("[%s] è·å–PspSystemPartitionå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, PspSystemPartition);
 			Ret = FALSE;
 		}
 
 		MyPspTerminateProcess = GetPspTerminateProcess();
 		if (!MmIsAddressValid(MyPspTerminateProcess))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡MyPspTerminateProcess±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, MyPspTerminateProcess);
+			MyDbgPrintfEx("[%s] è·å–MyPspTerminateProcesså˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, MyPspTerminateProcess);
 			Ret = FALSE;
 		}
 
 		IopNetworkFileSystemQueueHead = GetIopNetworkFileSystemQueueHead();
 		if (!MmIsAddressValid(IopNetworkFileSystemQueueHead))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡IopNetworkFileSystemQueueHead±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, IopNetworkFileSystemQueueHead);
+			MyDbgPrintfEx("[%s] è·å–IopNetworkFileSystemQueueHeadå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, IopNetworkFileSystemQueueHead);
 			Ret = FALSE;
 		}
 
 		IopCdRomFileSystemQueueHead = GetIopCdRomFileSystemQueueHead();
 		if (!MmIsAddressValid(IopCdRomFileSystemQueueHead))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡IopCdRomFileSystemQueueHead±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, IopCdRomFileSystemQueueHead);
+			MyDbgPrintfEx("[%s] è·å–IopCdRomFileSystemQueueHeadå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, IopCdRomFileSystemQueueHead);
 			Ret = FALSE;
 		}
 
 		IopDiskFileSystemQueueHead = GetIopDiskFileSystemQueueHead();
 		if (!MmIsAddressValid(IopDiskFileSystemQueueHead))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡IopDiskFileSystemQueueHead±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, IopDiskFileSystemQueueHead);
+			MyDbgPrintfEx("[%s] è·å–IopDiskFileSystemQueueHeadå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, IopDiskFileSystemQueueHead);
 			Ret = FALSE;
 		}
 
 		IopTapeFileSystemQueueHead = GetIopTapeFileSystemQueueHead();
 		if (!MmIsAddressValid(IopTapeFileSystemQueueHead))
 		{
-			MyDbgPrintfEx("[%s] »ñÈ¡IopTapeFileSystemQueueHead±äÁ¿Ê§°Ü Data[%I64X]!\n", __FUNCTION__, IopTapeFileSystemQueueHead);
+			MyDbgPrintfEx("[%s] è·å–IopTapeFileSystemQueueHeadå˜é‡å¤±è´¥ Data[%I64X]!\n", __FUNCTION__, IopTapeFileSystemQueueHead);
 			Ret = FALSE;
 		}
 
-		//ÖØÔØÄÚºË
+		//é‡è½½å†…æ ¸
 		LoadNtosKrnel();
 
-		//ÖØÔØWin32k
+		//é‡è½½Win32k
 		LoadWin32k();
 
 	} while (0);
@@ -1344,21 +1344,21 @@ UCHAR InitGlobalVariable(PDRIVER_OBJECT pDriverObject)
 UCHAR GetNtoskrnlMoudleBaseAddr(PDRIVER_OBJECT pDriver, PWCHAR pModuleName, PULONG64 MoudleAddr, PSIZE_T MoudleSize)
 {
 	////////////////////////////////////////////////////////////////////////
-	//±äÁ¿ÉùÃ÷ÇøÓò
+	//å˜é‡å£°æ˜åŒºåŸŸ
 	PLDR_DATA_TABLE_ENTRY pldr = 0;
 	PLIST_ENTRY CurrentList = 0;
 	PLIST_ENTRY NextList = 0;
 	UNICODE_STRING NtoskrnlName = { 0 };
 	////////////////////////////////////////////////////////////////////////
 
-	//ÑéÖ¤Ãû³Æ²ÎÊı
+	//éªŒè¯åç§°å‚æ•°
 	if (!MmIsAddressValid(pModuleName))
 	{
 		return FALSE;
 	}
 
 	////////////////////////////////////////////////////////////////////////
-	//±äÁ¿³õÊ¼»¯ÇøÓò
+	//å˜é‡åˆå§‹åŒ–åŒºåŸŸ
 	pldr = (PLDR_DATA_TABLE_ENTRY)pDriver->DriverSection;
 	CurrentList = pldr->InLoadOrderLinks.Blink;
 	NextList = CurrentList->Blink;
@@ -1366,7 +1366,7 @@ UCHAR GetNtoskrnlMoudleBaseAddr(PDRIVER_OBJECT pDriver, PWCHAR pModuleName, PULO
 	////////////////////////////////////////////////////////////////////////
 
 	////////////////////////////////////////////////////////////////////////
-	//ÏîÄ¿ĞèÇóÇøÓò
+	//é¡¹ç›®éœ€æ±‚åŒºåŸŸ
 	while (CurrentList != NextList)
 	{
 		pldr = CONTAINING_RECORD(NextList, LDR_DATA_TABLE_ENTRY, InLoadOrderLinks);
@@ -1377,12 +1377,12 @@ UCHAR GetNtoskrnlMoudleBaseAddr(PDRIVER_OBJECT pDriver, PWCHAR pModuleName, PULO
 			{
 				if (MmIsAddressValid(MoudleAddr))
 				{
-					*MoudleAddr = (ULONG64)pldr->DllBase;//µÃµ½Ä£¿é»ùµØÖ·
+					*MoudleAddr = (ULONG64)pldr->DllBase;//å¾—åˆ°æ¨¡å—åŸºåœ°å€
 				}
 
 				if (MmIsAddressValid(MoudleSize))
 				{
-					*MoudleSize = (SIZE_T)pldr->SizeOfImage;//µÃµ½Ä£¿é´óĞ¡
+					*MoudleSize = (SIZE_T)pldr->SizeOfImage;//å¾—åˆ°æ¨¡å—å¤§å°
 				}
 
 				return TRUE;
@@ -1405,7 +1405,7 @@ PULONG64 GetKiProcessorBlock()
 	//RTL_OSVERSIONINFOEXW version = { 0 };
 	//RtlGetVersion(&version);
 
-	//°æ±¾Win10 19045 °æ±¾
+	//ç‰ˆæœ¬Win10 19045 ç‰ˆæœ¬
 	//if (version.dwMajorVersion == 10 && version.dwBuildNumber == 19045)
 	//{
 	if (MmIsAddressValid(pFunAddr))
@@ -1416,8 +1416,8 @@ PULONG64 GetKiProcessorBlock()
 			if (RtlCompareMemory(&pFunAddr[i], Opcode, sizeof(Opcode)) == sizeof(Opcode))
 			{
 				PUCHAR pAddr = &pFunAddr[i] + sizeof(Opcode);
-				ULONG32 Offset = *(PULONG32)pAddr;					//»ñÈ¡Æ«ÒÆ
-				return pAddr + 4 + Offset;							//»ñÈ¡º¯ÊıµØÖ·
+				ULONG32 Offset = *(PULONG32)pAddr;					//è·å–åç§»
+				return pAddr + 4 + Offset;							//è·å–å‡½æ•°åœ°å€
 			}
 		}
 	}
@@ -1427,7 +1427,7 @@ PULONG64 GetKiProcessorBlock()
 
 ULONG64 GetPspCidTable()
 {
-	//¶¨Î»PspReferenceCidTableEntry»ñÈ¡È«¾Ö±äÁ¿PspCidTable
+	//å®šä½PspReferenceCidTableEntryè·å–å…¨å±€å˜é‡PspCidTable
 
 	/*
 	PAGE : 00000001405F113F 48 89 7C 24 20					mov[rsp + arg_18], rdi
@@ -1538,7 +1538,7 @@ ULONG64 GetObpInfoMaskToOffset()
 
 ULONG64 GetObpRootDirectoryObject()
 {
-	//¶¨Î»ObQueryNameStringMode»ñÈ¡È«¾Ö±äÁ¿ObpRootDirectoryObject
+	//å®šä½ObQueryNameStringModeè·å–å…¨å±€å˜é‡ObpRootDirectoryObject
 	//PAGE : 00000001406B368E 48 3B 8C 24 80 00 00 00       cmp     rcx, [rsp + 118h + var_98]
 	//PAGE : 00000001406B3696 0F 84 48 01 00 00             jz      loc_1406B37E4
 	//PAGE : 00000001406B3696
@@ -1649,7 +1649,7 @@ ULONG64 GetPspCreateProcessNotifyRoutineCount()
 {
 	//PAGE : 000000014078A2DC 33 D2							xor edx, edx
 	//PAGE : 000000014078A2DE E9 71 FF FF FF                jmp     loc_14078A254
-	//PAGE : 000000014078A2E3                               loc_14078A2E3 : ; CODE XREF : PspSetCreateProcessNotifyRoutine + 91¡üj
+	//PAGE : 000000014078A2E3                               loc_14078A2E3 : ; CODE XREF : PspSetCreateProcessNotifyRoutine + 91â†‘j
 	//PAGE : 000000014078A2E3 F0 FF 05 EA 46 5A 00          lock inc cs : PspCreateProcessNotifyRoutineCount	
 
 	UCHAR szBuf[] = { 0x33,0xD2,0xE9,0x71,0xFF,0xFF,0xFF,0xF0,0xFF,0x05 };
@@ -1723,7 +1723,7 @@ ULONG64 GetPspCreateThreadNotifyRoutine()
 	//PAGE : 000000014076ACEA
 	//PAGE : 000000014076ACEC; -------------------------------------------------------------------------- -
 	//PAGE : 000000014076ACEC
-	//PAGE : 000000014076ACEC                               loc_14076ACEC : ; CODE XREF : PspEnumerateCallback + 5¡üj
+	//PAGE : 000000014076ACEC                               loc_14076ACEC : ; CODE XREF : PspEnumerateCallback + 5â†‘j
 	//PAGE : 000000014076ACEC 48 8D 0D 6D 13 58 00          lea     rcx, PspCreateThreadNotifyRoutine
 
 	UCHAR szBuf[] = { 0x48,0x8D,0x0D,0x00,0x00,0x00,0x00,0xEB,0xD7,0x48,0x8D,0x0D };
@@ -2057,7 +2057,7 @@ ULONG64 GetIopTimerQueueHead()
 	}
 
 
-	//IopTimerQueueHeadÌØÕ÷Âë
+	//IopTimerQueueHeadç‰¹å¾ç 
 	//PAGE : 00000001407C2ECC 48 89 78 20                   mov[rax + 20h], rdi
 	//PAGE : 00000001407C2ED0 48 8D 0D 79 2D 48 00          lea     rcx, IopTimerQueueHead; 
 
@@ -2072,9 +2072,9 @@ ULONG64 GetIopTimerQueueHead()
 			pFunAddr[i + 5] == 0x8D &&
 			pFunAddr[i + 6] == 0x0D)
 		{
-			//ÕÒµ½ÁË
+			//æ‰¾åˆ°äº†
 			PUCHAR pAddr = (ULONG64)&pFunAddr[i] + 0x7;
-			ULONG32 Offset = *(PULONG32)pAddr;		//»ñÈ¡Æ«ÒÆ
+			ULONG32 Offset = *(PULONG32)pAddr;		//è·å–åç§»
 			dqRet = (pAddr + 4) + Offset;			//
 			break;
 		}

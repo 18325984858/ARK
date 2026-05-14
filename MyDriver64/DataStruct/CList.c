@@ -1,9 +1,9 @@
-#include "CList.h"
+ï»¿#include "CList.h"
 
 PCListNode _ByListNode(ElemType data)
 {
-	PVOID p = NULL;															/*½ÓÊÕÉêÇëµÄµØÖ·*/
-	ULONG64 nSpaceSize = sizeof(CListNode);									/*ÒªÉêÇë¿Õ¼äµÄ´óĞ¡*/
+	PVOID p = NULL;															/*æ¥æ”¶ç”³è¯·çš„åœ°å€*/
+	ULONG64 nSpaceSize = sizeof(CListNode);									/*è¦ç”³è¯·ç©ºé—´çš„å¤§å°*/
 
 	p = ExAllocatePool(PagedPool, nSpaceSize);
 
@@ -68,7 +68,7 @@ int GetListSize(PCList plist)
 	return 0;
 }
 
-void InsertHeadDoubleLoopList(PCList plist, ElemType data)		/*Í·²åË«ÏòÑ­»·Á´±í*/
+void InsertHeadDoubleLoopList(PCList plist, ElemType data)		/*å¤´æ’åŒå‘å¾ªç¯é“¾è¡¨*/
 {
 	PCListNode pHead = NULL;
 	PCListNode p = _ByListNode(data);
@@ -78,30 +78,30 @@ void InsertHeadDoubleLoopList(PCList plist, ElemType data)		/*Í·²åË«ÏòÑ­»·Á´±í*/
 		return;
 	}
 
-	if (plist->m_pHead == NULL && plist->m_pTrail == NULL)		/*µ±Á´±íÎª¿ÕÊ±*/
+	if (plist->m_pHead == NULL && plist->m_pTrail == NULL)		/*å½“é“¾è¡¨ä¸ºç©ºæ—¶*/
 	{
-		plist->m_pHead = p;										/*Í·½áµãÖ¸ÏòĞÂÉêÇëµÄ½Úµã*/
-		plist->m_pTrail = p;									/*Î²½áµãÖ¸ÏòĞÂÉêÇëµÄ½Úµã*/
-		p->m_pFront = plist->m_pTrail;							/*ĞÂÉêÇëµÄ½ÚµãµÄÇ°ÇıÎªÎ²½Úµã*/
-		p->m_pNext = plist->m_pHead;							/*ĞÂÉêÇëµÄ½ÚµãµÄºó¼ÌÎªÍ·½Úµã*/
+		plist->m_pHead = p;										/*å¤´ç»“ç‚¹æŒ‡å‘æ–°ç”³è¯·çš„èŠ‚ç‚¹*/
+		plist->m_pTrail = p;									/*å°¾ç»“ç‚¹æŒ‡å‘æ–°ç”³è¯·çš„èŠ‚ç‚¹*/
+		p->m_pFront = plist->m_pTrail;							/*æ–°ç”³è¯·çš„èŠ‚ç‚¹çš„å‰é©±ä¸ºå°¾èŠ‚ç‚¹*/
+		p->m_pNext = plist->m_pHead;							/*æ–°ç”³è¯·çš„èŠ‚ç‚¹çš„åç»§ä¸ºå¤´èŠ‚ç‚¹*/
 	}
 	else
 	{
-		pHead = plist->m_pHead;									/*Ö¸ÏòÍ·½áµã*/
+		pHead = plist->m_pHead;									/*æŒ‡å‘å¤´ç»“ç‚¹*/
 		if (MmIsAddressValid(pHead))
 		{
-			plist->m_pHead = p;										/*Í·½áµãÖ¸ÏòĞÂÉêÇëµÄ½Úµã*/
-			p->m_pNext = pHead;										/*ĞÂÉêÇë½ÚµãµÄÏÂÒ»¸ö½ÚµãÎªpHeadNext*/
-			pHead->m_pFront = p;									/*pHeadNextµÄÇ°ÇıÎªĞÂ½Úµã*/
-			p->m_pFront = plist->m_pTrail;							/*ĞÂÉêÇë½ÚµãµÄÇ°ÇıÎªÎ²½Úµã*/
-			plist->m_pTrail->m_pNext = plist->m_pHead;				/*¸ü¸ÄÁ´±íÎ²½ÚµãµÄÏÂÒ»¸ö½ÚµãÎª*/
+			plist->m_pHead = p;										/*å¤´ç»“ç‚¹æŒ‡å‘æ–°ç”³è¯·çš„èŠ‚ç‚¹*/
+			p->m_pNext = pHead;										/*æ–°ç”³è¯·èŠ‚ç‚¹çš„ä¸‹ä¸€ä¸ªèŠ‚ç‚¹ä¸ºpHeadNext*/
+			pHead->m_pFront = p;									/*pHeadNextçš„å‰é©±ä¸ºæ–°èŠ‚ç‚¹*/
+			p->m_pFront = plist->m_pTrail;							/*æ–°ç”³è¯·èŠ‚ç‚¹çš„å‰é©±ä¸ºå°¾èŠ‚ç‚¹*/
+			plist->m_pTrail->m_pNext = plist->m_pHead;				/*æ›´æ”¹é“¾è¡¨å°¾èŠ‚ç‚¹çš„ä¸‹ä¸€ä¸ªèŠ‚ç‚¹ä¸º*/
 		}
 	}
 	plist->m_Size++;
 	return;
 }
 
-PCListNode InsertTrailDoubleLoopList(PCList plist, ElemType data)		/*Î²²åË«ÏòÑ­»·Á´±í*/
+PCListNode InsertTrailDoubleLoopList(PCList plist, ElemType data)		/*å°¾æ’åŒå‘å¾ªç¯é“¾è¡¨*/
 {
 	PCListNode pTrail = NULL;
 	PCListNode p = _ByListNode(data);
@@ -111,23 +111,23 @@ PCListNode InsertTrailDoubleLoopList(PCList plist, ElemType data)		/*Î²²åË«ÏòÑ­»
 		return p;
 	}
 
-	if (plist->m_pHead == NULL && plist->m_pTrail == NULL)		/*µ±Á´±íÎª¿ÕÊ±*/
+	if (plist->m_pHead == NULL && plist->m_pTrail == NULL)		/*å½“é“¾è¡¨ä¸ºç©ºæ—¶*/
 	{
-		plist->m_pHead = p;										/*Í·½áµãÖ¸ÏòĞÂÉêÇëµÄ½Úµã*/
-		plist->m_pTrail = p;									/*Î²½áµãÖ¸ÏòĞÂÉêÇëµÄ½Úµã*/
-		p->m_pFront = plist->m_pTrail;							/*ĞÂÉêÇëµÄ½ÚµãµÄÇ°ÇıÎªÎ²½Úµã*/
-		p->m_pNext = plist->m_pHead;							/*ĞÂÉêÇëµÄ½ÚµãµÄºó¼ÌÎªÍ·½Úµã*/
+		plist->m_pHead = p;										/*å¤´ç»“ç‚¹æŒ‡å‘æ–°ç”³è¯·çš„èŠ‚ç‚¹*/
+		plist->m_pTrail = p;									/*å°¾ç»“ç‚¹æŒ‡å‘æ–°ç”³è¯·çš„èŠ‚ç‚¹*/
+		p->m_pFront = plist->m_pTrail;							/*æ–°ç”³è¯·çš„èŠ‚ç‚¹çš„å‰é©±ä¸ºå°¾èŠ‚ç‚¹*/
+		p->m_pNext = plist->m_pHead;							/*æ–°ç”³è¯·çš„èŠ‚ç‚¹çš„åç»§ä¸ºå¤´èŠ‚ç‚¹*/
 	}
 	else
 	{
-		pTrail = plist->m_pTrail;								/*»ñÈ¡µ±Ç°Î²½Úµã*/
+		pTrail = plist->m_pTrail;								/*è·å–å½“å‰å°¾èŠ‚ç‚¹*/
 		if (MmIsAddressValid(pTrail))
 		{
-			pTrail->m_pNext = p;									/*pTrailµÄÏÂÒ»¸ö½ÚµãÎªĞÂ½Úµã*/
-			p->m_pFront = pTrail;									/*ĞÂ½ÚµãµÄÇ°ÇıÎªpTrail*/
-			plist->m_pTrail = p;									/*½«Î²½ÚµãÖ¸ÏòĞÂ½Úµã*/
-			p->m_pNext = plist->m_pHead;							/*ĞÂ½ÚµãµÄÏÂÒ»¸ö½ÚµãÎªÍ·½Úµã*/
-			plist->m_pHead->m_pFront = p;							/*¸ü¸ÄÁ´±íÍ·½áµãÖ¸Ïò*/
+			pTrail->m_pNext = p;									/*pTrailçš„ä¸‹ä¸€ä¸ªèŠ‚ç‚¹ä¸ºæ–°èŠ‚ç‚¹*/
+			p->m_pFront = pTrail;									/*æ–°èŠ‚ç‚¹çš„å‰é©±ä¸ºpTrail*/
+			plist->m_pTrail = p;									/*å°†å°¾èŠ‚ç‚¹æŒ‡å‘æ–°èŠ‚ç‚¹*/
+			p->m_pNext = plist->m_pHead;							/*æ–°èŠ‚ç‚¹çš„ä¸‹ä¸€ä¸ªèŠ‚ç‚¹ä¸ºå¤´èŠ‚ç‚¹*/
+			plist->m_pHead->m_pFront = p;							/*æ›´æ”¹é“¾è¡¨å¤´ç»“ç‚¹æŒ‡å‘*/
 
 		}
 	}
@@ -135,7 +135,7 @@ PCListNode InsertTrailDoubleLoopList(PCList plist, ElemType data)		/*Î²²åË«ÏòÑ­»
 	return p;
 }
 
-void InsertPosFrontDoubleLoopList(PCList plist, PCListNode pNode, ElemType data)		/*°´Ö¸¶¨Î»ÖÃÇ°Ãæ²åÈëË«ÏòÑ­»·Á´±íÖĞ*/
+void InsertPosFrontDoubleLoopList(PCList plist, PCListNode pNode, ElemType data)		/*æŒ‰æŒ‡å®šä½ç½®å‰é¢æ’å…¥åŒå‘å¾ªç¯é“¾è¡¨ä¸­*/
 {
 	PCListNode pCurrentFront = NULL;
 	PCListNode pCurrentNext = NULL;
@@ -148,7 +148,7 @@ void InsertPosFrontDoubleLoopList(PCList plist, PCListNode pNode, ElemType data)
 	else
 	{
 
-		if (!IsVerifyListNode(plist, pNode))				/*ÑéÖ¤½ÚµãÊÇ·ñÓĞĞ§*/
+		if (!IsVerifyListNode(plist, pNode))				/*éªŒè¯èŠ‚ç‚¹æ˜¯å¦æœ‰æ•ˆ*/
 		{
 			return;
 		}
@@ -158,26 +158,26 @@ void InsertPosFrontDoubleLoopList(PCList plist, PCListNode pNode, ElemType data)
 			InsertHeadDoubleLoopList(plist, data);
 			return;
 		}
-		p = _ByListNode(data);								/*ÉêÇëĞÂ½Úµã*/
+		p = _ByListNode(data);								/*ç”³è¯·æ–°èŠ‚ç‚¹*/
 
 		if (p == NULL)
 		{
 			return;
 		}
 
-		pCurrentFront = pNode->m_pFront;					/*»ñÈ¡Òª²åÈë½ÚµãµÄÇ°Ò»¸ö½Úµã*/
-		pCurrentNext = pNode;								/*»ñÈ¡Òª²åÈë½ÚµãµÄºóÒ»¸ö½Úµã*/
+		pCurrentFront = pNode->m_pFront;					/*è·å–è¦æ’å…¥èŠ‚ç‚¹çš„å‰ä¸€ä¸ªèŠ‚ç‚¹*/
+		pCurrentNext = pNode;								/*è·å–è¦æ’å…¥èŠ‚ç‚¹çš„åä¸€ä¸ªèŠ‚ç‚¹*/
 
-		pCurrentFront->m_pNext = p;							/*¸ü¸ÄpCurrentFrontµÄºó¼Ì½ÚµãÎªp*/
-		p->m_pFront = pCurrentFront;						/*¸ü¸ÄpµÄÇ°ÇıÎªpCurrentFront*/
-		pCurrentNext->m_pFront = p;							/*¸ü¸ÄpCurrentNextµÄÇ°Çı½ÚµãÎªp*/
-		p->m_pNext = pCurrentNext;							/*¸ü¸ÄpµÄºó¼ÌÎªpCurrentNext*/
+		pCurrentFront->m_pNext = p;							/*æ›´æ”¹pCurrentFrontçš„åç»§èŠ‚ç‚¹ä¸ºp*/
+		p->m_pFront = pCurrentFront;						/*æ›´æ”¹pçš„å‰é©±ä¸ºpCurrentFront*/
+		pCurrentNext->m_pFront = p;							/*æ›´æ”¹pCurrentNextçš„å‰é©±èŠ‚ç‚¹ä¸ºp*/
+		p->m_pNext = pCurrentNext;							/*æ›´æ”¹pçš„åç»§ä¸ºpCurrentNext*/
 	}
 	plist->m_Size++;
 	return;
 }
 
-void InsertPosNextDoubleLoopList(PCList plist, PCListNode pNode, ElemType data)		/*°´Ö¸¶¨Î»ÖÃºóÃæ²åÈëË«ÏòÑ­»·Á´±íÖĞ*/
+void InsertPosNextDoubleLoopList(PCList plist, PCListNode pNode, ElemType data)		/*æŒ‰æŒ‡å®šä½ç½®åé¢æ’å…¥åŒå‘å¾ªç¯é“¾è¡¨ä¸­*/
 {
 	PCListNode pCurrentFront = NULL;
 	PCListNode pCurrentNext = NULL;
@@ -194,20 +194,20 @@ void InsertPosNextDoubleLoopList(PCList plist, PCListNode pNode, ElemType data)	
 			InsertTrailDoubleLoopList(plist, data);
 			return;
 		}
-		p = _ByListNode(data);								/*ÉêÇëĞÂ½Úµã*/
+		p = _ByListNode(data);								/*ç”³è¯·æ–°èŠ‚ç‚¹*/
 
 		if (p == NULL)
 		{
 			return;
 		}
 
-		pCurrentFront = pNode;								/*»ñÈ¡Òª²åÈë½ÚµãµÄÇ°Ò»¸ö½Úµã*/
-		pCurrentNext = pNode->m_pNext;						/*»ñÈ¡Òª²åÈë½ÚµãµÄºóÒ»¸ö½Úµã*/
+		pCurrentFront = pNode;								/*è·å–è¦æ’å…¥èŠ‚ç‚¹çš„å‰ä¸€ä¸ªèŠ‚ç‚¹*/
+		pCurrentNext = pNode->m_pNext;						/*è·å–è¦æ’å…¥èŠ‚ç‚¹çš„åä¸€ä¸ªèŠ‚ç‚¹*/
 
-		pCurrentFront->m_pNext = p;							/*¸ü¸ÄpCurrentFrontµÄºó¼Ì½ÚµãÎªp*/
-		p->m_pFront = pCurrentFront;						/*¸ü¸ÄpµÄÇ°ÇıÎªpCurrentFront*/
-		pCurrentNext->m_pFront = p;							/*¸ü¸ÄpCurrentNextµÄÇ°Çı½ÚµãÎªp*/
-		p->m_pNext = pCurrentNext;							/*¸ü¸ÄpµÄºó¼ÌÎªpCurrentNext*/
+		pCurrentFront->m_pNext = p;							/*æ›´æ”¹pCurrentFrontçš„åç»§èŠ‚ç‚¹ä¸ºp*/
+		p->m_pFront = pCurrentFront;						/*æ›´æ”¹pçš„å‰é©±ä¸ºpCurrentFront*/
+		pCurrentNext->m_pFront = p;							/*æ›´æ”¹pCurrentNextçš„å‰é©±èŠ‚ç‚¹ä¸ºp*/
+		p->m_pNext = pCurrentNext;							/*æ›´æ”¹pçš„åç»§ä¸ºpCurrentNext*/
 	}
 	plist->m_Size++;
 	return;
@@ -216,10 +216,10 @@ void InsertPosNextDoubleLoopList(PCList plist, PCListNode pNode, ElemType data)	
 ElemType PopHeadDoubleLoopList(PCList plist)
 {
 	ElemType Data = NULL;
-	//ÅĞ¶ÏÁ´±íÊÇ·ñÓĞÊı¾İ Óë Ö¸ÕëÊÇ·ñÓĞÓÃ
+	//åˆ¤æ–­é“¾è¡¨æ˜¯å¦æœ‰æ•°æ® ä¸ æŒ‡é’ˆæ˜¯å¦æœ‰ç”¨
 	if (MmIsAddressValid(plist) && plist->m_Size > 0)
 	{
-		//È¡Í·²¿ĞÅÏ¢
+		//å–å¤´éƒ¨ä¿¡æ¯
 		Data = plist->m_pHead->m_Data;
 		DeleteHeadDoubleLoopList(plist);
 	}
@@ -229,36 +229,36 @@ ElemType PopHeadDoubleLoopList(PCList plist)
 ElemType PopTrailDoubleLoopList(PCList plist)
 {
 	ElemType Data = NULL;
-	//ÅĞ¶ÏÁ´±íÊÇ·ñÓĞÊı¾İ Óë Ö¸ÕëÊÇ·ñÓĞÓÃ
+	//åˆ¤æ–­é“¾è¡¨æ˜¯å¦æœ‰æ•°æ® ä¸ æŒ‡é’ˆæ˜¯å¦æœ‰ç”¨
 	if (MmIsAddressValid(plist) && plist->m_Size > 0)
 	{
-		//È¡Í·²¿ĞÅÏ¢
+		//å–å¤´éƒ¨ä¿¡æ¯
 		Data = plist->m_pTrail->m_Data;
 		DeleteTrailDoubleLoopList(plist);
 	}
 	return Data;
 }
 
-PCListNode FindListNode(PCList plist, ElemType data)		/*¸ù¾İÊı¾İ²éÕÒÁ´±í½Úµã,·µ»Ø½Úµã*/
+PCListNode FindListNode(PCList plist, ElemType data)		/*æ ¹æ®æ•°æ®æŸ¥æ‰¾é“¾è¡¨èŠ‚ç‚¹,è¿”å›èŠ‚ç‚¹*/
 {
 	PCListNode pCurrent = NULL;
 	if (plist->m_pHead == NULL && plist->m_pTrail == NULL)
 	{
-		return NULL;										/*Á´±íÎª¿Õ*/
+		return NULL;										/*é“¾è¡¨ä¸ºç©º*/
 	}
 	else
 	{
-		pCurrent = plist->m_pHead;							/*´ÓÍ·¿ªÊ¼²éÕÒ*/
+		pCurrent = plist->m_pHead;							/*ä»å¤´å¼€å§‹æŸ¥æ‰¾*/
 		do
 		{
-			if (pCurrent->m_Data == data)					/*Òª²éÕÒµÄÊı¾İÏàµÈÊ±*/
+			if (pCurrent->m_Data == data)					/*è¦æŸ¥æ‰¾çš„æ•°æ®ç›¸ç­‰æ—¶*/
 			{
-				return pCurrent;							/*·µ»Øµ±Ç°½Úµã*/
+				return pCurrent;							/*è¿”å›å½“å‰èŠ‚ç‚¹*/
 			}
-			pCurrent = pCurrent->m_pNext;					/*Ö¸Ïòµ±Ç°½ÚµãµÄÒ»ÏÂ¸ö½Úµã*/
+			pCurrent = pCurrent->m_pNext;					/*æŒ‡å‘å½“å‰èŠ‚ç‚¹çš„ä¸€ä¸‹ä¸ªèŠ‚ç‚¹*/
 		} while (pCurrent != plist->m_pHead);
 	}
-	return NULL;											/*Êı¾İ²»´æÔÚ·µ»Ø¿Õ*/
+	return NULL;											/*æ•°æ®ä¸å­˜åœ¨è¿”å›ç©º*/
 }
 
 ElemType DeleteHeadDoubleLoopList(PCList plist)
@@ -277,7 +277,7 @@ ElemType DeleteHeadDoubleLoopList(PCList plist)
 	{
 		nFreeSpaceSize = sizeof(CListNode);
 
-		if (plist->m_pHead == plist->m_pTrail)				/*µ±Ö»ÓĞÒ»¸ö½ÚµãÊ±*/
+		if (plist->m_pHead == plist->m_pTrail)				/*å½“åªæœ‰ä¸€ä¸ªèŠ‚ç‚¹æ—¶*/
 		{
 			pRetData = plist->m_pHead->m_Data;
 
@@ -287,17 +287,17 @@ ElemType DeleteHeadDoubleLoopList(PCList plist)
 		}
 		else
 		{
-			pCurrent = plist->m_pHead;						/*ÒªÊÍ·ÅµÄ½Úµã*/
-			pCurrentFront = plist->m_pHead->m_pFront;		/*»ñÈ¡ÒªÊÍ·Å½ÚµãµÄÇ°Çı*/
-			pCurrentNext = plist->m_pHead->m_pNext;			/*»ñÈ¡ÒªÊÍ·Å½ÚµãµÄºó¼Ì*/
+			pCurrent = plist->m_pHead;						/*è¦é‡Šæ”¾çš„èŠ‚ç‚¹*/
+			pCurrentFront = plist->m_pHead->m_pFront;		/*è·å–è¦é‡Šæ”¾èŠ‚ç‚¹çš„å‰é©±*/
+			pCurrentNext = plist->m_pHead->m_pNext;			/*è·å–è¦é‡Šæ”¾èŠ‚ç‚¹çš„åç»§*/
 
-			pRetData = pCurrent->m_Data;					/*½«´æ´¢µÄÊı¾İ·µ»Ø*/
+			pRetData = pCurrent->m_Data;					/*å°†å­˜å‚¨çš„æ•°æ®è¿”å›*/
 
 			ExFreePool(pCurrent);
 
-			plist->m_pHead = pCurrentNext;					/*ÖØĞÂ¸ü¸ÄÁ´±íÍ·ÎªpCurrentNext*/
-			pCurrentFront->m_pNext = plist->m_pHead;		/*ÖØĞÂ¸ü¸ÄÁ´±íÎ²½ÚµãÖ¸ÏòÍ·*/
-			plist->m_pHead->m_pFront = pCurrentFront;		/*ÖØĞÂ¸ü¸ÄÁ´±íÍ·½ÚµãÖ¸ÏòÎ²*/
+			plist->m_pHead = pCurrentNext;					/*é‡æ–°æ›´æ”¹é“¾è¡¨å¤´ä¸ºpCurrentNext*/
+			pCurrentFront->m_pNext = plist->m_pHead;		/*é‡æ–°æ›´æ”¹é“¾è¡¨å°¾èŠ‚ç‚¹æŒ‡å‘å¤´*/
+			plist->m_pHead->m_pFront = pCurrentFront;		/*é‡æ–°æ›´æ”¹é“¾è¡¨å¤´èŠ‚ç‚¹æŒ‡å‘å°¾*/
 		}
 		plist->m_Size--;
 	}
@@ -320,7 +320,7 @@ ElemType DeleteTrailDoubleLoopList(PCList plist)
 	{
 		nFreeSpaceSize = sizeof(CListNode);
 
-		if (plist->m_pHead == plist->m_pTrail)				/*µ±Ö»ÓĞÒ»¸ö½ÚµãÊ±*/
+		if (plist->m_pHead == plist->m_pTrail)				/*å½“åªæœ‰ä¸€ä¸ªèŠ‚ç‚¹æ—¶*/
 		{
 			pRetData = plist->m_pHead->m_Data;
 
@@ -330,17 +330,17 @@ ElemType DeleteTrailDoubleLoopList(PCList plist)
 		}
 		else
 		{
-			pCurrent = plist->m_pTrail;						/*ÒªÊÍ·ÅµÄ½Úµã*/
-			pCurrentFront = plist->m_pTrail->m_pFront;		/*»ñÈ¡ÒªÊÍ·Å½ÚµãµÄÇ°Çı*/
-			pCurrentNext = plist->m_pTrail->m_pNext;		/*»ñÈ¡ÒªÊÍ·Å½ÚµãµÄºó¼Ì*/
+			pCurrent = plist->m_pTrail;						/*è¦é‡Šæ”¾çš„èŠ‚ç‚¹*/
+			pCurrentFront = plist->m_pTrail->m_pFront;		/*è·å–è¦é‡Šæ”¾èŠ‚ç‚¹çš„å‰é©±*/
+			pCurrentNext = plist->m_pTrail->m_pNext;		/*è·å–è¦é‡Šæ”¾èŠ‚ç‚¹çš„åç»§*/
 
 			pRetData = pCurrent->m_Data;
 
 			ExFreePool(pCurrent);
 
-			plist->m_pTrail = pCurrentFront;				/*ÖØĞÂ¸ü¸ÄÁ´±íÍ·ÎªpCurrentNext*/
-			pCurrentFront->m_pNext = plist->m_pHead;		/*ÖØĞÂ¸ü¸ÄÁ´±íÎ²½ÚµãÖ¸ÏòÍ·*/
-			plist->m_pHead->m_pFront = plist->m_pTrail;		/*ÖØĞÂ¸ü¸ÄÁ´±íÍ·½ÚµãÖ¸ÏòÎ²*/
+			plist->m_pTrail = pCurrentFront;				/*é‡æ–°æ›´æ”¹é“¾è¡¨å¤´ä¸ºpCurrentNext*/
+			pCurrentFront->m_pNext = plist->m_pHead;		/*é‡æ–°æ›´æ”¹é“¾è¡¨å°¾èŠ‚ç‚¹æŒ‡å‘å¤´*/
+			plist->m_pHead->m_pFront = plist->m_pTrail;		/*é‡æ–°æ›´æ”¹é“¾è¡¨å¤´èŠ‚ç‚¹æŒ‡å‘å°¾*/
 		}
 	}
 	plist->m_Size--;
@@ -363,9 +363,9 @@ ElemType DeletePosDoubleLoopList(PCList plist, PCListNode pNode)
 	{
 		nFreeSpaceSize = sizeof(CListNode);
 
-		if (plist->m_pHead == plist->m_pTrail)				/*µ±Ö»ÓĞÒ»¸ö½ÚµãÊ±*/
+		if (plist->m_pHead == plist->m_pTrail)				/*å½“åªæœ‰ä¸€ä¸ªèŠ‚ç‚¹æ—¶*/
 		{
-			if (plist->m_pHead == pNode)					/*Ö±½Ó±È½ÏÍ·½áµãÊÇ·ñºÍÒªÉ¾³ıµÄ½ÚµãÏàµÈ*/
+			if (plist->m_pHead == pNode)					/*ç›´æ¥æ¯”è¾ƒå¤´ç»“ç‚¹æ˜¯å¦å’Œè¦åˆ é™¤çš„èŠ‚ç‚¹ç›¸ç­‰*/
 			{
 				pRetData = plist->m_pHead->m_Data;
 				ExFreePool(plist->m_pHead);
@@ -375,57 +375,57 @@ ElemType DeletePosDoubleLoopList(PCList plist, PCListNode pNode)
 		}
 		else
 		{
-			if (!IsVerifyListNode(plist, pNode))			/*ÑéÖ¤½ÚµãÊÇ·ñÓĞĞ§*/
+			if (!IsVerifyListNode(plist, pNode))			/*éªŒè¯èŠ‚ç‚¹æ˜¯å¦æœ‰æ•ˆ*/
 			{
 				return NULL;
 			}
 
-			if (pNode == plist->m_pHead)					/*µ±ÒªÉ¾³ıµÄ½ÚµãÊÇÍ·½áµãÊ±*/
+			if (pNode == plist->m_pHead)					/*å½“è¦åˆ é™¤çš„èŠ‚ç‚¹æ˜¯å¤´ç»“ç‚¹æ—¶*/
 			{
 				pRetData = DeleteHeadDoubleLoopList(plist);
 				return pRetData;
 			}
-			else if (pNode == plist->m_pTrail)				/*µ±ÒªÉ¾³ıµÄ½ÚµãÊÇÎ²½áµãÊ±*/
+			else if (pNode == plist->m_pTrail)				/*å½“è¦åˆ é™¤çš„èŠ‚ç‚¹æ˜¯å°¾ç»“ç‚¹æ—¶*/
 			{
 				pRetData = DeleteTrailDoubleLoopList(plist);
 				return pRetData;
 			}
 			else
 			{
-				pCurrentFront = pNode->m_pFront;			/*»ñÈ¡ÒªÉ¾³ı½ÚµãµÄÉÏÒ»¸ö½Úµã*/
-				pCurrentNext = pNode->m_pNext;				/*»ñÈ¡ÒªÉ¾³ı½ÚµãµÄÏÂÒ»¸ö½Úµã*/
-				pCurrent = pNode;							/*Ö¸Ïòµ±Ç°ÒªÉ¾³ıµÄ½Úµã*/
+				pCurrentFront = pNode->m_pFront;			/*è·å–è¦åˆ é™¤èŠ‚ç‚¹çš„ä¸Šä¸€ä¸ªèŠ‚ç‚¹*/
+				pCurrentNext = pNode->m_pNext;				/*è·å–è¦åˆ é™¤èŠ‚ç‚¹çš„ä¸‹ä¸€ä¸ªèŠ‚ç‚¹*/
+				pCurrent = pNode;							/*æŒ‡å‘å½“å‰è¦åˆ é™¤çš„èŠ‚ç‚¹*/
 
 				pRetData = pCurrent->m_Data;
 
 				ExFreePool(pCurrent);
 
-				pCurrentFront->m_pNext = pCurrentNext;		/*½«É¾³ı½ÚµãÇ°ÇıµÄºó¼ÌÖ¸ÏòÉ¾³ı½ÚµãµÄºó¼Ì*/
-				pCurrentNext->m_pFront = pCurrentFront;		/*½«É¾³ı½Úµãºó¼ÌµÄÇ°ÇıÖ¸ÏòÉ¾³ı½ÚµãµÄÇ°Çı*/
+				pCurrentFront->m_pNext = pCurrentNext;		/*å°†åˆ é™¤èŠ‚ç‚¹å‰é©±çš„åç»§æŒ‡å‘åˆ é™¤èŠ‚ç‚¹çš„åç»§*/
+				pCurrentNext->m_pFront = pCurrentFront;		/*å°†åˆ é™¤èŠ‚ç‚¹åç»§çš„å‰é©±æŒ‡å‘åˆ é™¤èŠ‚ç‚¹çš„å‰é©±*/
 			}
 		}
 	}
-	plist->m_Size--;										/*Á´±í´óĞ¡¼õÒ»*/
+	plist->m_Size--;										/*é“¾è¡¨å¤§å°å‡ä¸€*/
 	return pRetData;
 }
 
-//ÌØ¶¨²éÑ¯
+//ç‰¹å®šæŸ¥è¯¢
 PCListNode FindListNodeEx1(PCList plist, ULONG64 nAddrType, CMPFUNPTRCALLBACK pfun)
 {
 	if (!MmIsAddressValid(plist))
 	{
 		return NULL;
 	}
-	//±éÀúÁ´±í
+	//éå†é“¾è¡¨
 
 	PCListNode pCurrent = NULL;
 	if (plist->m_pHead == NULL && plist->m_pTrail == NULL)
 	{
-		return NULL;										/*Á´±íÎª¿Õ*/
+		return NULL;										/*é“¾è¡¨ä¸ºç©º*/
 	}
 	else
 	{
-		pCurrent = plist->m_pHead;							/*´ÓÍ·¿ªÊ¼²éÕÒ*/
+		pCurrent = plist->m_pHead;							/*ä»å¤´å¼€å§‹æŸ¥æ‰¾*/
 		do
 		{
 			if (!MmIsAddressValid(pCurrent->m_Data))
@@ -435,15 +435,15 @@ PCListNode FindListNodeEx1(PCList plist, ULONG64 nAddrType, CMPFUNPTRCALLBACK pf
 
 			if (pfun(pCurrent->m_Data, nAddrType) == 0)
 			{
-				return pCurrent;							/*·µ»Øµ±Ç°½Úµã*/
+				return pCurrent;							/*è¿”å›å½“å‰èŠ‚ç‚¹*/
 			}
-			pCurrent = pCurrent->m_pNext;					/*Ö¸Ïòµ±Ç°½ÚµãµÄÒ»ÏÂ¸ö½Úµã*/
+			pCurrent = pCurrent->m_pNext;					/*æŒ‡å‘å½“å‰èŠ‚ç‚¹çš„ä¸€ä¸‹ä¸ªèŠ‚ç‚¹*/
 		} while (pCurrent != plist->m_pHead);
 	}
-	return NULL;											/*Êı¾İ²»´æÔÚ·µ»Ø¿Õ*/
+	return NULL;											/*æ•°æ®ä¸å­˜åœ¨è¿”å›ç©º*/
 }
 
-void DestroyList(PCList plist, pDestroyListCallBack pCall)													/*´İ»ÙÁ´±í*/
+void DestroyList(PCList plist, pDestroyListCallBack pCall)													/*æ‘§æ¯é“¾è¡¨*/
 {
 	int nFlag = FALSE;
 	if (MmIsAddressValid(pCall))
@@ -457,7 +457,7 @@ void DestroyList(PCList plist, pDestroyListCallBack pCall)													/*´İ»ÙÁ´±
 	{
 		if (nFlag)
 		{
-			pCall(p); //µ÷ÓÃ×¢²áµÄÊÍ·Å×ÊÔ´º¯Êı
+			pCall(p); //è°ƒç”¨æ³¨å†Œçš„é‡Šæ”¾èµ„æºå‡½æ•°
 		}
 	}
 }

@@ -7,6 +7,7 @@
 #include "DlgHalTable.h"
 #include "DlgWdf.h"
 #include "DlgFilterDriver.h"
+#include "DlgWorkerThread.h"
 // DlgKernel 对话框
 
 class DlgKernel : public CDialogEx, public CFunction
@@ -55,6 +56,7 @@ public:
 	DlgHalTable m_DlgHalTable;
 	DlgWdf m_DlgWdf;
 	DlgFilterDriver m_FilterDriver;
+	DlgWorkerThread m_DlgWorkerThread;
 
 	afx_msg void OnNMClickKernelTab(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnDestroy();

@@ -1,4 +1,4 @@
-#include "Ssdt.h"
+ï»¿#include "Ssdt.h"
 #include "Hook/EtwHook.h"
 #include "Head.h"
 #include "CommunCation.h"
@@ -37,8 +37,8 @@ UCHAR InitRootSsdtHook()
 		return FALSE;
 	}
 
-	ULONG64 dqCount = ((PKSYSTEM_SERVICE_TABLE)KeServiceDescriptorTable)->NumberOfService;			//»ñÈ¡SSDT±íÊıÁ¿
-	PULONG64 TableBaseAddr = ((PKSYSTEM_SERVICE_TABLE)KeServiceDescriptorTable)->ServiceTableBase;	//»ñÈ¡SSDTº¯Êı»ùµØÖ·
+	ULONG64 dqCount = ((PKSYSTEM_SERVICE_TABLE)KeServiceDescriptorTable)->NumberOfService;			//è·å–SSDTè¡¨æ•°é‡
+	PULONG64 TableBaseAddr = ((PKSYSTEM_SERVICE_TABLE)KeServiceDescriptorTable)->ServiceTableBase;	//è·å–SSDTå‡½æ•°åŸºåœ°å€
 	if (!MmIsAddressValid(TableBaseAddr))
 	{
 		return FALSE;
@@ -55,7 +55,7 @@ UCHAR InitRootSsdtHook()
 	return TRUE;
 }
 
-//ÅĞ¶ÏÊÇ·ñÊÇÒªHOOKµÄº¯Êı
+//åˆ¤æ–­æ˜¯å¦æ˜¯è¦HOOKçš„å‡½æ•°
 VOID __fastcall call_back(ULONG32 ssdt_index, PULONG64* ssdt_address)
 {
 	UNREFERENCED_PARAMETER(ssdt_index);
@@ -100,18 +100,18 @@ MyNtAccessCheck(
 	__out PNTSTATUS AccessStatus
 )
 {
-	//´ËÎ»ÖÃÓÃÓÚĞ´Ç°»Øµ÷¿ò¼Ü
-	//Ç°»Øµ÷ºÃ´¦ÔÚÓÚ¿ÉÒÔÀ¹½Ø²ÎÊı,ĞŞ¸Ä²ÎÊı
+	//æ­¤ä½ç½®ç”¨äºå†™å‰å›è°ƒæ¡†æ¶
+	//å‰å›è°ƒå¥½å¤„åœ¨äºå¯ä»¥æ‹¦æˆªå‚æ•°,ä¿®æ”¹å‚æ•°
 
 
 
-	//´ËÎ»ÖÃÓÃÓÚµ÷ÓÃÔ­ÏÈµÄº¯Êı
+	//æ­¤ä½ç½®ç”¨äºè°ƒç”¨åŸå…ˆçš„å‡½æ•°
 	NTSTATUS ntStatus = ((PfnNtAccessCheck)g_MySSDTTableHookInfo[um_SSDT_Monitor_NtAccessCheck]->SrcAddr)(SecurityDescriptor, ClientToken, DesiredAccess, GenericMapping, PrivilegeSet, PrivilegeSetLength, GrantedAccess, AccessStatus);
 
-	//´Ë´¦Èç¹û¿ªÆôÁË¼à¿Ø¾ÍÉú³É°ü
+	//æ­¤å¤„å¦‚æœå¼€å¯äº†ç›‘æ§å°±ç”ŸæˆåŒ…
 	if (g_MySSDTTableHookInfo[um_SSDT_Monitor_NtAccessCheck]->nIsMonitor)
 	{
-		//Éú³É°ü
+		//ç”ŸæˆåŒ…
 		ULONG32 PackSize = sizeof(CSSDTHookInfo);
 		PCSSDTHookInfo pData = MyExAllocMemOry(PackSize, POOL_FLAG_NON_PAGED, KernelMode);
 		if (pData != NULL)
@@ -127,27 +127,27 @@ MyNtAccessCheck(
 				pData->ParagmaNumber = 8;
 				wcscpy(pData->FunName, L"NtAccessCheck");
 
-				//wcscpy(pData->StrFormat, L"²ÎÊıÒ»:%016I64X ²ÎÊı¶ş:%08X ²ÎÊıÈı:%08X ²ÎÊıËÄ:%016I64X ²ÎÊıÎå:%016I64X ²ÎÊıÁù:%016I64X ²ÎÊıÆß:%016I64X ²ÎÊı°Ë:%016I64X");
+				//wcscpy(pData->StrFormat, L"å‚æ•°ä¸€:%016I64X å‚æ•°äºŒ:%08X å‚æ•°ä¸‰:%08X å‚æ•°å››:%016I64X å‚æ•°äº”:%016I64X å‚æ•°å…­:%016I64X å‚æ•°ä¸ƒ:%016I64X å‚æ•°å…«:%016I64X");
 
-				//ÉèÖÃ²ÎÊıÒ»
+				//è®¾ç½®å‚æ•°ä¸€
 				SetPragma(&pData->Paragma[0], SecurityDescriptor, Pragma_Type_Addr);
-				//ÉèÖÃ²ÎÊı¶ş
+				//è®¾ç½®å‚æ•°äºŒ
 				SetPragma(&pData->Paragma[1], ClientToken, Pragma_Type_Dword);
-				//ÉèÖÃ²ÎÊıÈı
+				//è®¾ç½®å‚æ•°ä¸‰
 				SetPragma(&pData->Paragma[2], DesiredAccess, Pragma_Type_Dword);
-				//ÉèÖÃ²ÎÊıËÄ
+				//è®¾ç½®å‚æ•°å››
 				SetPragma(&pData->Paragma[3], GenericMapping, Pragma_Type_Addr);
-				//ÉèÖÃ²ÎÊıÎå
+				//è®¾ç½®å‚æ•°äº”
 				SetPragma(&pData->Paragma[4], PrivilegeSet, Pragma_Type_Addr);
-				//ÉèÖÃ²ÎÊıÁù
+				//è®¾ç½®å‚æ•°å…­
 				SetPragma(&pData->Paragma[5], PrivilegeSetLength, Pragma_Type_Addr);
-				//ÉèÖÃ²ÎÊıÆß
+				//è®¾ç½®å‚æ•°ä¸ƒ
 				SetPragma(&pData->Paragma[6], GrantedAccess, Pragma_Type_Addr);
-				//ÉèÖÃ²ÎÊı°Ë
+				//è®¾ç½®å‚æ•°å…«
 				SetPragma(&pData->Paragma[7], AccessStatus, Pragma_Type_Addr);
 			}
 
-			//Ê¹ÓÃApcÒì²½·¢ËÍÏûÏ¢
+			//ä½¿ç”¨Apcå¼‚æ­¥å‘é€æ¶ˆæ¯
 			{
 				PRKAPC Kapc = MyExAllocMemOry(sizeof(KAPC), POOL_FLAG_NON_PAGED, KernelMode);
 				if (Kapc)
@@ -163,28 +163,28 @@ MyNtAccessCheck(
 		}
 	}
 
-	//´ËÎ»ÖÃÓÃÓÚĞ´ºó»Øµ÷¿ò¼Ü
-	//ºó»Øµ÷×÷ÓÃÔÚÓÚ¿ÉÒÔÀ¹½Ø·µ»ØÖµ»òĞŞ¸Ä·µ»ØÖµ
+	//æ­¤ä½ç½®ç”¨äºå†™åå›è°ƒæ¡†æ¶
+	//åå›è°ƒä½œç”¨åœ¨äºå¯ä»¥æ‹¦æˆªè¿”å›å€¼æˆ–ä¿®æ”¹è¿”å›å€¼
 
 
-	//Ö´ĞĞÍêº¯ÊıºóÒıÓÃ¼ÆÊı¼õÒ»
+	//æ‰§è¡Œå®Œå‡½æ•°åå¼•ç”¨è®¡æ•°å‡ä¸€
 	InterlockedDecrement(&g_ApiCallNumber);
 	return ntStatus;
 }
 
 ULONG64 MyNtWorkerFactoryWorkerReady(PVOID64 Paragma)
 {
-	//Ç°»Øµ÷
+	//å‰å›è°ƒ
 
 
 
-	//µ÷ÓÃÔ­±¾º¯Êı
+	//è°ƒç”¨åŸæœ¬å‡½æ•°
 	NTSTATUS ntStatus = ((PfnNtWorkerFactoryWorkerReady)g_MySSDTTableHookInfo[um_SSDT_Monitor_NtWorkerFactoryWorkerReady]->SrcAddr)(Paragma);
 
-	//´Ë´¦Èç¹û¿ªÆôÁË¼à¿Ø¾ÍÉú³É°ü
+	//æ­¤å¤„å¦‚æœå¼€å¯äº†ç›‘æ§å°±ç”ŸæˆåŒ…
 	if (g_MySSDTTableHookInfo[um_SSDT_Monitor_NtWorkerFactoryWorkerReady]->nIsMonitor)
 	{
-		//Éú³É°ü
+		//ç”ŸæˆåŒ…
 		ULONG32 PackSize = sizeof(CSSDTHookInfo);
 		PCSSDTHookInfo pData = MyExAllocMemOry(PackSize, POOL_FLAG_NON_PAGED, KernelMode);
 		if (pData != NULL)
@@ -200,12 +200,12 @@ ULONG64 MyNtWorkerFactoryWorkerReady(PVOID64 Paragma)
 				pData->ParagmaNumber = 1;
 				wcscpy(pData->FunName, L"NtWorkerFactoryWorkerReady");
 
-				//ÉèÖÃ²ÎÊıÒ»
+				//è®¾ç½®å‚æ•°ä¸€
 				SetPragma(&pData->Paragma[0], Paragma, Pragma_Type_Addr);
 			}
 
 
-			//Ê¹ÓÃApcÒì²½·¢ËÍÏûÏ¢
+			//ä½¿ç”¨Apcå¼‚æ­¥å‘é€æ¶ˆæ¯
 			{
 				PRKAPC Kapc = MyExAllocMemOry(sizeof(KAPC), POOL_FLAG_NON_PAGED, KernelMode);
 				if (Kapc)
@@ -221,9 +221,9 @@ ULONG64 MyNtWorkerFactoryWorkerReady(PVOID64 Paragma)
 		}
 	}
 
-	//ºó»Øµ÷
+	//åå›è°ƒ
 
-	//Ö´ĞĞÍêº¯ÊıºóÒıÓÃ¼ÆÊı¼õÒ»
+	//æ‰§è¡Œå®Œå‡½æ•°åå¼•ç”¨è®¡æ•°å‡ä¸€
 	InterlockedDecrement(&g_ApiCallNumber);
 	return ntStatus;
 }
@@ -238,17 +238,17 @@ MyNtAcceptConnectPort(
 	__out_opt PREMOTE_PORT_VIEW ClientView
 )
 {
-	//Ç°»Øµ÷
+	//å‰å›è°ƒ
 
 
 
-	//µ÷ÓÃÔ­±¾º¯Êı
+	//è°ƒç”¨åŸæœ¬å‡½æ•°
 	NTSTATUS ntStatus = ((PfnNtAcceptConnectPort)g_MySSDTTableHookInfo[um_SSDT_Monitor_NtAcceptConnectPort]->SrcAddr)(PortHandle, PortContext, ConnectionRequest, AcceptConnection, ServerView, ClientView);
 
-	//´Ë´¦Èç¹û¿ªÆôÁË¼à¿Ø¾ÍÉú³É°ü
+	//æ­¤å¤„å¦‚æœå¼€å¯äº†ç›‘æ§å°±ç”ŸæˆåŒ…
 	if (g_MySSDTTableHookInfo[um_SSDT_Monitor_NtAcceptConnectPort]->nIsMonitor)
 	{
-		//Éú³É°ü
+		//ç”ŸæˆåŒ…
 		ULONG32 PackSize = sizeof(CSSDTHookInfo);
 		PCSSDTHookInfo pData = MyExAllocMemOry(PackSize, POOL_FLAG_NON_PAGED, KernelMode);
 		if (pData != NULL)
@@ -264,23 +264,23 @@ MyNtAcceptConnectPort(
 				pData->ParagmaNumber = 1;
 				wcscpy(pData->FunName, L"NtAcceptConnectPort");
 
-				//ÉèÖÃ²ÎÊıÒ»
+				//è®¾ç½®å‚æ•°ä¸€
 				SetPragma(&pData->Paragma[0], PortHandle, Pragma_Type_Addr);
-				//ÉèÖÃ²ÎÊı¶ş
+				//è®¾ç½®å‚æ•°äºŒ
 				SetPragma(&pData->Paragma[1], PortContext, Pragma_Type_Addr);
-				//ÉèÖÃ²ÎÊıÈı
+				//è®¾ç½®å‚æ•°ä¸‰
 				SetPragma(&pData->Paragma[2], ConnectionRequest, Pragma_Type_Addr);
-				//ÉèÖÃ²ÎÊıËÄ
+				//è®¾ç½®å‚æ•°å››
 				SetPragma(&pData->Paragma[3], AcceptConnection, Pragma_Type_Char);
-				//ÉèÖÃ²ÎÊıÎå
+				//è®¾ç½®å‚æ•°äº”
 				SetPragma(&pData->Paragma[4], ServerView, Pragma_Type_Addr);
-				//ÉèÖÃ²ÎÊıÁù
+				//è®¾ç½®å‚æ•°å…­
 				SetPragma(&pData->Paragma[5], ClientView, Pragma_Type_Addr);
 
 			}
 
 
-			//Ê¹ÓÃApcÒì²½·¢ËÍÏûÏ¢
+			//ä½¿ç”¨Apcå¼‚æ­¥å‘é€æ¶ˆæ¯
 			{
 				PRKAPC Kapc = MyExAllocMemOry(sizeof(KAPC), POOL_FLAG_NON_PAGED, KernelMode);
 				if (Kapc)
@@ -296,10 +296,10 @@ MyNtAcceptConnectPort(
 		}
 	}
 
-	//ºó»Øµ÷
+	//åå›è°ƒ
 
 
-	//Ö´ĞĞÍêº¯ÊıºóÒıÓÃ¼ÆÊı¼õÒ»
+	//æ‰§è¡Œå®Œå‡½æ•°åå¼•ç”¨è®¡æ•°å‡ä¸€
 	InterlockedDecrement(&g_ApiCallNumber);
 	return ntStatus;
 }
@@ -312,18 +312,18 @@ MyNtMapUserPhysicalPagesScatter(
 	__in_ecount_opt(NumberOfPages) PULONG_PTR UserPfnArray
 )
 {
-	//Ç°»Øµ÷
+	//å‰å›è°ƒ
 
 
 
-	//µ÷ÓÃÔ­±¾º¯Êı
+	//è°ƒç”¨åŸæœ¬å‡½æ•°
 	NTSTATUS ntStatus = ((PfnNtMapUserPhysicalPagesScatter)g_MySSDTTableHookInfo[um_SSDT_Monitor_NtMapUserPhysicalPagesScatter]->SrcAddr)(VirtualAddresses, NumberOfPages, UserPfnArray);
 
 
-	//´Ë´¦Èç¹û¿ªÆôÁË¼à¿Ø¾ÍÉú³É°ü
+	//æ­¤å¤„å¦‚æœå¼€å¯äº†ç›‘æ§å°±ç”ŸæˆåŒ…
 	if (g_MySSDTTableHookInfo[um_SSDT_Monitor_NtMapUserPhysicalPagesScatter]->nIsMonitor)
 	{
-		//Éú³É°ü
+		//ç”ŸæˆåŒ…
 		ULONG32 PackSize = sizeof(CSSDTHookInfo);
 		PCSSDTHookInfo pData = MyExAllocMemOry(PackSize, POOL_FLAG_NON_PAGED, KernelMode);
 		if (pData != NULL)
@@ -339,16 +339,16 @@ MyNtMapUserPhysicalPagesScatter(
 				pData->ParagmaNumber = 3;
 				wcscpy(pData->FunName, L"NtMapUserPhysicalPagesScatter");
 
-				//ÉèÖÃ²ÎÊıÒ»
+				//è®¾ç½®å‚æ•°ä¸€
 				SetPragma(&pData->Paragma[0], VirtualAddresses, Pragma_Type_Addr);
-				//ÉèÖÃ²ÎÊı¶ş
+				//è®¾ç½®å‚æ•°äºŒ
 				SetPragma(&pData->Paragma[1], NumberOfPages, Pragma_Type_Addr);
-				//ÉèÖÃ²ÎÊıÈı
+				//è®¾ç½®å‚æ•°ä¸‰
 				SetPragma(&pData->Paragma[2], UserPfnArray, Pragma_Type_Addr);
 			}
 
 
-			//Ê¹ÓÃApcÒì²½·¢ËÍÏûÏ¢
+			//ä½¿ç”¨Apcå¼‚æ­¥å‘é€æ¶ˆæ¯
 			{
 				PRKAPC Kapc = MyExAllocMemOry(sizeof(KAPC), POOL_FLAG_NON_PAGED, KernelMode);
 				if (Kapc)
@@ -365,9 +365,9 @@ MyNtMapUserPhysicalPagesScatter(
 	}
 
 
-	//ºó»Øµ÷
+	//åå›è°ƒ
 
-	//Ö´ĞĞÍêº¯ÊıºóÒıÓÃ¼ÆÊı¼õÒ»
+	//æ‰§è¡Œå®Œå‡½æ•°åå¼•ç”¨è®¡æ•°å‡ä¸€
 	InterlockedDecrement(&g_ApiCallNumber);
 	return ntStatus;
 }
@@ -382,14 +382,14 @@ MyNtWaitForSingleObject(
 
 
 
-	//µ÷ÓÃÔ­±¾º¯Êı
+	//è°ƒç”¨åŸæœ¬å‡½æ•°
 	NTSTATUS ntStatus = ((PfnNtWaitForSingleObject)g_MySSDTTableHookInfo[um_SSDT_Monitor_NtWaitForSingleObject]->SrcAddr)(Handle, Alertable, Timeout);
 
 
-	//´Ë´¦Èç¹û¿ªÆôÁË¼à¿Ø¾ÍÉú³É°ü
+	//æ­¤å¤„å¦‚æœå¼€å¯äº†ç›‘æ§å°±ç”ŸæˆåŒ…
 	if (g_MySSDTTableHookInfo[um_SSDT_Monitor_NtWaitForSingleObject]->nIsMonitor)
 	{
-		//Éú³É°ü
+		//ç”ŸæˆåŒ…
 		ULONG32 PackSize = sizeof(CSSDTHookInfo);
 		PCSSDTHookInfo pData = MyExAllocMemOry(PackSize, POOL_FLAG_NON_PAGED, KernelMode);
 		if (pData != NULL)
@@ -405,16 +405,16 @@ MyNtWaitForSingleObject(
 				pData->ParagmaNumber = 3;
 				wcscpy(pData->FunName, L"NtWaitForSingleObject");
 
-				//ÉèÖÃ²ÎÊıÒ»
+				//è®¾ç½®å‚æ•°ä¸€
 				SetPragma(&pData->Paragma[0], Handle, Pragma_Type_Addr);
-				//ÉèÖÃ²ÎÊı¶ş
+				//è®¾ç½®å‚æ•°äºŒ
 				SetPragma(&pData->Paragma[1], Alertable, Pragma_Type_Char);
-				//ÉèÖÃ²ÎÊıÈı
+				//è®¾ç½®å‚æ•°ä¸‰
 				SetPragma(&pData->Paragma[2], Timeout, Pragma_Type_Addr);
 			}
 
 
-			//Ê¹ÓÃApcÒì²½·¢ËÍÏûÏ¢
+			//ä½¿ç”¨Apcå¼‚æ­¥å‘é€æ¶ˆæ¯
 			{
 				PRKAPC Kapc = MyExAllocMemOry(sizeof(KAPC), POOL_FLAG_NON_PAGED, KernelMode);
 				if (Kapc)
@@ -431,9 +431,9 @@ MyNtWaitForSingleObject(
 	}
 
 
-	//ºó»Øµ÷
+	//åå›è°ƒ
 
-	//Ö´ĞĞÍêº¯ÊıºóÒıÓÃ¼ÆÊı¼õÒ»
+	//æ‰§è¡Œå®Œå‡½æ•°åå¼•ç”¨è®¡æ•°å‡ä¸€
 	InterlockedDecrement(&g_ApiCallNumber);
 	return ntStatus;
 }
@@ -450,10 +450,10 @@ MyNtCallbackReturn(
 
 	NTSTATUS ntStatus = ((PfnNtCallbackReturn)g_MySSDTTableHookInfo[um_SSDT_Monitor_NtCallbackReturn]->SrcAddr)(OutputBuffer, OutputLength, Status);
 
-	//´Ë´¦Èç¹û¿ªÆôÁË¼à¿Ø¾ÍÉú³É°ü
+	//æ­¤å¤„å¦‚æœå¼€å¯äº†ç›‘æ§å°±ç”ŸæˆåŒ…
 	if (g_MySSDTTableHookInfo[um_SSDT_Monitor_NtCallbackReturn]->nIsMonitor)
 	{
-		//Éú³É°ü
+		//ç”ŸæˆåŒ…
 		ULONG32 PackSize = sizeof(CSSDTHookInfo);
 		PCSSDTHookInfo pData = MyExAllocMemOry(PackSize, POOL_FLAG_NON_PAGED, KernelMode);
 		if (pData != NULL)
@@ -469,15 +469,15 @@ MyNtCallbackReturn(
 				pData->ParagmaNumber = 3;
 				wcscpy(pData->FunName, L"NtWaitForSingleObject");
 
-				//ÉèÖÃ²ÎÊıÒ»
+				//è®¾ç½®å‚æ•°ä¸€
 				SetPragma(&pData->Paragma[0], OutputBuffer, Pragma_Type_Addr);
-				//ÉèÖÃ²ÎÊı¶ş
+				//è®¾ç½®å‚æ•°äºŒ
 				SetPragma(&pData->Paragma[1], OutputLength, Pragma_Type_Dword);
-				//ÉèÖÃ²ÎÊıÈı
+				//è®¾ç½®å‚æ•°ä¸‰
 				SetPragma(&pData->Paragma[2], Status, Pragma_Type_Addr);
 			}
 
-			//Ê¹ÓÃApcÒì²½·¢ËÍÏûÏ¢
+			//ä½¿ç”¨Apcå¼‚æ­¥å‘é€æ¶ˆæ¯
 			{
 				PRKAPC Kapc = MyExAllocMemOry(sizeof(KAPC), POOL_FLAG_NON_PAGED, KernelMode);
 				if (Kapc)
@@ -493,7 +493,7 @@ MyNtCallbackReturn(
 		}
 	}
 
-	//Ö´ĞĞÍêº¯ÊıºóÒıÓÃ¼ÆÊı¼õÒ»
+	//æ‰§è¡Œå®Œå‡½æ•°åå¼•ç”¨è®¡æ•°å‡ä¸€
 	InterlockedDecrement(&g_ApiCallNumber);
 	return Status;
 }
@@ -515,10 +515,10 @@ MyNtReadFile(
 
 	NTSTATUS ntStatus = ((PfnNtReadFile)g_MySSDTTableHookInfo[um_SSDT_Monitor_NtReadFile]->SrcAddr)(FileHandle, Event, ApcRoutine, ApcContext, IoStatusBlock, Buffer, Length, ByteOffset, Key);
 
-	//´Ë´¦Èç¹û¿ªÆôÁË¼à¿Ø¾ÍÉú³É°ü
+	//æ­¤å¤„å¦‚æœå¼€å¯äº†ç›‘æ§å°±ç”ŸæˆåŒ…
 	if (g_MySSDTTableHookInfo[um_SSDT_Monitor_NtReadFile]->nIsMonitor)
 	{
-		//Éú³É°ü
+		//ç”ŸæˆåŒ…
 		ULONG32 PackSize = sizeof(CSSDTHookInfo);
 		PCSSDTHookInfo pData = MyExAllocMemOry(PackSize, POOL_FLAG_NON_PAGED, KernelMode);
 		if (pData != NULL)
@@ -534,27 +534,27 @@ MyNtReadFile(
 				pData->ParagmaNumber = 9;
 				wcscpy(pData->FunName, L"NtReadFile");
 
-				//ÉèÖÃ²ÎÊıÒ»
+				//è®¾ç½®å‚æ•°ä¸€
 				SetPragma(&pData->Paragma[0], FileHandle, Pragma_Type_Addr);
-				//ÉèÖÃ²ÎÊı¶ş
+				//è®¾ç½®å‚æ•°äºŒ
 				SetPragma(&pData->Paragma[1], Event, Pragma_Type_Dword);
-				//ÉèÖÃ²ÎÊıÈı
+				//è®¾ç½®å‚æ•°ä¸‰
 				SetPragma(&pData->Paragma[2], ApcRoutine, Pragma_Type_Addr);
-				//ÉèÖÃ²ÎÊıËÄ
+				//è®¾ç½®å‚æ•°å››
 				SetPragma(&pData->Paragma[3], ApcContext, Pragma_Type_Addr);
-				//ÉèÖÃ²ÎÊıÎå
+				//è®¾ç½®å‚æ•°äº”
 				SetPragma(&pData->Paragma[4], IoStatusBlock, Pragma_Type_Dword);
-				//ÉèÖÃ²ÎÊıÁù
+				//è®¾ç½®å‚æ•°å…­
 				SetPragma(&pData->Paragma[5], Buffer, Pragma_Type_Addr);
-				//ÉèÖÃ²ÎÊıÆß
+				//è®¾ç½®å‚æ•°ä¸ƒ
 				SetPragma(&pData->Paragma[6], Length, Pragma_Type_Dword);
-				//ÉèÖÃ²ÎÊı°Ë
+				//è®¾ç½®å‚æ•°å…«
 				SetPragma(&pData->Paragma[7], ByteOffset, Pragma_Type_Dword);
-				//ÉèÖÃ²ÎÊı¾Å
+				//è®¾ç½®å‚æ•°ä¹
 				SetPragma(&pData->Paragma[8], Key, Pragma_Type_Addr);
 			}
 
-			//Ê¹ÓÃApcÒì²½·¢ËÍÏûÏ¢
+			//ä½¿ç”¨Apcå¼‚æ­¥å‘é€æ¶ˆæ¯
 			{
 				PRKAPC Kapc = MyExAllocMemOry(sizeof(KAPC), POOL_FLAG_NON_PAGED, KernelMode);
 				if (Kapc)
@@ -570,7 +570,7 @@ MyNtReadFile(
 		}
 	}
 
-	//Ö´ĞĞÍêº¯ÊıºóÒıÓÃ¼ÆÊı¼õÒ»
+	//æ‰§è¡Œå®Œå‡½æ•°åå¼•ç”¨è®¡æ•°å‡ä¸€
 	InterlockedDecrement(&g_ApiCallNumber);
 	return ntStatus;
 }
@@ -591,10 +591,10 @@ MyNtDeviceIoControlFile(
 {
 	NTSTATUS ntStatus = ((PfnNtDeviceIoControlFile)g_MySSDTTableHookInfo[um_SSDT_Monitor_NtDeviceIoControlFile]->SrcAddr)(FileHandle, Event, ApcRoutine, ApcContext, IoStatusBlock, IoControlCode, InputBuffer, InputBufferLength, OutputBuffer, OutputBufferLength);
 
-	//´Ë´¦Èç¹û¿ªÆôÁË¼à¿Ø¾ÍÉú³É°ü
+	//æ­¤å¤„å¦‚æœå¼€å¯äº†ç›‘æ§å°±ç”ŸæˆåŒ…
 	if (g_MySSDTTableHookInfo[um_SSDT_Monitor_NtDeviceIoControlFile]->nIsMonitor)
 	{
-		//Éú³É°ü
+		//ç”ŸæˆåŒ…
 		ULONG32 PackSize = sizeof(CSSDTHookInfo);
 		PCSSDTHookInfo pData = MyExAllocMemOry(PackSize, POOL_FLAG_NON_PAGED, KernelMode);
 		if (pData != NULL)
@@ -610,29 +610,29 @@ MyNtDeviceIoControlFile(
 				pData->ParagmaNumber = 10;
 				wcscpy(pData->FunName, L"NtDeviceIoControlFile");
 
-				//ÉèÖÃ²ÎÊıÒ»
+				//è®¾ç½®å‚æ•°ä¸€
 				SetPragma(&pData->Paragma[0], FileHandle, Pragma_Type_Addr);
-				//ÉèÖÃ²ÎÊı¶ş
+				//è®¾ç½®å‚æ•°äºŒ
 				SetPragma(&pData->Paragma[1], Event, Pragma_Type_Dword);
-				//ÉèÖÃ²ÎÊıÈı
+				//è®¾ç½®å‚æ•°ä¸‰
 				SetPragma(&pData->Paragma[2], ApcRoutine, Pragma_Type_Addr);
-				//ÉèÖÃ²ÎÊıËÄ
+				//è®¾ç½®å‚æ•°å››
 				SetPragma(&pData->Paragma[3], ApcContext, Pragma_Type_Addr);
-				//ÉèÖÃ²ÎÊıÎå
+				//è®¾ç½®å‚æ•°äº”
 				SetPragma(&pData->Paragma[4], IoStatusBlock, Pragma_Type_Dword);
-				//ÉèÖÃ²ÎÊıÁù
+				//è®¾ç½®å‚æ•°å…­
 				SetPragma(&pData->Paragma[5], IoControlCode, Pragma_Type_Addr);
-				//ÉèÖÃ²ÎÊıÆß
+				//è®¾ç½®å‚æ•°ä¸ƒ
 				SetPragma(&pData->Paragma[6], InputBuffer, Pragma_Type_Dword);
-				//ÉèÖÃ²ÎÊı°Ë
+				//è®¾ç½®å‚æ•°å…«
 				SetPragma(&pData->Paragma[7], InputBufferLength, Pragma_Type_Dword);
-				//ÉèÖÃ²ÎÊı¾Å
+				//è®¾ç½®å‚æ•°ä¹
 				SetPragma(&pData->Paragma[8], OutputBuffer, Pragma_Type_Addr);
-				//ÉèÖÃ²ÎÊıÊ®
+				//è®¾ç½®å‚æ•°å
 				SetPragma(&pData->Paragma[9], OutputBufferLength, Pragma_Type_Addr);
 			}
 
-			//Ê¹ÓÃApcÒì²½·¢ËÍÏûÏ¢
+			//ä½¿ç”¨Apcå¼‚æ­¥å‘é€æ¶ˆæ¯
 			{
 				PRKAPC Kapc = MyExAllocMemOry(sizeof(KAPC), POOL_FLAG_NON_PAGED, KernelMode);
 				if (Kapc)
@@ -648,7 +648,7 @@ MyNtDeviceIoControlFile(
 		}
 	}
 
-	//Ö´ĞĞÍêº¯ÊıºóÒıÓÃ¼ÆÊı¼õÒ»
+	//æ‰§è¡Œå®Œå‡½æ•°åå¼•ç”¨è®¡æ•°å‡ä¸€
 	InterlockedDecrement(&g_ApiCallNumber);
 	return ntStatus;
 }
@@ -670,10 +670,10 @@ MyNtWriteFile(
 
 	NTSTATUS ntStatus = ((PfnNtWriteFile)g_MySSDTTableHookInfo[um_SSDT_Monitor_NtWriteFile]->SrcAddr)(FileHandle, Event, ApcRoutine, ApcContext, IoStatusBlock, Buffer, Length, ByteOffset, Key);
 
-	//´Ë´¦Èç¹û¿ªÆôÁË¼à¿Ø¾ÍÉú³É°ü
+	//æ­¤å¤„å¦‚æœå¼€å¯äº†ç›‘æ§å°±ç”ŸæˆåŒ…
 	if (g_MySSDTTableHookInfo[um_SSDT_Monitor_NtWriteFile]->nIsMonitor)
 	{
-		//Éú³É°ü
+		//ç”ŸæˆåŒ…
 		ULONG32 PackSize = sizeof(CSSDTHookInfo);
 		PCSSDTHookInfo pData = MyExAllocMemOry(PackSize, POOL_FLAG_NON_PAGED, KernelMode);
 		if (pData != NULL)
@@ -689,27 +689,27 @@ MyNtWriteFile(
 				pData->ParagmaNumber = 9;
 				wcscpy(pData->FunName, L"NtWriteFile");
 
-				//ÉèÖÃ²ÎÊıÒ»
+				//è®¾ç½®å‚æ•°ä¸€
 				SetPragma(&pData->Paragma[0], FileHandle, Pragma_Type_Addr);
-				//ÉèÖÃ²ÎÊı¶ş
+				//è®¾ç½®å‚æ•°äºŒ
 				SetPragma(&pData->Paragma[1], Event, Pragma_Type_Dword);
-				//ÉèÖÃ²ÎÊıÈı
+				//è®¾ç½®å‚æ•°ä¸‰
 				SetPragma(&pData->Paragma[2], ApcRoutine, Pragma_Type_Addr);
-				//ÉèÖÃ²ÎÊıËÄ
+				//è®¾ç½®å‚æ•°å››
 				SetPragma(&pData->Paragma[3], ApcContext, Pragma_Type_Addr);
-				//ÉèÖÃ²ÎÊıÎå
+				//è®¾ç½®å‚æ•°äº”
 				SetPragma(&pData->Paragma[4], IoStatusBlock, Pragma_Type_Dword);
-				//ÉèÖÃ²ÎÊıÁù
+				//è®¾ç½®å‚æ•°å…­
 				SetPragma(&pData->Paragma[5], Buffer, Pragma_Type_Addr);
-				//ÉèÖÃ²ÎÊıÆß
+				//è®¾ç½®å‚æ•°ä¸ƒ
 				SetPragma(&pData->Paragma[6], Length, Pragma_Type_Dword);
-				//ÉèÖÃ²ÎÊı°Ë
+				//è®¾ç½®å‚æ•°å…«
 				SetPragma(&pData->Paragma[7], ByteOffset, Pragma_Type_Dword);
-				//ÉèÖÃ²ÎÊı¾Å
+				//è®¾ç½®å‚æ•°ä¹
 				SetPragma(&pData->Paragma[8], Key, Pragma_Type_Addr);
 			}
 
-			//Ê¹ÓÃApcÒì²½·¢ËÍÏûÏ¢
+			//ä½¿ç”¨Apcå¼‚æ­¥å‘é€æ¶ˆæ¯
 			{
 				PRKAPC Kapc = MyExAllocMemOry(sizeof(KAPC), POOL_FLAG_NON_PAGED, KernelMode);
 				if (Kapc)
@@ -725,7 +725,7 @@ MyNtWriteFile(
 		}
 	}
 
-	//Ö´ĞĞÍêº¯ÊıºóÒıÓÃ¼ÆÊı¼õÒ»
+	//æ‰§è¡Œå®Œå‡½æ•°åå¼•ç”¨è®¡æ•°å‡ä¸€
 	InterlockedDecrement(&g_ApiCallNumber);
 	return ntStatus;
 

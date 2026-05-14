@@ -1,0 +1,8 @@
+{
+    "files.encoding": "utf8bom",
+    "files.autoGuessEncoding": false,
+    "files.eol": "\r\n",
+    "[rc]": {
+        "files.encoding": "utf16le"
+    }
+}

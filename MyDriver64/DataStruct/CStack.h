@@ -1,27 +1,27 @@
-#pragma once
+ï»¿#pragma once
 #include "../DefineArea.h"
 
 
-#define ElemType ULONG64										/*Êı¾İÀàĞÍ*/
-#define STACK_INIT_SIZE 0xF										/*Õ»µÄÈİÁ¿*/
+#define ElemType ULONG64										/*æ•°æ®ç±»å‹*/
+#define STACK_INIT_SIZE 0xF										/*æ ˆçš„å®¹é‡*/
 
-typedef struct CStack											/*Õ»½á¹¹Ìå*/
+typedef struct CStack											/*æ ˆç»“æ„ä½“*/
 {
-	ElemType* m_Data;											/*´æ´¢Õ»Êı¾İ*/
-	ULONG64 m_Capacity;											/*´æ´¢Õ»µÄ×î´óÈİÁ¿*/
-	ULONG64 m_Top;												/*´æ´¢Ö¸Ïòµ±Ç°Õ»µÄÕ»¶¥Î»ÖÃ*/
+	ElemType* m_Data;											/*å­˜å‚¨æ ˆæ•°æ®*/
+	ULONG64 m_Capacity;											/*å­˜å‚¨æ ˆçš„æœ€å¤§å®¹é‡*/
+	ULONG64 m_Top;												/*å­˜å‚¨æŒ‡å‘å½“å‰æ ˆçš„æ ˆé¡¶ä½ç½®*/
 }CStack, * PCStack;
 
-NTSTATUS InitStack(PCStack MyStack);							/*³õÊ¼»¯Õ»º¯Êı*/
-BOOL GetStackIsFull(PCStack MyStack);							/*ÅĞ¶ÏÕ»ÊÇ·ñÂú*/
-BOOL GetStackIsNull(PCStack MyStack);							/*ÅĞ¶ÏÕ»ÊÇ·ñ¿Õ*/
+NTSTATUS InitStack(PCStack MyStack);							/*åˆå§‹åŒ–æ ˆå‡½æ•°*/
+BOOL GetStackIsFull(PCStack MyStack);							/*åˆ¤æ–­æ ˆæ˜¯å¦æ»¡*/
+BOOL GetStackIsNull(PCStack MyStack);							/*åˆ¤æ–­æ ˆæ˜¯å¦ç©º*/
 
-BOOL PushStack(PCStack MyStack, ElemType Base);					/*²åÈëÊı¾İ*/
-BOOL PopStack(PCStack MyStack);									/*³öÕ»*/
-ElemType GetStackTopData(PCStack MyStack, ElemType* OutData);	/*·µ»ØÕ»¶¥Êı¾İ*/
-VOID ShowStack(PCStack MyStack);								/*ÏÔÊ¾Êı¾İ*/
-ULONG64 GetStackLength(PCStack MyStack);						/*·µ»ØÕ»³¤¶È´óĞ¡*/
-ULONG64 GetStackSize(PCStack MyStack);							/*»ñÈ¡Õ»×Ü¿Õ¼ä*/
-BOOL ClearStack(PCStack MyStack);								/*ÇåÉ¨Õ»*/
-BOOL DestroyStack(PCStack MyStack);								/*´İ»ÙÕ»*/
-NTSTATUS IncStackSpace(PCStack MyStack);						/*¿Õ¼ä²»×ãÊ±,ÏòºóÑÓĞøÉêÇë*/
+BOOL PushStack(PCStack MyStack, ElemType Base);					/*æ’å…¥æ•°æ®*/
+BOOL PopStack(PCStack MyStack);									/*å‡ºæ ˆ*/
+ElemType GetStackTopData(PCStack MyStack, ElemType* OutData);	/*è¿”å›æ ˆé¡¶æ•°æ®*/
+VOID ShowStack(PCStack MyStack);								/*æ˜¾ç¤ºæ•°æ®*/
+ULONG64 GetStackLength(PCStack MyStack);						/*è¿”å›æ ˆé•¿åº¦å¤§å°*/
+ULONG64 GetStackSize(PCStack MyStack);							/*è·å–æ ˆæ€»ç©ºé—´*/
+BOOL ClearStack(PCStack MyStack);								/*æ¸…æ‰«æ ˆ*/
+BOOL DestroyStack(PCStack MyStack);								/*æ‘§æ¯æ ˆ*/
+NTSTATUS IncStackSpace(PCStack MyStack);						/*ç©ºé—´ä¸è¶³æ—¶,å‘åå»¶ç»­ç”³è¯·*/

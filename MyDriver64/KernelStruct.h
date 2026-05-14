@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include <ntddk.h>
 #include "Struct.h"
 
@@ -276,8 +276,8 @@ typedef struct _MMVAD_SHORT
 }MMVAD_SHORT, * PMMVAD_SHORT;
 typedef struct PROCESS_HANDLE_STRUCT
 {
-	ULONG64 TableAddr;														//´æ´¢½ø³ÌË½ÓĞ¾ä±ú±íÇ°8×Ö½Ú,¾ä±ú¶ÔÏó
-	ULONG64 Power;															//´æ´¢½ø³ÌË½ÓĞ¾ä±ú±íºó8×Ö½Ú,È¨ÏŞ
+	ULONG64 TableAddr;														//å­˜å‚¨è¿›ç¨‹ç§æœ‰å¥æŸ„è¡¨å‰8å­—èŠ‚,å¥æŸ„å¯¹è±¡
+	ULONG64 Power;															//å­˜å‚¨è¿›ç¨‹ç§æœ‰å¥æŸ„è¡¨å8å­—èŠ‚,æƒé™
 }PROCESS_HANDLE_STRUCT, * PPROCESS_HANDLE_STRUCT;
 typedef struct _OBJECT_TYPE_INITIALIZER
 {
@@ -395,17 +395,17 @@ typedef struct _OBJECT_HEADER_NAME_INFO
 }OBJECT_HEADER_NAME_INFO, * POBJECT_HEADER_NAME_INFO;
 typedef struct _KSYSTEM_SERVICE_TABLE
 {
-	ULONG64 ServiceTableBase;												// º¯ÊıµØÖ·±í
-	ULONG64 ServiceCounterTableBase;										// SSDT º¯Êı±»µ÷ÓÃµÄ´ÎÊı
-	ULONG64 NumberOfService;												// º¯Êı¸öÊı
-	ULONG64 ParamTableBase;													// º¯Êı²ÎÊı±í
+	ULONG64 ServiceTableBase;												// å‡½æ•°åœ°å€è¡¨
+	ULONG64 ServiceCounterTableBase;										// SSDT å‡½æ•°è¢«è°ƒç”¨çš„æ¬¡æ•°
+	ULONG64 NumberOfService;												// å‡½æ•°ä¸ªæ•°
+	ULONG64 ParamTableBase;													// å‡½æ•°å‚æ•°è¡¨
 } KSYSTEM_SERVICE_TABLE, * PKSYSTEM_SERVICE_TABLE;
 typedef struct _PageAddrInfo
 {
-	ULONG64 PteBase;					//Ö¸ÏòÏßĞÔµØÖ·µÄPte
-	ULONG64 PdeBase;					//Ö¸ÏòÏßĞÔµØÖ·µÄPde
-	ULONG64 PpeBase;					//Ö¸ÏòÏßĞÔµØÖ·µÄPpe
-	ULONG64 PxeBase;					//Ö¸ÏòÏßĞÔµØÖ·µÄPxe
+	ULONG64 PteBase;					//æŒ‡å‘çº¿æ€§åœ°å€çš„Pte
+	ULONG64 PdeBase;					//æŒ‡å‘çº¿æ€§åœ°å€çš„Pde
+	ULONG64 PpeBase;					//æŒ‡å‘çº¿æ€§åœ°å€çš„Ppe
+	ULONG64 PxeBase;					//æŒ‡å‘çº¿æ€§åœ°å€çš„Pxe
 }CPageAddrInfo, * PCPageAddrInfo;
 typedef struct _KTIMER_TABLE_ENTRY
 {
@@ -598,14 +598,14 @@ typedef struct _HAL_PRIVATE_DISPATCH
 typedef struct _KerneMessagePack
 {
 	CLIST_ENTRY List;
-	PCFilterGetMessageHeadInfo Pack;					//´æ´¢°ü	
+	PCFilterGetMessageHeadInfo Pack;					//å­˜å‚¨åŒ…	
 }CKerneMessagePack, * PCKerneMessagePack;
 
 typedef struct _KerneMessageList
 {
 	PCKerneMessagePack PackList;
-	KSPIN_LOCK Lock;														//×ÊÔ´·ÃÎÊÍ¬²½¶ÔÏó
-	KEVENT Event;															//Í¨Öª¶ÔÏó
-	ULONG64 IsInitialize;													//ÊÇ·ñ³õÊ¼»¯¹ıÁË
+	KSPIN_LOCK Lock;														//èµ„æºè®¿é—®åŒæ­¥å¯¹è±¡
+	KEVENT Event;															//é€šçŸ¥å¯¹è±¡
+	ULONG64 IsInitialize;													//æ˜¯å¦åˆå§‹åŒ–è¿‡äº†
 }CKerneMessageList, * PCKerneMessageList;
 #pragma pack(pop)

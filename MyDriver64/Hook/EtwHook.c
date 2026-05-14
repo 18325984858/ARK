@@ -1,4 +1,4 @@
-#include "hde64.h"
+ï»¿#include "hde64.h"
 #include "EtwHook.h"
 #include "../Define.h"
 #include "../DataStruct/CStack.h"
@@ -18,10 +18,10 @@ ULONG64 g_MyHalpHvCounterQueryCounterAddr = keQueryPerformanceCounterHook;
 ULONG64 g_OldHalpPerformanceCounter = NULL;
 ULONG64 g_circularKernelContextLogger = NULL;
 
-//±È½ÏµØÖ· Ö»´¦ÀíµÈÓÚ
+//æ¯”è¾ƒåœ°å€ åªå¤„ç†ç­‰äº
 DWORD EtwCmpSrcAndDstAddr(PCEtwHook SrcAddr, PCEtwHook DstAddr)
 {
-	//±È½ÏÔ­º¯ÊıµØÖ·ÊÇ·ñÒ»Ñù  //ÔÙ±È½ÏÒªCallµÄµØÖ·ÊÇ·ñÒ»Ñù  
+	//æ¯”è¾ƒåŸå‡½æ•°åœ°å€æ˜¯å¦ä¸€æ ·  //å†æ¯”è¾ƒè¦Callçš„åœ°å€æ˜¯å¦ä¸€æ ·  
 	if (SrcAddr->SrcAddr == DstAddr->SrcAddr && SrcAddr->CallAddr == DstAddr->CallAddr)
 	{
 		return 0;
@@ -29,10 +29,10 @@ DWORD EtwCmpSrcAndDstAddr(PCEtwHook SrcAddr, PCEtwHook DstAddr)
 	return -1;
 }
 
-//±È½ÏµØÖ· Ö»´¦ÀíµÈÓÚ
+//æ¯”è¾ƒåœ°å€ åªå¤„ç†ç­‰äº
 DWORD EtwCmpSrcAddr(PCEtwHook SrcAddr, PCEtwHook DstAddr)
 {
-	//±È½ÏÔ­º¯ÊıµØÖ·ÊÇ·ñÒ»Ñù  //ÔÙ±È½ÏÒªCallµÄµØÖ·ÊÇ·ñÒ»Ñù  
+	//æ¯”è¾ƒåŸå‡½æ•°åœ°å€æ˜¯å¦ä¸€æ ·  //å†æ¯”è¾ƒè¦Callçš„åœ°å€æ˜¯å¦ä¸€æ ·  
 	if (SrcAddr->SrcAddr == DstAddr->SrcAddr)
 	{
 		return 0;
@@ -40,10 +40,10 @@ DWORD EtwCmpSrcAddr(PCEtwHook SrcAddr, PCEtwHook DstAddr)
 	return -1;
 }
 
-//±È½ÏµØÖ· Ö»´¦ÀíµÈÓÚ
+//æ¯”è¾ƒåœ°å€ åªå¤„ç†ç­‰äº
 DWORD EtwCmpDstAddr(PCEtwHook SrcAddr, PCEtwHook DstAddr)
 {
-	//±È½ÏÄ¿±êº¯ÊıµØÖ·ÊÇ·ñÒ»Ñù  
+	//æ¯”è¾ƒç›®æ ‡å‡½æ•°åœ°å€æ˜¯å¦ä¸€æ ·  
 	if (SrcAddr->CallAddr == DstAddr->CallAddr)
 	{
 		return 0;
@@ -53,7 +53,7 @@ DWORD EtwCmpDstAddr(PCEtwHook SrcAddr, PCEtwHook DstAddr)
 
 DWORD EtwCmpLeven(PCEtwHook SrcAddr, PCEtwHook DstAddr)
 {
-	//±È½ÏÄ¿±êº¯ÊıµØÖ·ÊÇ·ñÒ»Ñù  
+	//æ¯”è¾ƒç›®æ ‡å‡½æ•°åœ°å€æ˜¯å¦ä¸€æ ·  
 	if (SrcAddr->nLeven == DstAddr->nLeven)
 	{
 		return 0;
@@ -65,12 +65,12 @@ DWORD EtwCmpLeven(PCEtwHook SrcAddr, PCEtwHook DstAddr)
 	return -1;
 }
 
-//²éÕÒEtwHookµÄÊı¾İ
+//æŸ¥æ‰¾EtwHookçš„æ•°æ®
 PCListNode FindEtwHookData(PCEtwHook SrcData, CMPFUNPTRCALLBACK pfun, PCList* pOutList)
 {
 	PCListNode pRetAddr = 0xFFFFFFFF;
 	PCList pMyOutList = NULL;
-	//ÑéÖ¤²ÎÊıÊÇ·ñ×¼È· ºÍ´æ´¢È«¾ÖÁ´±íµÄµØ·½
+	//éªŒè¯å‚æ•°æ˜¯å¦å‡†ç¡® å’Œå­˜å‚¨å…¨å±€é“¾è¡¨çš„åœ°æ–¹
 	if (MmIsAddressValid(SrcData)
 		&& MmIsAddressValid(SrcData->SrcAddr)
 		&& MmIsAddressValid(SrcData->CallAddr)
@@ -79,11 +79,11 @@ PCListNode FindEtwHookData(PCEtwHook SrcData, CMPFUNPTRCALLBACK pfun, PCList* pO
 	{
 
 		//__debugbreak();
-		//Ê×ÏÈ±È½Ïg_EtwHookListlÁ´±íÀïµÄÊı¾İ»ñÈ¡µ½¸ùÄ¿Â¼
+		//é¦–å…ˆæ¯”è¾ƒg_EtwHookListlé“¾è¡¨é‡Œçš„æ•°æ®è·å–åˆ°æ ¹ç›®å½•
 		PCListNode p = FindListNodeEx1(&g_EtwHookList, SrcData, EtwCmpSrcAddr);
 
 		PCListNode pCurNode = &g_EtwHookList.m_pHead;
-		//±éÀúg_EtwHookListÍâ²ãÁ´±í ²éÕÒµ½
+		//éå†g_EtwHookListå¤–å±‚é“¾è¡¨ æŸ¥æ‰¾åˆ°
 		//do
 		//{
 		//	if (!MmIsAddressValid(pCurNode))
@@ -97,76 +97,76 @@ PCListNode FindEtwHookData(PCEtwHook SrcData, CMPFUNPTRCALLBACK pfun, PCList* pO
 
 
 
-		//³õÊ¼»¯Õ»
+		//åˆå§‹åŒ–æ ˆ
 		CStack Stack;
 		if (!NT_SUCCESS(InitStack(&Stack)))
 		{
-			//Ê§°Ü·µ»Ø
+			//å¤±è´¥è¿”å›
 			return pRetAddr;
 		}
 
 		while (MmIsAddressValid(p) && MmIsAddressValid(p->m_Data))
 		{
-			//ÕÒµ½ÁË
+			//æ‰¾åˆ°äº†
 			PCEtwHook pHookNode = (PCEtwHook)p->m_Data;
-			//Ê×ÏÈÅĞ¶Ïµ±Ç°µÄ½ÚµãÊÇ·ñÊÇÒªÕÒµÄÄ¿±ê
+			//é¦–å…ˆåˆ¤æ–­å½“å‰çš„èŠ‚ç‚¹æ˜¯å¦æ˜¯è¦æ‰¾çš„ç›®æ ‡
 			if (pHookNode->CallAddr == SrcData->CallAddr)
 			{
-				//ÕÒµ½ÁËÊı¾İ ½áÊøÑ­»·
+				//æ‰¾åˆ°äº†æ•°æ® ç»“æŸå¾ªç¯
 				pRetAddr = p;
 				break;
 			}
 
 
-			//ÅĞ¶ÏÊÇ·ñÓĞ±»¸½¼ÓµÄÊı¾İ
+			//åˆ¤æ–­æ˜¯å¦æœ‰è¢«é™„åŠ çš„æ•°æ®
 			if (pHookNode->nIsAttach)
 			{	//
-				//ÓĞ±»¸½¼ÓµÄÊı¾İÔÚ½øÈë±éÀúÁ´±íµÄÊ±ºò½«Ç°Ò»¸öÁ´±íµÄµØÖ··ÅÈëµ½Õ»ÖĞ
+				//æœ‰è¢«é™„åŠ çš„æ•°æ®åœ¨è¿›å…¥éå†é“¾è¡¨çš„æ—¶å€™å°†å‰ä¸€ä¸ªé“¾è¡¨çš„åœ°å€æ”¾å…¥åˆ°æ ˆä¸­
 				//
 
-				//Èç¹ûÏÂÒ»¸ö½Úµã²»ÊÇÍ·½áµã¾Í¼ÓÈëµ½Õ»ÖĞ
+				//å¦‚æœä¸‹ä¸€ä¸ªèŠ‚ç‚¹ä¸æ˜¯å¤´ç»“ç‚¹å°±åŠ å…¥åˆ°æ ˆä¸­
 				PCEtwHook pEtwHookNode = (PCEtwHook)p->m_pNext->m_Data;
 				if (pEtwHookNode->nIndex != ETW_HOOK_LEVEN_HEAD_VALUE)
 				{
 					PushStack(&Stack, p->m_pNext);
 				}
 
-				//½«¸½¼ÓÁ´±í¸³Öµ±»dµ±Ç°ÕıÔÚ±éÀúµÄ½Úµã,ÏÂÒ»¸ö´ÓÕâ¸ö¿ªÊ¼±éÀú
+				//å°†é™„åŠ é“¾è¡¨èµ‹å€¼è¢«då½“å‰æ­£åœ¨éå†çš„èŠ‚ç‚¹,ä¸‹ä¸€ä¸ªä»è¿™ä¸ªå¼€å§‹éå†
 				p = &pHookNode->AttachList;
 			}
 			else
 			{
 				//
-				//Ã»±»¸½¼ÓµÄÊı¾İ¾Í¼ÌĞø±éÀúÏÂÒ»¸ö
+				//æ²¡è¢«é™„åŠ çš„æ•°æ®å°±ç»§ç»­éå†ä¸‹ä¸€ä¸ª
 				//
 
 				//
-				//ÅĞ¶ÏÊÇÒª´Óµ±Ç°Á´±íÖĞÈ¡ÏÂÒ»¸ö,»¹ÊÇ´ÓÕ»ÖĞÄÃÉÏÒ»²ãµÄÁ´±í
+				//åˆ¤æ–­æ˜¯è¦ä»å½“å‰é“¾è¡¨ä¸­å–ä¸‹ä¸€ä¸ª,è¿˜æ˜¯ä»æ ˆä¸­æ‹¿ä¸Šä¸€å±‚çš„é“¾è¡¨
 				//
 
 				if (((PCEtwHook)p->m_pNext->m_Data)->nIndex == ETW_HOOK_LEVEN_HEAD_VALUE)
 				{
-					//Èç¹û³ÉÁ¢¾Í´ú±íµ±Ç°Á´±íÒÑ¾­±éÀúÍê³É,ÄÇÃ´¾ÍÊÇ´ÓÕ»ÖĞ»ñÈ¡ÉÏ²ãÁ´±í
+					//å¦‚æœæˆç«‹å°±ä»£è¡¨å½“å‰é“¾è¡¨å·²ç»éå†å®Œæˆ,é‚£ä¹ˆå°±æ˜¯ä»æ ˆä¸­è·å–ä¸Šå±‚é“¾è¡¨
 					if (!GetStackIsNull(&Stack))
 					{
-						//Õ»¿ÕÁË,¾Í´ú±í±éÀúÍê³É
+						//æ ˆç©ºäº†,å°±ä»£è¡¨éå†å®Œæˆ
 						break;
 					}
 
-					//Õ»Ã»¿Õ¾Íµ¯³öÒ»¸ö
+					//æ ˆæ²¡ç©ºå°±å¼¹å‡ºä¸€ä¸ª
 					p = PopStack(&Stack);
 				}
 				else
 				{
 					//
-					//·ñÔò¾ÍÖ¸ÏòÏÂÒ»¸ö
+					//å¦åˆ™å°±æŒ‡å‘ä¸‹ä¸€ä¸ª
 					// 
 
 					p = p->m_pNext;
 				}
 			}
 		}
-		//Çå¿ÕÕ»Êı¾İ
+		//æ¸…ç©ºæ ˆæ•°æ®
 		DestroyStack(&Stack);
 	}
 
@@ -181,14 +181,14 @@ PCListNode FindEtwHookData(PCEtwHook SrcData, CMPFUNPTRCALLBACK pfun, PCList* pO
 	return pRetAddr;
 }
 
-//¸ù¾İ²ã¼¶²éÕÒÄÜ²åÈëµÄµØ·½
+//æ ¹æ®å±‚çº§æŸ¥æ‰¾èƒ½æ’å…¥çš„åœ°æ–¹
 PCListNode FindInsertDataNode(PCList plist, USHORT SrcLeven, PCEtwHook SrcData, PCList* pOutList, PCListNode* pParentNode)
 {
 
 	//
-	// 1>´Ë½á¹¹ÔİÊ±Ö»Éè¼Æµ½Á½²ãÁ´±í
-	// 2>Ò²¾ÍÊÇÃ¿¸ö½ÚµãÖĞÒ²ÓĞÒ»¸öÁ´±í,µ±Òª²éÕÒµÄÊı¾İÖØ¸´Ê±»á¼ÓÈëµ½Õâ¸ö½ÚµãÀïÃæµÄÁ´±íÒ²¾ÍÊÇAttach
-	// 3>Èç¹ûÓöµ½YÖØ¸´µÄÖµ¾Í²»¿´²ã´ÎÁË,¾ÍÖ±½Ó²åÈëµ½Á´±í×îºóÃæ
+	// 1>æ­¤ç»“æ„æš‚æ—¶åªè®¾è®¡åˆ°ä¸¤å±‚é“¾è¡¨
+	// 2>ä¹Ÿå°±æ˜¯æ¯ä¸ªèŠ‚ç‚¹ä¸­ä¹Ÿæœ‰ä¸€ä¸ªé“¾è¡¨,å½“è¦æŸ¥æ‰¾çš„æ•°æ®é‡å¤æ—¶ä¼šåŠ å…¥åˆ°è¿™ä¸ªèŠ‚ç‚¹é‡Œé¢çš„é“¾è¡¨ä¹Ÿå°±æ˜¯Attach
+	// 3>å¦‚æœé‡åˆ°Yé‡å¤çš„å€¼å°±ä¸çœ‹å±‚æ¬¡äº†,å°±ç›´æ¥æ’å…¥åˆ°é“¾è¡¨æœ€åé¢
 	//
 
 	PCListNode pRetParentNode = NULL;
@@ -198,7 +198,7 @@ PCListNode FindInsertDataNode(PCList plist, USHORT SrcLeven, PCEtwHook SrcData, 
 
 	do
 	{
-		//ÑéÖ¤²ÎÊı
+		//éªŒè¯å‚æ•°
 		if (MmIsAddressValid(plist))
 		{
 			UCHAR dbX = MYHIWORD(SrcLeven);		//
@@ -211,7 +211,7 @@ PCListNode FindInsertDataNode(PCList plist, USHORT SrcLeven, PCEtwHook SrcData, 
 
 			ULONG64 OutIndex = GetListSize(pCurListLeven);
 
-			//µ±Òª²åÈëµÄÁ´±íÊıÁ¿Îª1»òÕßÎª0Ê±Ö±½Ó·µ»ØÍ·²¿
+			//å½“è¦æ’å…¥çš„é“¾è¡¨æ•°é‡ä¸º1æˆ–è€…ä¸º0æ—¶ç›´æ¥è¿”å›å¤´éƒ¨
 			if (OutIndex < 1)
 			{
 				if (dbY == 0)
@@ -222,10 +222,10 @@ PCListNode FindInsertDataNode(PCList plist, USHORT SrcLeven, PCEtwHook SrcData, 
 					break;
 				}
 
-				//µ±ÒªÉèÖÃµÄÊı¾İ²ã¼¶X´óÓÚ0ÇÒÁ´±íÖĞ½ÚµãµÄÊıÁ¿Ğ¡ÓÚ2Ê±Éú³ÉÒ»¸ö¿Õ½Úµã½«Ô­µØÖ·¸³ÖµÉÏÈ¥,²¢ÉèÖÃÎ»ÎªFALSE´ú±íÎŞĞ§½Úµã
+				//å½“è¦è®¾ç½®çš„æ•°æ®å±‚çº§Xå¤§äº0ä¸”é“¾è¡¨ä¸­èŠ‚ç‚¹çš„æ•°é‡å°äº2æ—¶ç”Ÿæˆä¸€ä¸ªç©ºèŠ‚ç‚¹å°†åŸåœ°å€èµ‹å€¼ä¸Šå»,å¹¶è®¾ç½®ä½ä¸ºFALSEä»£è¡¨æ— æ•ˆèŠ‚ç‚¹
 				else if (dbY > 0)
 				{
-					//ÉêÇëÒ»¸öHook½á¹¹Ìå
+					//ç”³è¯·ä¸€ä¸ªHookç»“æ„ä½“
 					PCEtwHook pAddr = ExAllocatePool(PagedPool, sizeof(CEtwHook));
 					if (!MmIsAddressValid(pAddr))
 					{
@@ -234,44 +234,44 @@ PCListNode FindInsertDataNode(PCList plist, USHORT SrcLeven, PCEtwHook SrcData, 
 
 					RtlZeroMemory(pAddr, sizeof(CEtwHook));
 
-					//ÉèÖÃÒªcallµÄµØÖ·ÎªNULL
+					//è®¾ç½®è¦callçš„åœ°å€ä¸ºNULL
 					pAddr->CallAddr = NULL;
 
 					if (MmIsAddressValid(SrcData))
 					{
-						//ÉèÖÃÔ­Callº¯ÊıµØÖ·ÎªSrcDataµÄÔ­º¯ÊıµØÖ·
+						//è®¾ç½®åŸCallå‡½æ•°åœ°å€ä¸ºSrcDataçš„åŸå‡½æ•°åœ°å€
 						pAddr->SrcAddr = SrcData->SrcAddr;
 					}
 
-					//ÉèÖÃÊÇ·ñÓĞÊı¾İ¸½¼ÓÕâ¸öÔİÊ±ÉèÖÃÎªFALSE,ÓÉÍâ²ã²åÈëÊ±ÔÚ¼ÓÈë
+					//è®¾ç½®æ˜¯å¦æœ‰æ•°æ®é™„åŠ è¿™ä¸ªæš‚æ—¶è®¾ç½®ä¸ºFALSE,ç”±å¤–å±‚æ’å…¥æ—¶åœ¨åŠ å…¥
 					pAddr->nIsAttach = FALSE;
 
 					{
-						//ÉèÖÃ³õÊ¼»¯¸½¼ÓÁ´±íÎªÕæ
+						//è®¾ç½®åˆå§‹åŒ–é™„åŠ é“¾è¡¨ä¸ºçœŸ
 						pAddr->nInitAttachList = TRUE;
-						//³õÊ¼»¯Á´±í
+						//åˆå§‹åŒ–é“¾è¡¨
 						InitDoubleLoopList(&pAddr->AttachList);
 					}
 
-					//ÉèÖÃ²ã¼¶,Y»ù±¾Îª0
+					//è®¾ç½®å±‚çº§,YåŸºæœ¬ä¸º0
 					pAddr->nLeven = SrcLeven & 0xFF00;
 
-					//ÉèÖÃ¿ÉÓÃ±êÖ¾Î»¼Ù
+					//è®¾ç½®å¯ç”¨æ ‡å¿—ä½å‡
 					pAddr->nIsValid = FALSE;
 
-					//ÉèÖÃµ±Ç°½ÚµãËùÔÚÁ´±í
+					//è®¾ç½®å½“å‰èŠ‚ç‚¹æ‰€åœ¨é“¾è¡¨
 					pAddr->pCurList = pCurListLeven;
 
-					//ÅĞ¶Ïµ±Òª²åÈëµÄÁ´±íwig_EtwHookListÁ´±íÊ±½«ÉèÖÃÎª¸ù½Úµã
+					//åˆ¤æ–­å½“è¦æ’å…¥çš„é“¾è¡¨wig_EtwHookListé“¾è¡¨æ—¶å°†è®¾ç½®ä¸ºæ ¹èŠ‚ç‚¹
 					if (plist == &g_EtwHookList)
 					{
 						pAddr->nIsRootNode = TRUE;
 					}
 
-					//½«µØÖ·µ±Êı¾İ´«ËÍ¹ıÈ¥
+					//å°†åœ°å€å½“æ•°æ®ä¼ é€è¿‡å»
 					pRetParentNode = InsertTrailDoubleLoopList(plist, pAddr);
 
-					//ĞŞ¸´Ë÷ÒıÖµ
+					//ä¿®å¤ç´¢å¼•å€¼
 					RepairEtwData(plist);
 
 					OutLis = &pAddr->AttachList;
@@ -284,84 +284,84 @@ PCListNode FindInsertDataNode(PCList plist, USHORT SrcLeven, PCEtwHook SrcData, 
 			OutIndex = 0;
 			MainOutIndex = 0;
 
-			//Ê×ÏÈ²éÕÒX²ã¼¶
+			//é¦–å…ˆæŸ¥æ‰¾Xå±‚çº§
 			do
 			{
-				//ÑéÖ¤²ÎÊı
+				//éªŒè¯å‚æ•°
 				if (!MmIsAddressValid(pCurListLevenNode) || !MmIsAddressValid(pCurListLevenNode->m_Data))
 				{
 					break;
 				}
 
-				//»ñÈ¡ÏÂÒ»¸öÒª¶Ô±ÈµÄ½Úµã
+				//è·å–ä¸‹ä¸€ä¸ªè¦å¯¹æ¯”çš„èŠ‚ç‚¹
 				PCListNode pNextListLeven = (PCListNode)pCurListLevenNode->m_pNext;
 				if (!MmIsAddressValid(pNextListLeven) || !MmIsAddressValid(pNextListLeven->m_Data))
 				{
 					break;
 				}
 
-				//µ±Ç°µÄ½ÚµãĞÅÏ¢
+				//å½“å‰çš„èŠ‚ç‚¹ä¿¡æ¯
 				PCEtwHook pCurHookInfo = (PCEtwHook)pCurListLevenNode->m_Data;
-				//µ±Ç°µÄÏÂÒ»¸ö½ÚµãĞÅÏ¢
+				//å½“å‰çš„ä¸‹ä¸€ä¸ªèŠ‚ç‚¹ä¿¡æ¯
 				PCEtwHook pNextHookInfo = (PCEtwHook)pNextListLeven->m_Data;
 
 
-				//µ±Òª²åÈëµÄÌõ¼şÎªÒ»¸ö½ÚµãµÄÀïÃæÊ± ,¾Í½«Õâ¸ö½Úµã¼ÓÈëµ½µ±Ç°½ÚµãµÄÁ´±íÀïÃæÈ¥
+				//å½“è¦æ’å…¥çš„æ¡ä»¶ä¸ºä¸€ä¸ªèŠ‚ç‚¹çš„é‡Œé¢æ—¶ ,å°±å°†è¿™ä¸ªèŠ‚ç‚¹åŠ å…¥åˆ°å½“å‰èŠ‚ç‚¹çš„é“¾è¡¨é‡Œé¢å»
 				if (MYHIWORD(pCurHookInfo->nLeven) == dbX)
 				{
-					//ÏàµÈËµÃ÷ÒÑ´æÔÚ 
+					//ç›¸ç­‰è¯´æ˜å·²å­˜åœ¨ 
 					//
-					// ´æÔÚµÄ»°¾ÍÏÈÅĞ¶ÏÊÇ·ñÓĞĞ§,ÓĞĞ§¾ÍÖ±½ÓÕÒÕÒ¸½¼ÓÁ´±í,¸ù¾İ¸½¼ÓµÄÁ´±í·µ»ØµÚ¼¸¸ö ,ÎŞĞ§¾ÍÖ±½Ó±È½ÏÔ­callµÄº¯ÊıÈç¹ûÏàµÈ¾ÍÖ±½Ó¸³Öµ
+					// å­˜åœ¨çš„è¯å°±å…ˆåˆ¤æ–­æ˜¯å¦æœ‰æ•ˆ,æœ‰æ•ˆå°±ç›´æ¥æ‰¾æ‰¾é™„åŠ é“¾è¡¨,æ ¹æ®é™„åŠ çš„é“¾è¡¨è¿”å›ç¬¬å‡ ä¸ª ,æ— æ•ˆå°±ç›´æ¥æ¯”è¾ƒåŸcallçš„å‡½æ•°å¦‚æœç›¸ç­‰å°±ç›´æ¥èµ‹å€¼
 					// 
 
 					OutIndex = 0;
 
-					//ÄÇÃ´¾Í¿ªÊ¼ÕÒY×ø±êµÄ  
+					//é‚£ä¹ˆå°±å¼€å§‹æ‰¾Yåæ ‡çš„  
 					if (!pCurHookInfo->nInitAttachList)
 					{
 						//
-						//Î´³õÊ¼»¯,µ«Êı¾İ½ÚµãÊÇ´æÔÚµÄ,ÄÇÃ´¾Í³õÊ¼»¯ºó·µ»ØÍ·½áµã
+						//æœªåˆå§‹åŒ–,ä½†æ•°æ®èŠ‚ç‚¹æ˜¯å­˜åœ¨çš„,é‚£ä¹ˆå°±åˆå§‹åŒ–åè¿”å›å¤´ç»“ç‚¹
 						// 
 
-						//³õÊ¼»¯Á´±í
+						//åˆå§‹åŒ–é“¾è¡¨
 						InitDoubleLoopList(&pCurHookInfo->AttachList);
 
-						//ĞŞ¸ÄÊôĞÔ
+						//ä¿®æ”¹å±æ€§
 						pCurHookInfo->nInitAttachList = TRUE;
 
-						//½«Á´±íÍ··µ»Ø»ØÈ¥
+						//å°†é“¾è¡¨å¤´è¿”å›å›å»
 						pRetAddr = &pCurHookInfo->AttachList.m_pHead;
 
-						//Á´±í¾ÍÎªÒª¸½¼ÓµÄÕâ¸öÁ´±í
+						//é“¾è¡¨å°±ä¸ºè¦é™„åŠ çš„è¿™ä¸ªé“¾è¡¨
 						pCurListLeven = &pCurHookInfo->AttachList;
 
-						//ÉèÖÃÒª²åÈëµÄ½ÚµãµÄÎ»ÖÃ
+						//è®¾ç½®è¦æ’å…¥çš„èŠ‚ç‚¹çš„ä½ç½®
 						OutIndex = 0;
 
-						//ÉèÖÃ¸¸½Úµã
+						//è®¾ç½®çˆ¶èŠ‚ç‚¹
 						pRetParentNode = pCurListLevenNode;
 					}
 					else
 					{
 						//
-						//³õÊ¼»¯ÁË,»¹ÓĞÊı¾İ,Õâ¸öÊ±ºò¾ÍÒª±éÀúÁ´±í±È½ÏYµÄÖµÁË
+						//åˆå§‹åŒ–äº†,è¿˜æœ‰æ•°æ®,è¿™ä¸ªæ—¶å€™å°±è¦éå†é“¾è¡¨æ¯”è¾ƒYçš„å€¼äº†
 						// 
-						//³õÊ¼»¯¹ı¾Í´ÓÍ·¿ªÊ¼¼Ó
+						//åˆå§‹åŒ–è¿‡å°±ä»å¤´å¼€å§‹åŠ 
 						//
 						OutIndex = 0;
 
-						//»ñÈ¡¸½¼ÓÁ´±í
+						//è·å–é™„åŠ é“¾è¡¨
 						PCList pAttachList = (PCList)&pCurHookInfo->AttachList;
 						if (!MmIsAddressValid(pAttachList))
 						{
 							break;
 						}
 
-						//ÅĞ¶ÏÁ´±íÊÇÓĞÊı¾İ
+						//åˆ¤æ–­é“¾è¡¨æ˜¯æœ‰æ•°æ®
 						if (GetListSize(&pAttachList))
 						{
 							PCListNode pCurAttachListLevenNode = (PCListNode)pAttachList->m_pHead;
-							//°´ÕÕÉÏÃæ²Ù×÷ÔÙÕÒY
+							//æŒ‰ç…§ä¸Šé¢æ“ä½œå†æ‰¾Y
 							do
 							{
 								if (!MmIsAddressValid(pCurAttachListLevenNode) || !MmIsAddressValid(pCurAttachListLevenNode->m_Data))
@@ -369,24 +369,24 @@ PCListNode FindInsertDataNode(PCList plist, USHORT SrcLeven, PCEtwHook SrcData, 
 									break;
 								}
 
-								//»ñÈ¡ÏÂÒ»¸öÒª¶Ô±ÈµÄ½Úµã
+								//è·å–ä¸‹ä¸€ä¸ªè¦å¯¹æ¯”çš„èŠ‚ç‚¹
 								PCListNode pNextAttachListLeven = (PCListNode)pCurAttachListLevenNode->m_pNext;
 								if (!MmIsAddressValid(pNextAttachListLeven) || !MmIsAddressValid(pNextAttachListLeven->m_Data))
 								{
 									break;
 								}
 
-								//µ±Ç°µÄ½ÚµãĞÅÏ¢
+								//å½“å‰çš„èŠ‚ç‚¹ä¿¡æ¯
 								pCurHookInfo = (PCEtwHook)pCurAttachListLevenNode->m_Data;
-								//µ±Ç°µÄÏÂÒ»¸ö½ÚµãĞÅÏ¢
+								//å½“å‰çš„ä¸‹ä¸€ä¸ªèŠ‚ç‚¹ä¿¡æ¯
 								pNextHookInfo = (PCEtwHook)pNextAttachListLeven->m_Data;
 
 								if (MYLOWORD(pCurHookInfo->nLeven) == dbY)
 								{
-									//ÏàµÈËµÃ÷ÒÑ´æÔÚ //ÄÇÃ´¾Í²åÈëµ½ËûºóÃæ //²»¸½¼Óµ½ËûÀïÃæµÄÁ´±íÁË
+									//ç›¸ç­‰è¯´æ˜å·²å­˜åœ¨ //é‚£ä¹ˆå°±æ’å…¥åˆ°ä»–åé¢ //ä¸é™„åŠ åˆ°ä»–é‡Œé¢çš„é“¾è¡¨äº†
 									pRetAddr = pCurAttachListLevenNode;
 
-									//Òª·µ»ØµÄÁ´±í
+									//è¦è¿”å›çš„é“¾è¡¨
 									OutLis = pAttachList;
 
 									break;
@@ -394,16 +394,16 @@ PCListNode FindInsertDataNode(PCList plist, USHORT SrcLeven, PCEtwHook SrcData, 
 
 								if (MYLOWORD(pCurHookInfo->nLeven) < dbY && (!(MYLOWORD(pNextHookInfo->nLeven) <= dbY) || pNextHookInfo->nIndex == ETW_HOOK_LEVEN_HEAD_VALUE))
 								{
-									//±íÊ¾Õâ¸öĞÂ²åÈëµÄ²ã¼¶ÔİÊ±Ã»±»Ê¹ÓÃ Ö±½Ó·µ»ØÕâ¸ö½Úµã Y²ã¼¶Ö±½ÓÃ»ÓĞ
+									//è¡¨ç¤ºè¿™ä¸ªæ–°æ’å…¥çš„å±‚çº§æš‚æ—¶æ²¡è¢«ä½¿ç”¨ ç›´æ¥è¿”å›è¿™ä¸ªèŠ‚ç‚¹ Yå±‚çº§ç›´æ¥æ²¡æœ‰
 									pRetAddr = pCurAttachListLevenNode;
 
-									//Òª·µ»ØµÄÁ´±í
+									//è¦è¿”å›çš„é“¾è¡¨
 									OutLis = pAttachList;
 
 									break;
 								}
 
-								//Ö¸ÏòÏÂÒ»¸ö½Úµã
+								//æŒ‡å‘ä¸‹ä¸€ä¸ªèŠ‚ç‚¹
 								pCurAttachListLevenNode = pNextAttachListLeven;
 
 								OutIndex++;
@@ -411,13 +411,13 @@ PCListNode FindInsertDataNode(PCList plist, USHORT SrcLeven, PCEtwHook SrcData, 
 						}
 						else
 						{
-							//µ±¸½¼ÓµÄÁ´±íÃ»Êı¾İÊ±
+							//å½“é™„åŠ çš„é“¾è¡¨æ²¡æ•°æ®æ—¶
 							pRetAddr = (PCListNode)pAttachList->m_pHead;
 
-							//Òª·µ»ØµÄÁ´±í
+							//è¦è¿”å›çš„é“¾è¡¨
 							OutLis = pAttachList;
 
-							//·µ»Ø¸¸½Úµã
+							//è¿”å›çˆ¶èŠ‚ç‚¹
 							pRetParentNode = pCurHookInfo;
 						}
 					}
@@ -426,25 +426,25 @@ PCListNode FindInsertDataNode(PCList plist, USHORT SrcLeven, PCEtwHook SrcData, 
 
 				//MyDbgPrintfEx("pCurHookInfoY:%d %I64X pNextHookInfoY:%d  %I64X dbX:%d\n", MYHIWORD(pCurHookInfo->nLeven), pCurHookInfo, MYHIWORD(pNextHookInfo->nLeven), pNextHookInfo, dbX);
 
-				//µ±Òª²åÈëµÄÌõ¼şÎªÁ½¸öÖµµÄÖĞ¼äÊ± »òÕßÊÇ±éÀúµ½Î²²¿ÒÀ¾ÉÃ»±È×îºóÒ»¸ö²ã¼¶´óÄÇÃ´¾Í·µ»Øµ±Ç°µÄ½Úµã
+				//å½“è¦æ’å…¥çš„æ¡ä»¶ä¸ºä¸¤ä¸ªå€¼çš„ä¸­é—´æ—¶ æˆ–è€…æ˜¯éå†åˆ°å°¾éƒ¨ä¾æ—§æ²¡æ¯”æœ€åä¸€ä¸ªå±‚çº§å¤§é‚£ä¹ˆå°±è¿”å›å½“å‰çš„èŠ‚ç‚¹
 				if (MYHIWORD(pCurHookInfo->nLeven) < dbX && (!(MYHIWORD(pNextHookInfo->nLeven) <= dbX) || pNextHookInfo->nIndex == ETW_HOOK_LEVEN_HEAD_VALUE))
 				{
 
-					//ÅĞ¶Ï¸ß¶ÈÊÇ·ñÊÇ¸ù½Úµã
+					//åˆ¤æ–­é«˜åº¦æ˜¯å¦æ˜¯æ ¹èŠ‚ç‚¹
 					if (dbY == FALSE)
 					{
-						//±íÊ¾Õâ¸öĞÂ²åÈëµÄ²ã¼¶ÔİÊ±Ã»±»Ê¹ÓÃ Ö±½Ó·µ»ØÕâ¸ö½Úµã Y²ã¼¶Ö±½ÓÃ»ÓĞ
+						//è¡¨ç¤ºè¿™ä¸ªæ–°æ’å…¥çš„å±‚çº§æš‚æ—¶æ²¡è¢«ä½¿ç”¨ ç›´æ¥è¿”å›è¿™ä¸ªèŠ‚ç‚¹ Yå±‚çº§ç›´æ¥æ²¡æœ‰
 						pRetAddr = pCurListLevenNode;
 
 						OutLis = pCurListLeven;
 
-						//ÉèÖÃÍâ²ãµÄË÷Òı
+						//è®¾ç½®å¤–å±‚çš„ç´¢å¼•
 						OutIndex = MainOutIndex;
 					}
 					else
 					{
-						//²»ÊÇ¸ù½Úµã,ÇÒÃ»ÓĞ¸ù½ÚµãµÄÊ±ºò¾ÍĞèÒªÉú³ÉÒ»¸öÁÙÊ±½Úµã½«´Ë½Úµã¹ÒÔÚµ½¸½¼ÓÁ´±íÉÏ²»È»²»ºÃ¹ÜÀí
-						//ÉêÇëÒ»¸öHook½á¹¹Ìå
+						//ä¸æ˜¯æ ¹èŠ‚ç‚¹,ä¸”æ²¡æœ‰æ ¹èŠ‚ç‚¹çš„æ—¶å€™å°±éœ€è¦ç”Ÿæˆä¸€ä¸ªä¸´æ—¶èŠ‚ç‚¹å°†æ­¤èŠ‚ç‚¹æŒ‚åœ¨åˆ°é™„åŠ é“¾è¡¨ä¸Šä¸ç„¶ä¸å¥½ç®¡ç†
+						//ç”³è¯·ä¸€ä¸ªHookç»“æ„ä½“
 						PCEtwHook pAddr = ExAllocatePool(PagedPool, sizeof(CEtwHook));
 						if (!MmIsAddressValid(pAddr))
 						{
@@ -453,44 +453,44 @@ PCListNode FindInsertDataNode(PCList plist, USHORT SrcLeven, PCEtwHook SrcData, 
 
 						RtlZeroMemory(pAddr, sizeof(CEtwHook));
 
-						//ÉèÖÃÒªcallµÄµØÖ·ÎªNULL
+						//è®¾ç½®è¦callçš„åœ°å€ä¸ºNULL
 						pAddr->CallAddr = NULL;
 
 						if (MmIsAddressValid(SrcData))
 						{
-							//ÉèÖÃÔ­Callº¯ÊıµØÖ·ÎªSrcDataµÄÔ­º¯ÊıµØÖ·
+							//è®¾ç½®åŸCallå‡½æ•°åœ°å€ä¸ºSrcDataçš„åŸå‡½æ•°åœ°å€
 							pAddr->SrcAddr = SrcData->SrcAddr;
 						}
 
-						//ÉèÖÃÊÇ·ñÓĞÊı¾İ¸½¼ÓÕâ¸öÔİÊ±ÉèÖÃÎªFALSE,ÓÉÍâ²ã²åÈëÊ±ÔÚ¼ÓÈë
+						//è®¾ç½®æ˜¯å¦æœ‰æ•°æ®é™„åŠ è¿™ä¸ªæš‚æ—¶è®¾ç½®ä¸ºFALSE,ç”±å¤–å±‚æ’å…¥æ—¶åœ¨åŠ å…¥
 						pAddr->nIsAttach = FALSE;
 
 						{
-							//ÉèÖÃ³õÊ¼»¯¸½¼ÓÁ´±íÎªÕæ
+							//è®¾ç½®åˆå§‹åŒ–é™„åŠ é“¾è¡¨ä¸ºçœŸ
 							pAddr->nInitAttachList = TRUE;
-							//³õÊ¼»¯Á´±í
+							//åˆå§‹åŒ–é“¾è¡¨
 							InitDoubleLoopList(&pAddr->AttachList);
 						}
 
-						//ÉèÖÃ²ã¼¶,Y»ù±¾Îª0
+						//è®¾ç½®å±‚çº§,YåŸºæœ¬ä¸º0
 						pAddr->nLeven = SrcLeven & 0xFF00;
 
-						//ÉèÖÃ¿ÉÓÃ±êÖ¾Î»¼Ù
+						//è®¾ç½®å¯ç”¨æ ‡å¿—ä½å‡
 						pAddr->nIsValid = FALSE;
 
-						//ÅĞ¶Ïµ±Òª²åÈëµÄÁ´±íwig_EtwHookListÁ´±íÊ±½«ÉèÖÃÎª¸ù½Úµã
+						//åˆ¤æ–­å½“è¦æ’å…¥çš„é“¾è¡¨wig_EtwHookListé“¾è¡¨æ—¶å°†è®¾ç½®ä¸ºæ ¹èŠ‚ç‚¹
 						if (plist == &g_EtwHookList)
 						{
 							pAddr->nIsRootNode = TRUE;
 						}
 
-						//ÉèÖÃµ±Ç°½ÚµãËùÔÚÁ´±í
+						//è®¾ç½®å½“å‰èŠ‚ç‚¹æ‰€åœ¨é“¾è¡¨
 						pAddr->pCurList = pCurListLeven;
 
-						//½«µØÖ·µ±Êı¾İ´«ËÍ¹ıÈ¥
+						//å°†åœ°å€å½“æ•°æ®ä¼ é€è¿‡å»
 						pRetParentNode = InsertTrailDoubleLoopList(plist, pAddr);
 
-						//ĞŞ¸´Ë÷ÒıÖµ
+						//ä¿®å¤ç´¢å¼•å€¼
 						RepairEtwData(plist);
 
 						OutLis = &pAddr->AttachList;
@@ -502,21 +502,21 @@ PCListNode FindInsertDataNode(PCList plist, USHORT SrcLeven, PCEtwHook SrcData, 
 					break;
 				}
 
-				//Ö¸ÏòÏÂÒ»¸ö
+				//æŒ‡å‘ä¸‹ä¸€ä¸ª
 				pCurListLevenNode = pNextListLeven;
 				MainOutIndex++;
 			} while (pCurListLevenNode != (PCListNode)pCurListLeven->m_pHead);
-			//Èç¹ûÑ­½áÊøËµÃ÷
+			//å¦‚æœå¾ªç»“æŸè¯´æ˜
 		}
 	} while (FALSE);
 
-	//·µ»ØÁ´±í
+	//è¿”å›é“¾è¡¨
 	if (MmIsAddressValid(pOutList))
 	{
 		*pOutList = OutLis;
 	}
 
-	//·µ»Ø¸¸½Úµã
+	//è¿”å›çˆ¶èŠ‚ç‚¹
 	if (MmIsAddressValid(pParentNode))
 	{
 		*pParentNode = pRetParentNode;
@@ -524,7 +524,7 @@ PCListNode FindInsertDataNode(PCList plist, USHORT SrcLeven, PCEtwHook SrcData, 
 	return pRetAddr;
 }
 
-//ĞŞ¸´Êı¾İ
+//ä¿®å¤æ•°æ®
 void RepairEtwData(PCList pList)
 {
 	if (MmIsAddressValid(pList))
@@ -546,23 +546,23 @@ void RepairEtwData(PCList pList)
 			PCEtwHook pData = pNextNode->m_Data;
 			if (MmIsAddressValid(pData))
 			{
-				//ĞŞ¸´Ë÷ÒıÊ±Ë³±ã±éÀúµ±Ç°½ÚµãÊÇ·ñÊÇÓĞĞ§Êı¾İ
+				//ä¿®å¤ç´¢å¼•æ—¶é¡ºä¾¿éå†å½“å‰èŠ‚ç‚¹æ˜¯å¦æ˜¯æœ‰æ•ˆæ•°æ®
 				if (pData->nIsAttach == FALSE && pData->nIsValid == FALSE && pData->nInitAttachList == FALSE)
 				{
-					//ÊÍ·Å×ÊÔ´
+					//é‡Šæ”¾èµ„æº
 					PCEtwHook pDelData = DeletePosDoubleLoopList(pList, pNextNode);
 					if (MmIsAddressValid(pDelData))
 					{
 						ExFreePool(pDelData);
 					}
 
-					//µ±Á´±íÎª¿ÕÊ±½áÊø±éÀú
+					//å½“é“¾è¡¨ä¸ºç©ºæ—¶ç»“æŸéå†
 					if (!GetListSize(pList))
 					{
 						break;
 					}
 
-					//ÖØÍ·¿ªÊ¼
+					//é‡å¤´å¼€å§‹
 					pNextNode = (PCListNode)pList->m_pHead;
 					i = ETW_HOOK_LEVEN_HEAD_VALUE;
 					continue;
@@ -576,19 +576,19 @@ void RepairEtwData(PCList pList)
 	}
 }
 
-//HookµØÖ·
-PCEtwHook HookAddr(ULONG64 SrcAddr/*Ô­µØÖ·*/, ULONG64 CallAddt/*ÒªÌæ»»µÄµØÖ·*/, USHORT SrcLeven)
+//Hookåœ°å€
+PCEtwHook HookAddr(ULONG64 SrcAddr/*åŸåœ°å€*/, ULONG64 CallAddt/*è¦æ›¿æ¢çš„åœ°å€*/, USHORT SrcLeven)
 {
-	//·µ»ØÖµ
+	//è¿”å›å€¼
 	PCEtwHook pAddr = NULL;
 
-	//ÑéÖ¤²ÎÊıÊÇ·ñÓĞĞ§
+	//éªŒè¯å‚æ•°æ˜¯å¦æœ‰æ•ˆ
 	if (!MmIsAddressValid(SrcAddr) || !MmIsAddressValid(CallAddt))
 	{
 		return FALSE;
 	}
 
-	//ÉêÇëÒ»¸öHook½á¹¹Ìå
+	//ç”³è¯·ä¸€ä¸ªHookç»“æ„ä½“
 	pAddr = ExAllocatePool(PagedPool, sizeof(CEtwHook));
 	if (!MmIsAddressValid(pAddr))
 	{
@@ -597,81 +597,81 @@ PCEtwHook HookAddr(ULONG64 SrcAddr/*Ô­µØÖ·*/, ULONG64 CallAddt/*ÒªÌæ»»µÄµØÖ·*/, 
 
 	RtlZeroMemory(pAddr, sizeof(CEtwHook));
 
-	//³õÊ¼»¯ ÒªcallµÄµØÖ·
+	//åˆå§‹åŒ– è¦callçš„åœ°å€
 	pAddr->CallAddr = CallAddt;
 
-	//³õÊ¼»¯Ô­º¯ÊıµØÖ·
+	//åˆå§‹åŒ–åŸå‡½æ•°åœ°å€
 	pAddr->SrcAddr = SrcAddr;
 
-	//ÉèÖÃ²ã¼¶
+	//è®¾ç½®å±‚çº§
 	pAddr->nLeven = SrcLeven;
 
-	//ÉèÖÃÓĞĞ§Î»
+	//è®¾ç½®æœ‰æ•ˆä½
 	pAddr->nIsValid = TRUE;
 
-	//µ±YÎª0Ê±
+	//å½“Yä¸º0æ—¶
 	if (MYLOWORD(pAddr->nLeven) == 0)
 	{
-		//ÉèÖÃÎª¸ù½Úµã
+		//è®¾ç½®ä¸ºæ ¹èŠ‚ç‚¹
 		pAddr->nIsRootNode = TRUE;
 	}
 
 	//pAddr->nIndex = FindListNodeEx1(&g_EtwHookList, SrcAddr, EtwCmpSrcAddr);
 
-	//´æ´¢Òª²åÈëµÄÁ´±í
+	//å­˜å‚¨è¦æ’å…¥çš„é“¾è¡¨
 	//PCListNode pDstList = &g_EtwHookList;
 	UCHAR nCurIndex = GetListSize(&g_EtwHookList);
 
-	//	//												ÏàµÈ²åÈë¸½¼ÓÁ´±í
+	//	//												ç›¸ç­‰æ’å…¥é™„åŠ é“¾è¡¨
 	//	//													  /\
 	//	//													  ||
-	//	//ÅĞ¶ÏÒª²åÈëµÄ²ã¼¶ ,ÅĞ¶ÏÒª²åÈëµÄµØ·½Ç°ºó²ã¼¶ µÍ²ã¼¶ < Òª²åÈëµÄ²ã¼¶ < ( (¸ß²ã¼¶) ÒòÎªÕâÊÇ¸öÑ­»·Á´±íÄÇÃ´Õâ¸ö¸ß²ã¼¶X²»ÄÜÎª0)
-	//	//×¢:Í¬¼¶ÏÈ×¢²áµÄÏÈÔËĞĞ,²»Í¬¼¶µÄ²ã¼¶Ô½¸ßÔ½ºóÖ´ĞĞ
+	//	//åˆ¤æ–­è¦æ’å…¥çš„å±‚çº§ ,åˆ¤æ–­è¦æ’å…¥çš„åœ°æ–¹å‰åå±‚çº§ ä½å±‚çº§ < è¦æ’å…¥çš„å±‚çº§ < ( (é«˜å±‚çº§) å› ä¸ºè¿™æ˜¯ä¸ªå¾ªç¯é“¾è¡¨é‚£ä¹ˆè¿™ä¸ªé«˜å±‚çº§Xä¸èƒ½ä¸º0)
+	//	//æ³¨:åŒçº§å…ˆæ³¨å†Œçš„å…ˆè¿è¡Œ,ä¸åŒçº§çš„å±‚çº§è¶Šé«˜è¶Šåæ‰§è¡Œ
 	//	// 
 
 	PCList pOutList = NULL;
 	PCListNode pParentNode = NULL;
-	//·µ»ØµÄ½ÚµãÊÇÒª²åÈëµ½Õâ¸ö½ÚµãºóÃæµÄÒ»¸öÊı¾İ
+	//è¿”å›çš„èŠ‚ç‚¹æ˜¯è¦æ’å…¥åˆ°è¿™ä¸ªèŠ‚ç‚¹åé¢çš„ä¸€ä¸ªæ•°æ®
 	PCListNode pInsertNode = FindInsertDataNode(&g_EtwHookList, SrcLeven, pAddr, &pOutList, &pParentNode);
 	if (MmIsAddressValid(pInsertNode) && MmIsAddressValid(pOutList))
 	{
-		//ÅĞ¶ÏÁ´±íµÄÖµÊÇÔÚÍ¬Ò»¸öÉÏÃæ
+		//åˆ¤æ–­é“¾è¡¨çš„å€¼æ˜¯åœ¨åŒä¸€ä¸ªä¸Šé¢
 		if (((PCEtwHook)pInsertNode->m_Data)->SrcAddr == SrcAddr)
 		{
 			if (((PCEtwHook)pInsertNode->m_Data)->nIsValid == FALSE && ((PCEtwHook)pInsertNode->m_Data)->nLeven == pAddr->nLeven)
 			{
-				//Ö±½Ó½«Êı¾İ¿½±´µ½·µ»ØµÄ½ÚµãÉÏ
+				//ç›´æ¥å°†æ•°æ®æ‹·è´åˆ°è¿”å›çš„èŠ‚ç‚¹ä¸Š
 				((PCEtwHook)pInsertNode->m_Data)->CallAddr = pAddr->CallAddr;
 				((PCEtwHook)pInsertNode->m_Data)->nIsValid = TRUE;
 
-				//ÊÍ·ÅÔ­À´ÉêÇëµÄÄÚ´æ
+				//é‡Šæ”¾åŸæ¥ç”³è¯·çš„å†…å­˜
 				ExFreePool(pAddr);
 			}
 			else
 			{
-				//²åÈë½øÁ´±íÖĞ
+				//æ’å…¥è¿›é“¾è¡¨ä¸­
 				InsertPosNextDoubleLoopList(pOutList, pInsertNode, pAddr);
 
-				//ĞŞ¸´Ë÷ÒıÖµ
+				//ä¿®å¤ç´¢å¼•å€¼
 				RepairEtwData(pOutList);
 
-				//ÉèÖÃµ±Ç°Òª²åÈë½ÚµãµÄ¸¸½Úµã Òª²åÈë½ÚµãµÄÇ°Ò»¸ö½ÚµãµÄ¸¸½Úµã¸³Öµ¸ø²åÈë½ÚµãµÄ¸¸½Úµã
+				//è®¾ç½®å½“å‰è¦æ’å…¥èŠ‚ç‚¹çš„çˆ¶èŠ‚ç‚¹ è¦æ’å…¥èŠ‚ç‚¹çš„å‰ä¸€ä¸ªèŠ‚ç‚¹çš„çˆ¶èŠ‚ç‚¹èµ‹å€¼ç»™æ’å…¥èŠ‚ç‚¹çš„çˆ¶èŠ‚ç‚¹
 				pAddr->ParentListNode = ((PCEtwHook)pInsertNode->m_Data)->ParentListNode;
 
 
-				//ÉèÖÃ¸¸½Úµã×î´ó²ã¼¶
+				//è®¾ç½®çˆ¶èŠ‚ç‚¹æœ€å¤§å±‚çº§
 				USHORT pParentMaxLeven = ((PCEtwHook)pInsertNode->m_Data)->nMaxLeven;
 				if (MYLOWORD(pParentMaxLeven) < MYLOWORD(pAddr->nLeven))
 				{
-					//Ìæ»»³ÉĞÂµÄ
+					//æ›¿æ¢æˆæ–°çš„
 					((PCEtwHook)pInsertNode->m_Data)->nMaxLeven = pAddr->nLeven;
 
-					//±£´æÀÏµÄ
+					//ä¿å­˜è€çš„
 					pAddr->nMaxLeven = pParentMaxLeven;
 				}
 
 			}
-			//ÉèÖÃµ±Ç°½ÚµãËùÔÚµÄÁ´±í
+			//è®¾ç½®å½“å‰èŠ‚ç‚¹æ‰€åœ¨çš„é“¾è¡¨
 			pAddr->pCurList = pOutList;
 		}
 	}
@@ -681,27 +681,27 @@ PCEtwHook HookAddr(ULONG64 SrcAddr/*Ô­µØÖ·*/, ULONG64 CallAddt/*ÒªÌæ»»µÄµØÖ·*/, 
 		{
 
 			//
-			// pOutList²»Îª NULL µÄÇé¿ö¾ÍÊÇ Á´±íµÄÊıÁ¿Ğ¡ÓÚ2
+			// pOutListä¸ä¸º NULL çš„æƒ…å†µå°±æ˜¯ é“¾è¡¨çš„æ•°é‡å°äº2
 			// 
 
-			//½«µØÖ·µ±Êı¾İ´«ËÍ¹ıÈ¥
+			//å°†åœ°å€å½“æ•°æ®ä¼ é€è¿‡å»
 			InsertTrailDoubleLoopList(pOutList, pAddr);
-			//ĞŞ¸´Ë÷ÒıÖµ
+			//ä¿®å¤ç´¢å¼•å€¼
 			RepairEtwData(pOutList);
 
-			//ÉèÖÃµ±Ç°Òª²åÈë½ÚµãµÄ¸¸½Úµã //²¢ÉèÖÃÁ´±íµÄ¸½¼ÓÊı¾İÎªÕæ
+			//è®¾ç½®å½“å‰è¦æ’å…¥èŠ‚ç‚¹çš„çˆ¶èŠ‚ç‚¹ //å¹¶è®¾ç½®é“¾è¡¨çš„é™„åŠ æ•°æ®ä¸ºçœŸ
 			if (MmIsAddressValid(pParentNode))
 			{
 				pAddr->ParentListNode = pParentNode;
 				((PCEtwHook)pParentNode->m_Data)->nIsAttach = TRUE;
 
-				//ÉèÖÃ¸¸½Úµã×î´ó²ã¼¶
+				//è®¾ç½®çˆ¶èŠ‚ç‚¹æœ€å¤§å±‚çº§
 				USHORT pParentMaxLeven = ((PCEtwHook)pInsertNode->m_Data)->nMaxLeven;
 				if (MYLOWORD(pParentMaxLeven) < MYLOWORD(pAddr->nLeven))
 				{
-					//Ìæ»»³ÉĞÂµÄ
+					//æ›¿æ¢æˆæ–°çš„
 					((PCEtwHook)pInsertNode->m_Data)->nMaxLeven = pAddr->nLeven;
-					//±£´æÀÏµÄ
+					//ä¿å­˜è€çš„
 					pAddr->nMaxLeven = pParentMaxLeven;
 				}
 			}
@@ -710,12 +710,12 @@ PCEtwHook HookAddr(ULONG64 SrcAddr/*Ô­µØÖ·*/, ULONG64 CallAddt/*ÒªÌæ»»µÄµØÖ·*/, 
 		else
 		{
 			//
-			// µ±Êä³öÁ´±íÎª¿ÕÊ± ²åÈëµ½¸ùÁ´±í g_EtwHookList
+			// å½“è¾“å‡ºé“¾è¡¨ä¸ºç©ºæ—¶ æ’å…¥åˆ°æ ¹é“¾è¡¨ g_EtwHookList
 			// 
 
-			//½«µØÖ·µ±Êı¾İ´«ËÍ¹ıÈ¥
+			//å°†åœ°å€å½“æ•°æ®ä¼ é€è¿‡å»
 			InsertTrailDoubleLoopList(&g_EtwHookList, pAddr);
-			//ĞŞ¸´Ë÷ÒıÖµ
+			//ä¿®å¤ç´¢å¼•å€¼
 			RepairEtwData(&g_EtwHookList);
 
 			pAddr->pCurList = &g_EtwHookList;
@@ -725,10 +725,10 @@ PCEtwHook HookAddr(ULONG64 SrcAddr/*Ô­µØÖ·*/, ULONG64 CallAddt/*ÒªÌæ»»µÄµØÖ·*/, 
 	return pAddr;
 }
 
-//Ğ¶ÔØHOOK
-ULONG64 UnHookAddr(PCEtwHook SrcAddr/*ÒªÉ¾³ıµÄµØÖ·,Ô­º¯ÊıµØÖ·*/)
+//å¸è½½HOOK
+ULONG64 UnHookAddr(PCEtwHook SrcAddr/*è¦åˆ é™¤çš„åœ°å€,åŸå‡½æ•°åœ°å€*/)
 {
-	//ÑéÖ¤²ÎÊıÊÇ·ñÓĞĞ§
+	//éªŒè¯å‚æ•°æ˜¯å¦æœ‰æ•ˆ
 	if (!MmIsAddressValid(SrcAddr))
 	{
 		return FALSE;
@@ -758,7 +758,7 @@ ULONG64 UnHookAddr(PCEtwHook SrcAddr/*ÒªÉ¾³ıµÄµØÖ·,Ô­º¯ÊıµØÖ·*/)
 
 		if ((pHookInfo->SrcAddr == SrcAddr->SrcAddr) && pHookInfo->nLeven == SrcAddr->nLeven)
 		{
-			//ÕÒµ½ÁË
+			//æ‰¾åˆ°äº†
 			p = pCurNode;
 			break;
 		}
@@ -769,50 +769,50 @@ ULONG64 UnHookAddr(PCEtwHook SrcAddr/*ÒªÉ¾³ıµÄµØÖ·,Ô­º¯ÊıµØÖ·*/)
 	{
 		PCEtwHook pCurDelNode = (PCEtwHook)p->m_Data;
 
-		//Ê×ÏÈÅĞ¶ÏÕâ¸ö½ÚµãÊÇ·ñÊÇ¸ù½Úµã
+		//é¦–å…ˆåˆ¤æ–­è¿™ä¸ªèŠ‚ç‚¹æ˜¯å¦æ˜¯æ ¹èŠ‚ç‚¹
 		if (MmIsAddressValid(pCurDelNode))
 		{
-			//»ñÈ¡Õâ¸ö½ÚµãËùÔÚµÄÁ´±í
+			//è·å–è¿™ä¸ªèŠ‚ç‚¹æ‰€åœ¨çš„é“¾è¡¨
 			PCList pCurDelList = pCurDelNode->pCurList;
 
-			//ÅĞ¶ÏÊÇ·ñÊÇ¸ù½Úµã
+			//åˆ¤æ–­æ˜¯å¦æ˜¯æ ¹èŠ‚ç‚¹
 			if (pCurDelNode->nIsRootNode || pCurDelList == &g_EtwHookList)
 			{
-				//ÅĞ¶ÏÊÇ·ñÓĞ¸½¼ÓµÄÊı¾İ
+				//åˆ¤æ–­æ˜¯å¦æœ‰é™„åŠ çš„æ•°æ®
 				if (pCurDelNode->nIsAttach)
 				{
-					//µ±ÓĞ¸½¼ÓÁ´±íÊ±,¸ù½Úµã²»É¾³ıÊı¾İÖ»ĞŞ¸ÄÊôĞÔ
-					pCurDelNode->nIsValid = FALSE;			//ÉèÖÃ³ÉÎŞĞ§½Úµã
-					pCurDelNode->CallAddr = NULL;			//Çå¿ÕÒªCallµÄµØÖ·
+					//å½“æœ‰é™„åŠ é“¾è¡¨æ—¶,æ ¹èŠ‚ç‚¹ä¸åˆ é™¤æ•°æ®åªä¿®æ”¹å±æ€§
+					pCurDelNode->nIsValid = FALSE;			//è®¾ç½®æˆæ— æ•ˆèŠ‚ç‚¹
+					pCurDelNode->CallAddr = NULL;			//æ¸…ç©ºè¦Callçš„åœ°å€
 					pCurDelNode->nInitAttachList = FALSE;	//
 				}
 				else
 				{
-					//É¾³ı½Úµã
+					//åˆ é™¤èŠ‚ç‚¹
 					PCEtwHook pData = DeletePosDoubleLoopList(pCurDelList, p);
 
 					if (MmIsAddressValid(pData))
 					{
 						ExFreePool(pData);
 
-						//ĞŞ¸´Ë÷Òı
+						//ä¿®å¤ç´¢å¼•
 						RepairEtwData(pCurDelList);
 					}
 				}
 			}
 			else
 			{
-				//¼ÇÂ¼¸¸½Úµã
+				//è®°å½•çˆ¶èŠ‚ç‚¹
 				PCListNode pParDelListNode = pCurDelNode->ParentListNode;
 
-				//É¾³ı½Úµã
+				//åˆ é™¤èŠ‚ç‚¹
 				PCEtwHook pData = DeletePosDoubleLoopList(pCurDelList, p);
 
 				if (MmIsAddressValid(pData))
 				{
 					//
 					ExFreePool(pData);
-					//ĞŞ¸´¸¸½Úµã
+					//ä¿®å¤çˆ¶èŠ‚ç‚¹
 
 					if (MmIsAddressValid(pParDelListNode))
 					{
@@ -821,7 +821,7 @@ ULONG64 UnHookAddr(PCEtwHook SrcAddr/*ÒªÉ¾³ıµÄµØÖ·,Ô­º¯ÊıµØÖ·*/)
 						if (!GetListSize(pCurDelList))
 						{
 
-							//µ±ÒªÉ¾³ıµÄ½Úµã±»¹ÒÔÚ¸½¼ÓÁ´±íÉÏÊ±,ÇÒÊÇ×îºóÒ»¸ö½ÚµãÊ±¾Í¼ì²é¸¸½ÚµãÊ±ºòÓĞĞ§,ÎŞĞ§Ò»²¢É¾³ı,ÓĞĞ§Ê±Çå¿ÕnIsAttachºÍnInitAttachList±êÖ¾¾ÍĞĞ
+							//å½“è¦åˆ é™¤çš„èŠ‚ç‚¹è¢«æŒ‚åœ¨é™„åŠ é“¾è¡¨ä¸Šæ—¶,ä¸”æ˜¯æœ€åä¸€ä¸ªèŠ‚ç‚¹æ—¶å°±æ£€æŸ¥çˆ¶èŠ‚ç‚¹æ—¶å€™æœ‰æ•ˆ,æ— æ•ˆä¸€å¹¶åˆ é™¤,æœ‰æ•ˆæ—¶æ¸…ç©ºnIsAttachå’ŒnInitAttachListæ ‡å¿—å°±è¡Œ
 							if (!pPerData->nIsValid)
 							{
 								pData = DeletePosDoubleLoopList(pPerData->pCurList, pParDelListNode);
@@ -839,11 +839,11 @@ ULONG64 UnHookAddr(PCEtwHook SrcAddr/*ÒªÉ¾³ıµÄµØÖ·,Ô­º¯ÊıµØÖ·*/)
 						}
 						else
 						{
-							//ĞŞ¸´×î´ó ²ã¼¶ nLeven
+							//ä¿®å¤æœ€å¤§ å±‚çº§ nLeven
 							pPerData->nMaxLeven = ((PCEtwHook)pCurDelList->m_pTrail->m_Data)->nLeven;
 						}
 					}
-					//ĞŞ¸´Ë÷Òı
+					//ä¿®å¤ç´¢å¼•
 					RepairEtwData(pCurDelList);
 				}
 			}
@@ -853,7 +853,7 @@ ULONG64 UnHookAddr(PCEtwHook SrcAddr/*ÒªÉ¾³ıµÄµØÖ·,Ô­º¯ÊıµØÖ·*/)
 	return FALSE;
 }
 
-//¿ªÆôETWÊÂ¼ş¼ÇÂ¼Æ÷,¸ü¸ÄÏµÍ³µ÷ÓÃÁ÷³Ì
+//å¼€å¯ETWäº‹ä»¶è®°å½•å™¨,æ›´æ”¹ç³»ç»Ÿè°ƒç”¨æµç¨‹
 NTSTATUS modify_trace_settings(trace_type type)
 {
 	GUID g_ckcl_session_guid = { 0x54dea73a, 0xed1f, 0x42a4, { 0xaf, 0x71, 0x3e, 0x63, 0xd0, 0x56, 0xf1, 0x74 } };
@@ -903,7 +903,7 @@ NTSTATUS modify_trace_settings(trace_type type)
 	return status;
 }
 
-//³õÊ¼»¯ÒªÓÃµ½µÄ±äÁ¿
+//åˆå§‹åŒ–è¦ç”¨åˆ°çš„å˜é‡
 ULONG64 EtwInit(ULONG64 pFunCallBack)
 {
 	if (!MmIsAddressValid(PerfGlobalGroupMask))
@@ -911,25 +911,25 @@ ULONG64 EtwInit(ULONG64 pFunCallBack)
 		return FALSE;
 	}
 
-	PULONG64 pArry = NULL; //´æ´¢Êı×éÊ×µØÖ·
-	PULONG64 pCkclWmiLoggerContext = NULL;//´æ´¢_WMI_LOGGER_CONTEXT½á¹¹ÌåÖ¸Õë
+	PULONG64 pArry = NULL; //å­˜å‚¨æ•°ç»„é¦–åœ°å€
+	PULONG64 pCkclWmiLoggerContext = NULL;//å­˜å‚¨_WMI_LOGGER_CONTEXTç»“æ„ä½“æŒ‡é’ˆ
 
 
 	if (MmIsAddressValid(EtwpDebuggerData))
 	{
-		//²»ÖªµÀÎªÉ¶ÊÇ¼Ó0x10,ÔİÊ±ÎŞ·¨È·¶¨EtwpDebuggerDataµÄ½á¹¹
+		//ä¸çŸ¥é“ä¸ºå•¥æ˜¯åŠ 0x10,æš‚æ—¶æ— æ³•ç¡®å®šEtwpDebuggerDataçš„ç»“æ„
 		pArry = *(PULONG64)(EtwpDebuggerData + 0x10);
 	}
 	else if (MmIsAddressValid(EtwpHostSiloState))
 	{
-		//*EtwpHostSiloState +0x1c8 ¶¨Î»µ½Êı×éÊ×µØÖµ
+		//*EtwpHostSiloState +0x1c8 å®šä½åˆ°æ•°ç»„é¦–åœ°å€¼
 		pArry = (*(PULONG64)EtwpHostSiloState + _ETW_SILODRIVERSTATE_EtwpLoggerContext);
 	}
 	//MyDbgPrintfEx("EtwpHostSiloState:%I64X\n", EtwpHostSiloState);
 	//MyDbgPrintfEx("EtwpDebuggerData:%I64X\n", EtwpDebuggerData);
 	//MyDbgPrintfEx("pArry:%I64X\n", pArry);
 
-	//rcx, ds:0[r14 * 8];  r14²»È·¶¨,µ«µ÷ÊÔ»ù±¾¶¼ÊÇ r14=2
+	//rcx, ds:0[r14 * 8];  r14ä¸ç¡®å®š,ä½†è°ƒè¯•åŸºæœ¬éƒ½æ˜¯ r14=2
 	pCkclWmiLoggerContext = pArry[2];
 	if (!MmIsAddressValid(pCkclWmiLoggerContext))
 	{
@@ -939,10 +939,10 @@ ULONG64 EtwInit(ULONG64 pFunCallBack)
 
 	g_circularKernelContextLogger = pCkclWmiLoggerContext;
 
-	//»ñÈ¡_WMI_LOGGER_CONTEXTÖĞGetCpuClock³ÉÔ±µØÖ· ±£´æµ½È«¾Ö±äÁ¿ÖĞ
+	//è·å–_WMI_LOGGER_CONTEXTä¸­GetCpuClockæˆå‘˜åœ°å€ ä¿å­˜åˆ°å…¨å±€å˜é‡ä¸­
 	g_pCpuClock = (ULONG64)g_circularKernelContextLogger + _WMI_LOGGER_CONTEXT_GetCpuClock;
 
-	//»ñÈ¡ÏµÍ³µ÷ÓÃ±í
+	//è·å–ç³»ç»Ÿè°ƒç”¨è¡¨
 	g_SyscallTable = get_syscall_entry(g_NtoskrnlAddr);
 	if (!MmIsAddressValid(g_SyscallTable))
 	{
@@ -950,7 +950,7 @@ ULONG64 EtwInit(ULONG64 pFunCallBack)
 		return FALSE;
 	}
 
-	//ÒªHOOKµÄµØÖ·
+	//è¦HOOKçš„åœ°å€
 	if (MmIsAddressValid(HalpPerformanceCounter))
 	{
 		//MyDbgPrintfEx("HalpPerformanceCounter:%I64X\n", HalpPerformanceCounter);
@@ -983,7 +983,7 @@ ULONG64 EtwInit(ULONG64 pFunCallBack)
 	// 	MyDbgPrintfEx("g_pEtwFunCallBack:%I64X\n", g_pEtwFunCallBack);
 	// 	MyDbgPrintfEx("g_pCpuClock:%I64X\n", g_pCpuClock);
 
-	//³õÊ¼»¯Á´±í
+	//åˆå§‹åŒ–é“¾è¡¨
 	InitDoubleLoopList(&g_EtwHookList);
 	return TRUE;
 }
@@ -1015,7 +1015,7 @@ VOID keQueryPerformanceCounterHook(ULONG_PTR pStack)
 	}
 }
 
-//¿ªÊ¼ÔËĞĞ
+//å¼€å§‹è¿è¡Œ
 ULONG64 EtwStart()
 {
 	if (!MmIsAddressValid(g_pCpuClock) || !MmIsAddressValid(HalpPerformanceCounter) || !MmIsAddressValid(g_pEtwFunCallBack))
@@ -1023,7 +1023,7 @@ ULONG64 EtwStart()
 		return FALSE;
 	}
 
-	//ĞŞ¸ÄÊôĞÔ¿ªÆôETW HOOK
+	//ä¿®æ”¹å±æ€§å¼€å¯ETW HOOK
 	if (!NT_SUCCESS(modify_trace_settings(syscall_trace)))
 	{
 		if (!NT_SUCCESS(modify_trace_settings(start_trace)))
@@ -1040,15 +1040,15 @@ ULONG64 EtwStart()
 	}
 	g_IsOpenEtw = TRUE;
 
-	g_OldCpuClock = *(PULONG64)g_pCpuClock;											//±£´æÔ­Öµ
-	*(PULONG64)g_pCpuClock = (PVOID64)1;											//ĞŞ¸ÄÖ´ĞĞÁ÷³Ì
-	g_OldHalpPerformanceCounter = *(PULONG64)(HalpPerformanceCounter + 0x70);		//±£´æÔ­Öµ
-	*(PULONG64)(HalpPerformanceCounter + 0x70) = (ULONG64)checkLogger;				//×Ô¼ºº¯ÊıµØÖ·
+	g_OldCpuClock = *(PULONG64)g_pCpuClock;											//ä¿å­˜åŸå€¼
+	*(PULONG64)g_pCpuClock = (PVOID64)1;											//ä¿®æ”¹æ‰§è¡Œæµç¨‹
+	g_OldHalpPerformanceCounter = *(PULONG64)(HalpPerformanceCounter + 0x70);		//ä¿å­˜åŸå€¼
+	*(PULONG64)(HalpPerformanceCounter + 0x70) = (ULONG64)checkLogger;				//è‡ªå·±å‡½æ•°åœ°å€
 
 	return g_IsOpenEtw;
 }
 
-//Í£Ö¹ÔËĞĞ
+//åœæ­¢è¿è¡Œ
 ULONG64 EtwStop()
 {
 	ULONG64 result = NULL;
@@ -1061,15 +1061,15 @@ ULONG64 EtwStop()
 		*(PULONG64)g_pCpuClock = (PVOID64)g_OldCpuClock;
 
 
-		//ÊÍ·ÅÁ´±í
-		DestroyList(&g_EtwHookList, ExFreePool);//´İ»ÙÁ´±í
+		//é‡Šæ”¾é“¾è¡¨
+		DestroyList(&g_EtwHookList, ExFreePool);//æ‘§æ¯é“¾è¡¨
 
 		g_IsOpenEtw = FALSE;
 	}
 	return result;
 }
 
-// »ñÈ¡SSDT±íµØÖ·
+// è·å–SSDTè¡¨åœ°å€
 PVOID64 get_syscall_entry(ULONG64 ntoskrnl)
 {
 	if (!MmIsAddressValid(ntoskrnl))
@@ -1080,7 +1080,7 @@ PVOID64 get_syscall_entry(ULONG64 ntoskrnl)
 #define IA32_LSTAR_MSR 0xC0000082
 	PVOID64 syscall_entry = (PVOID64)__readmsr(IA32_LSTAR_MSR);
 
-	// Ã»ÓĞ²¹¶¡¹ı,Ö±½Ó·µ»ØKiSystemCall64
+	// æ²¡æœ‰è¡¥ä¸è¿‡,ç›´æ¥è¿”å›KiSystemCall64
 	ULONG section_size = 0;
 	ULONG64 KVASCODE = get_image_address(ntoskrnl, "KVASCODE", &section_size);
 	if (!KVASCODE)
@@ -1088,34 +1088,34 @@ PVOID64 get_syscall_entry(ULONG64 ntoskrnl)
 		return syscall_entry;
 	}
 
-	//KiSystemCall64»¹ÔÚÇøÓòÄÚ,·µ»Ø
+	//KiSystemCall64è¿˜åœ¨åŒºåŸŸå†…,è¿”å›
 	if (!(syscall_entry >= (PVOID64)KVASCODE && syscall_entry < (PVOID64)(KVASCODE + section_size)))
 	{
 		return syscall_entry;
 	}
 
-	// À´µ½ÕâÒ»²½´ú±íKiSystemCall64Shadow,´ò²¹¶¡ÁË
+	// æ¥åˆ°è¿™ä¸€æ­¥ä»£è¡¨KiSystemCall64Shadow,æ‰“è¡¥ä¸äº†
 	CHde64 hde_info = { 0 };
 	for (char* ki_system_service_user = (char*)syscall_entry; ; ki_system_service_user += hde_info.m_len)
 	{
-		//·´»ã±à
+		//åæ±‡ç¼–
 		if (!Myhde64_disasm(ki_system_service_user, &hde_info)) break;
 
-		// ÎÒÃÇÒª²éÕÒjmp
+		// æˆ‘ä»¬è¦æŸ¥æ‰¾jmp
 #define OPCODE_JMP_NEAR 0xE9
 		if (hde_info.m_opcode != OPCODE_JMP_NEAR)
 		{
 			continue;
 		}
 
-		//ºöÂÔKVASCODE½ÚÖĞjmpÖ¸Áî
+		//å¿½ç•¥KVASCODEèŠ‚ä¸­jmpæŒ‡ä»¤
 		PVOID64 possible_syscall_entry = (PVOID64)((LONG64)ki_system_service_user + (LONG)hde_info.m_len + (LONG)hde_info.CImm.m_imm32);
 		if (possible_syscall_entry >= (PVOID64)KVASCODE && possible_syscall_entry < (PVOID64)((ULONG64)KVASCODE + section_size))
 		{
 			continue;
 		}
 
-		//·¢ÏÖKiSystemServiceUser
+		//å‘ç°KiSystemServiceUser
 		syscall_entry = possible_syscall_entry;
 		break;
 	}
@@ -1123,7 +1123,7 @@ PVOID64 get_syscall_entry(ULONG64 ntoskrnl)
 	return syscall_entry;
 }
 
-//Ìæ»»º¯Êı
+//æ›¿æ¢å‡½æ•°
 ULONG64 self_get_cpu_clock()
 {
 
@@ -1132,7 +1132,7 @@ ULONG64 self_get_cpu_clock()
 		return __rdtsc();
 	}
 
-	PKTHREAD pCurThread = (PKTHREAD)__readgsqword(_KPCR_CurrentThread); //»ñÈ¡µ±Ç°Ïß³Ì
+	PKTHREAD pCurThread = (PKTHREAD)__readgsqword(_KPCR_CurrentThread); //è·å–å½“å‰çº¿ç¨‹
 
 	if (!MmIsAddressValid(pCurThread))
 	{
@@ -1140,11 +1140,11 @@ ULONG64 self_get_cpu_clock()
 	}
 
 	ULONG32 nSystemCallNumber = 0;
-	nSystemCallNumber = *(PULONG32)((ULONG64)pCurThread + _KTHREAD_SystemCallNumber); //»ñÈ¡SSSDTµ÷ÓÃºÅ SystemCallNumber
+	nSystemCallNumber = *(PULONG32)((ULONG64)pCurThread + _KTHREAD_SystemCallNumber); //è·å–SSSDTè°ƒç”¨å· SystemCallNumber
 
-	PVOID64* stack_max = (PVOID64*)__readgsqword(_KPCR_RspBase);		//»ñÈ¡µ±Ç°Ïß³Ì¶ÑÕ»
-	PVOID64* stack_frame = (PVOID64*)_AddressOfReturnAddress();			//»ñÈ¡ÉÏ²ãµ÷ÓÃµØÖ·
-	//µ±Ç°Õ»Î»ÖÃ      Õ»¶¥Î»ÖÃ		//Ò»Ö±ÕÒµ½ÉÏ²ãµ÷ÓÃµÄ¶ÑÕ»³ö  
+	PVOID64* stack_max = (PVOID64*)__readgsqword(_KPCR_RspBase);		//è·å–å½“å‰çº¿ç¨‹å †æ ˆ
+	PVOID64* stack_frame = (PVOID64*)_AddressOfReturnAddress();			//è·å–ä¸Šå±‚è°ƒç”¨åœ°å€
+	//å½“å‰æ ˆä½ç½®      æ ˆé¡¶ä½ç½®		//ä¸€ç›´æ‰¾åˆ°ä¸Šå±‚è°ƒç”¨çš„å †æ ˆå‡º  
 	for (PVOID64* stack_current = stack_max; stack_current > stack_frame; --stack_current)
 	{
 #define INFINITYHOOK_MAGIC_1 ((ULONG32)0x501802)
@@ -1174,7 +1174,7 @@ ULONG64 self_get_cpu_clock()
 			continue;
 		}
 
-		//×ßµ½´Ë´¦ËµÃ÷ÕÒÁËÌØÕ÷ÂëÎ»ÖÃ,½ÓÏÂÀ´ÄÃµ½Òªµ÷ÓÃµÄº¯ÊıµØÖ·
+		//èµ°åˆ°æ­¤å¤„è¯´æ˜æ‰¾äº†ç‰¹å¾ç ä½ç½®,æ¥ä¸‹æ¥æ‹¿åˆ°è¦è°ƒç”¨çš„å‡½æ•°åœ°å€
 		for (; stack_current < stack_max; ++stack_current)
 		{
 
@@ -1231,7 +1231,7 @@ ULONG64 get_image_address(ULONG64 addr, PCHAR name, PULONG32 size)
 	return NULL;
 }
 
-//·µ»ØHookÔËĞĞ×´Ì¬
+//è¿”å›Hookè¿è¡ŒçŠ¶æ€
 UCHAR IsEtwHookRun()
 {
 	return g_IsOpenEtw;

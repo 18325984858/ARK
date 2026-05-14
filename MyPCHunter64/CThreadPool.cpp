@@ -1,4 +1,4 @@
-#include "CThreadPool.h"
+ï»¿#include "CThreadPool.h"
 
 
 CThreadPool::CThreadPool(uint32_t nMaxThreadCount) :m_ActiveThreads(0)
@@ -11,17 +11,17 @@ CThreadPool::CThreadPool(uint32_t nMaxThreadCount) :m_ActiveThreads(0)
 	m_ThreadsRuning = TRUE;
 	for (int i = 0; i < nMaxThreadCount; i++)
 	{
-		//´´½¨Ïß³Ì¶ÔÏó
+		//åˆ›å»ºçº¿ç¨‹å¯¹è±¡
 		auto pThread = new std::thread(&CThreadPool::WorkThread, this, i);
 
-		//²åÈëµ½Ïß³ÌÁ´±íÖÐ
+		//æ’å…¥åˆ°çº¿ç¨‹é“¾è¡¨ä¸­
 		m_Threads.push_back(pThread);
 	}
 }
 
 CThreadPool::~CThreadPool()
 {
-	//µÈ´ýÏß³ÌÍË³ö
+	//ç­‰å¾…çº¿ç¨‹é€€å‡º
 	Wait();
 }
 
@@ -32,9 +32,9 @@ PVOID CThreadPool::WorkThread(CThreadPool* pThis, uint32_t nIndex)
 	while (TRUE)
 	{
 		{
-			std::unique_lock<std::mutex> Lock(pThis->m_TaskLock);		//ÈÎÎñËø
+			std::unique_lock<std::mutex> Lock(pThis->m_TaskLock);		//ä»»åŠ¡é”
 
-			//Ìõ¼þËø,µÈ´ýÈÎÎñÐÅºÅ,ÇÒÈÎÎñ¶ÓÁÐ²»Îª¿ÕºÍÏß³ÌÔËÐÐ×´Ì¬ÎªÕæ,·ñÔòÏß³Ì¹ÒÆð
+			//æ¡ä»¶é”,ç­‰å¾…ä»»åŠ¡ä¿¡å·,ä¸”ä»»åŠ¡é˜Ÿåˆ—ä¸ä¸ºç©ºå’Œçº¿ç¨‹è¿è¡ŒçŠ¶æ€ä¸ºçœŸ,å¦åˆ™çº¿ç¨‹æŒ‚èµ·
 			pThis->m_CountLock.wait(Lock, [&] {return !pThis->m_TaskQueue.empty() || !pThis->m_ThreadsRuning; });
 
 			if (!pThis->m_ThreadsRuning)
@@ -42,7 +42,7 @@ PVOID CThreadPool::WorkThread(CThreadPool* pThis, uint32_t nIndex)
 				break;
 			}
 
-			/*»ñÈ¡ÈÎÎñ*/
+			/*èŽ·å–ä»»åŠ¡*/
 			if (!pThis->m_TaskQueue.empty())
 			{
 				pTask = pThis->m_TaskQueue.front();
@@ -50,15 +50,15 @@ PVOID CThreadPool::WorkThread(CThreadPool* pThis, uint32_t nIndex)
 			}
 		}
 
-		//ÕýÔÚÔËÐÐµÄÏß³ÌÊýÁ¿
+		//æ­£åœ¨è¿è¡Œçš„çº¿ç¨‹æ•°é‡
 		pThis->m_ActiveThreads++;
 
 		if (pTask != NULL)
 		{
-			//Ö´ÐÐÈÎÎñ
+			//æ‰§è¡Œä»»åŠ¡
 			pTask->DoTask();
 
-			//É¾³ý×ÊÔ´
+			//åˆ é™¤èµ„æº
 			delete pTask;
 
 			pTask = NULL;
@@ -68,7 +68,7 @@ PVOID CThreadPool::WorkThread(CThreadPool* pThis, uint32_t nIndex)
 
 	}
 
-	//Í¶µÝÈÎÎñÐÅºÅ
+	//æŠ•é€’ä»»åŠ¡ä¿¡å·
 	pThis->m_CountLock.notify_one();
 
 	return (LPVOID)TRUE;
@@ -84,10 +84,10 @@ int32_t CThreadPool::AddTask(CTask* pTask)
 
 	{
 		std::unique_lock<std::mutex> Lock(m_TaskLock);
-		/*Ìí¼ÓÈÎÎñ*/
+		/*æ·»åŠ ä»»åŠ¡*/
 		m_TaskQueue.push_back(pTask);
 
-		m_CountLock.notify_one();	//Í¶µÝÈÎÎñÐÅºÅ
+		m_CountLock.notify_one();	//æŠ•é€’ä»»åŠ¡ä¿¡å·
 	}
 
 	return TRUE;
@@ -95,19 +95,19 @@ int32_t CThreadPool::AddTask(CTask* pTask)
 
 int32_t CThreadPool::Wait()
 {
-	//Ïß³Ì×´Ì¬ÉèÖÃÎª¼Ù
+	//çº¿ç¨‹çŠ¶æ€è®¾ç½®ä¸ºå‡
 	m_ThreadsRuning = FALSE;
-	//Í¶µÝÐÅºÅ
+	//æŠ•é€’ä¿¡å·
 	m_CountLock.notify_all();
 
 
-	//µÈ´ýÏß³ÌÍË³ö
+	//ç­‰å¾…çº¿ç¨‹é€€å‡º
 	for (auto lst : m_Threads)
 	{
 		lst->join();
 	}
 
-	//ÊÍ·ÅËùÓÐÈÎÎñ
+	//é‡Šæ”¾æ‰€æœ‰ä»»åŠ¡
 	for (auto lst : m_TaskQueue)
 	{
 		lst->DoTask();

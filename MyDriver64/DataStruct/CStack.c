@@ -1,4 +1,4 @@
-#include "CStack.h"
+ï»¿#include "CStack.h"
 
 NTSTATUS InitStack(PCStack MyStack)
 {
@@ -9,7 +9,7 @@ NTSTATUS InitStack(PCStack MyStack)
 
 	if (!NT_SUCCESS(nStatus))
 	{
-		//DbgPrint("Õ»¿Õ¼ä³õÊ¼»¯Ê§°Ü!.....nStatus : [%I64X]\n", nStatus);
+		//DbgPrint("æ ˆç©ºé—´åˆå§‹åŒ–å¤±è´¥!.....nStatus : [%I64X]\n", nStatus);
 		return nStatus;
 	}
 
@@ -51,7 +51,7 @@ BOOL PushStack(PCStack MyStack, ElemType Base)
 	{
 		if (IncStackSpace(MyStack))
 		{
-			DbgPrint("Õ»¿Õ¼äÒÑÂú!....\n");
+			DbgPrint("æ ˆç©ºé—´å·²æ»¡!....\n");
 			return FALSE;
 		}
 	}
@@ -66,7 +66,7 @@ BOOL PopStack(PCStack MyStack)
 	{
 		if (GetStackIsNull(MyStack))
 		{
-			DbgPrint("Õ»¿Õ¼äÒÔ¿Õ!....\n");
+			DbgPrint("æ ˆç©ºé—´ä»¥ç©º!....\n");
 			return TRUE;
 		}
 
@@ -84,7 +84,7 @@ ElemType GetStackTopData(PCStack MyStack, ElemType* OutData)
 		{
 			if (MmIsAddressValid(OutData))
 			{
-				*OutData = MyStack->m_Data[MyStack->m_Top - 1];		/*·µ»ØÕ»¶¥-1µÄÊı¾İ*/
+				*OutData = MyStack->m_Data[MyStack->m_Top - 1];		/*è¿”å›æ ˆé¡¶-1çš„æ•°æ®*/
 			}
 			return MyStack->m_Data[MyStack->m_Top - 1];
 		}
@@ -144,7 +144,7 @@ BOOL DestroyStack(PCStack MyStack)
 	{
 		if (MmIsAddressValid(MyStack->m_Data))
 		{
-			ZwFreeVirtualMemory(NtCurrentProcess(), &MyStack->m_Data, &FreeSize, MEM_RELEASE);	/*²ÎÊı¶ş,²ÎÊıÈı²»ÄÜÖ±½ÓĞ´0,ĞèÒª±äÁ¿´æ´¢*/
+			ZwFreeVirtualMemory(NtCurrentProcess(), &MyStack->m_Data, &FreeSize, MEM_RELEASE);	/*å‚æ•°äºŒ,å‚æ•°ä¸‰ä¸èƒ½ç›´æ¥å†™0,éœ€è¦å˜é‡å­˜å‚¨*/
 			MyStack->m_Data = NULL;
 			MyStack->m_Top = 0;
 			MyStack->m_Capacity = 0;
@@ -170,7 +170,7 @@ NTSTATUS IncStackSpace(PCStack MyStack)
 		nStatus = ZwAllocateVirtualMemory(NtCurrentProcess(), &DstAddr, NULL, &DstSize, MEM_COMMIT, PAGE_READWRITE);
 		if (!NT_SUCCESS(nStatus))
 		{
-			DbgPrint("Õ»¿Õ¼äÉêÇëÊ§°Ü,ÄÚ´æ²»×ã! : [%I64X].....\n", nStatus);
+			DbgPrint("æ ˆç©ºé—´ç”³è¯·å¤±è´¥,å†…å­˜ä¸è¶³! : [%I64X].....\n", nStatus);
 			return nStatus;
 		}
 		RtlZeroMemory(DstAddr, DstSize);

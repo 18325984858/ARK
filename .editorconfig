@@ -1,0 +1,14 @@
+root = true
+
+[*.{c,h,cpp,hpp,cc,cxx,inc,inf,def}]
+charset = utf-8-bom
+end_of_line = crlf
+insert_final_newline = true
+trim_trailing_whitespace = false
+
+# MFC 资源脚本必须保持 UTF-16 LE，禁止自动改成 UTF-8。
+[*.rc]
+charset = utf-16le
+end_of_line = crlf
+insert_final_newline = true
+trim_trailing_whitespace = false

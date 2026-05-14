@@ -1,4 +1,4 @@
-#include "DefineArea.h"
+ï»¿#include "DefineArea.h"
 #include "KernelStruct.h"
 #include "Head.h"
 #include <ntimage.h>
@@ -72,7 +72,7 @@ ULONG64 InitSystemPteBase()
 	typedef PVOID(__fastcall* MMGETVIRTUALFORPHYSICALMAIN)(PHYSICAL_ADDRESS PhysicalAddress);//MmGetVirtualForPhysical
 
 	////////////////////////////////////////////////////////////////////////
-	//±äÁ¿ÉùÃ÷ÇøÓò
+	//å˜é‡å£°æ˜åŒºåŸŸ
 	UNICODE_STRING MmGetVirtualForPhysicalName = { 0 };
 	PHYSICAL_ADDRESS pml4t = { 0 };
 	PULONG64 pml4t_va = 0;
@@ -81,9 +81,9 @@ ULONG64 InitSystemPteBase()
 	////////////////////////////////////////////////////////////////////////
 
 	////////////////////////////////////////////////////////////////////////
-	//±äÁ¿³õÊ¼»¯ÇøÓò
+	//å˜é‡åˆå§‹åŒ–åŒºåŸŸ
 	RtlInitUnicodeString(&MmGetVirtualForPhysicalName, L"MmGetVirtualForPhysical");
-	pml4t.QuadPart = __readcr3(); /*»ñÈ¡CR3¼Ä´æÆ÷*/
+	pml4t.QuadPart = __readcr3(); /*è·å–CR3å¯„å­˜å™¨*/
 	MMGETVIRTUALFORPHYSICALMAIN MyMmGetVirtualForPhysical = (MMGETVIRTUALFORPHYSICALMAIN)MmGetSystemRoutineAddress(&MmGetVirtualForPhysicalName);
 
 	if (!MyMmGetVirtualForPhysical)
@@ -91,23 +91,23 @@ ULONG64 InitSystemPteBase()
 		return NULL;
 	}
 
-	/*Ó³ÉäCR3ÎïÀíµØÖ·*/
+	/*æ˜ å°„CR3ç‰©ç†åœ°å€*/
 	pml4t_va = (PULONG64)MyMmGetVirtualForPhysical(pml4t);
 
 	//MyDbgPrintfEx("MmGetVirtualForPhysical:%I64X\n", pml4t_va);
 
-	pml4t_va = (PULONG64)((ULONG64)pml4t_va & 0xFFFFFFFFFFFFF000);		//É¾³ıË÷Òı»ñÈ¡ÎïÀíÒ³Ö¡
+	pml4t_va = (PULONG64)((ULONG64)pml4t_va & 0xFFFFFFFFFFFFF000);		//åˆ é™¤ç´¢å¼•è·å–ç‰©ç†é¡µå¸§
 	////////////////////////////////////////////////////////////////////////
 
 	////////////////////////////////////////////////////////////////////////
-	//ÏîÄ¿ĞèÇóÇøÓò
+	//é¡¹ç›®éœ€æ±‚åŒºåŸŸ
 	if (pml4t_va)
 	{
-		for (index = 0; index < 512; index++)		//Ò»¸öÒ³0x1000 //Ò»ÌõÊı¾İ8×Ö½Ú //Ò»Ò³ÓĞ512ÌõÊı¾İ
+		for (index = 0; index < 512; index++)		//ä¸€ä¸ªé¡µ0x1000 //ä¸€æ¡æ•°æ®8å­—èŠ‚ //ä¸€é¡µæœ‰512æ¡æ•°æ®
 		{
 			if (((ULONG64)(pml4t_va[index]) & (ULONG64)0x0000FFFFFFFFF000) == (pml4t.QuadPart & 0x0000FFFFFFFFF000))
 			{
-				//»ñÈ¡µ±Ç°ÏµÍ³ÎïÀíµØÖ·µÄBase
+				//è·å–å½“å‰ç³»ç»Ÿç‰©ç†åœ°å€çš„Base
 				NtBase = (ULONG64)((ULONG64)(index + (ULONG64)0x1FFFE00) << 39);
 				g_SystemAddrBase.PteBase = NtBase;
 				g_SystemAddrBase.PdeBase = NtBase + ((ULONG64)index << 30);
@@ -123,7 +123,7 @@ ULONG64 InitSystemPteBase()
 
 ULONG64 GetPageBaseLinearAddr(IN ULONG64 SrcLinearAddress, PCPageAddrInfo OutData)
 {
-	//ÑéÖ¤²ÎÊıÊÇ·ñÕıÈ·
+	//éªŒè¯å‚æ•°æ˜¯å¦æ­£ç¡®
 	if (MmIsAddressValid(SrcLinearAddress))
 	{
 		OutData->PxeBase = g_SystemAddrBase.PxeBase + ((SrcLinearAddress & 0xFF8000000000) >> 39) << 3;
@@ -143,15 +143,15 @@ ULONG64 MmIsAddressValidEx0(ULONG64 SrcLinearAddress)
 	}
 
 
-#define Kernel_Addr	0xFFFF	/*ÄÚºËÄ£Ê½µØÖ·*/
-#define User_Addr	0x0000	/*ÓÃ»§Ä£Ê½µØÖ·*/
+#define Kernel_Addr	0xFFFF	/*å†…æ ¸æ¨¡å¼åœ°å€*/
+#define User_Addr	0x0000	/*ç”¨æˆ·æ¨¡å¼åœ°å€*/
 
 	ULONG64 Val = ((ULONG64)SrcLinearAddress >> 47) & 0xFFFF;
-	//ÑéÖ¤²ÎÊıÊÇ·ñÕıÈ· //FFFF800000000000Çé¿ö ºÍ0000700000000000Çé¿ö
+	//éªŒè¯å‚æ•°æ˜¯å¦æ­£ç¡® //FFFF800000000000æƒ…å†µ å’Œ0000700000000000æƒ…å†µ
 	if ((Val == Kernel_Addr) || (Val == User_Addr))
 	{
 		//__debugbreak();
-		//¸ù¾İÒ³Ä¿Â¼±í»ùÖ·,»ñÏßĞÔµØÖ·
+		//æ ¹æ®é¡µç›®å½•è¡¨åŸºå€,è·çº¿æ€§åœ°å€
 		ULONG64 AddrInfo[4] = { 0 };
 		AddrInfo[0] = ((SrcLinearAddress >> 9) & 0x7FFFFFFFF8i64) + g_SystemAddrBase.PteBase;
 		AddrInfo[1] = ((AddrInfo[0] >> 9) & 0x7FFFFFFFF8i64) + g_SystemAddrBase.PteBase;
@@ -160,7 +160,7 @@ ULONG64 MmIsAddressValidEx0(ULONG64 SrcLinearAddress)
 
 		for (int i = (sizeof(AddrInfo) / sizeof(ULONG64) - 1); i >= 0; i--)
 		{
-			//»ñÈ¡µ±Ç°Ïß³ÌËùÊô½ø³Ì
+			//è·å–å½“å‰çº¿ç¨‹æ‰€å±è¿›ç¨‹
 #define GetCurThreadProcess() (*(PULONG64)((ULONG64)KeGetCurrentThread() + _KTHREAD_ApcState + _KAPC_STATE_Process))
 			PULONG64 Addr = AddrInfo[i];
 			ULONG64 Atttrubute = *Addr;
@@ -170,22 +170,22 @@ ULONG64 MmIsAddressValidEx0(ULONG64 SrcLinearAddress)
 				(*MiFlags & 0xC00000) != 0 &&
 				(CurThreadAddressPolicy != 1))
 			{
-				//ÅĞ¶ÏPÎ»ÊÇ·ñÓĞĞ§
+				//åˆ¤æ–­Pä½æ˜¯å¦æœ‰æ•ˆ
 				if (Atttrubute & 1 == 0)
 				{
 					return FALSE;
 				}
 
-				//0x20 AÎ»±íÊ¾ÊÇ·ñ·ÃÎÊÁËÕâ¸öÒ³ DÎ»±íÊ¾ÊÇ·ñĞ´ÈëÁËÕâ¸öÒ³ U/SÎ»Îª0Ôò²»ÔÊĞíÓÃ»§²ã·ÃÎÊ
+				//0x20 Aä½è¡¨ç¤ºæ˜¯å¦è®¿é—®äº†è¿™ä¸ªé¡µ Dä½è¡¨ç¤ºæ˜¯å¦å†™å…¥äº†è¿™ä¸ªé¡µ U/Sä½ä¸º0åˆ™ä¸å…è®¸ç”¨æˆ·å±‚è®¿é—®
 				if ((Atttrubute & 0x20) == 0 || (Atttrubute & 0x42) == 0)
 				{
-					//»ñÈ¡EPROCESSÖĞShadowMapping
+					//è·å–EPROCESSä¸­ShadowMapping
 #define ShadowMappingVal (_EPROCESS_Vm+_MMSUPPORT_FULL_Shared+_MMSUPPORT_SHARED_ShadowMapping)
 					PULONG64 ShadowMapping = *(PULONG64)((ULONG64)GetCurThreadProcess() + ShadowMappingVal);
 					if (ShadowMapping)
 					{
 						ULONG64 PhysicalAddr = ShadowMapping[((ULONG64)Addr >> 3) & 0x1FF];
-						ULONG Flags = Atttrubute | 0x20;//AÎ»±íÊ¾ÊÇ·ñ·ÃÎÊÁËÕâ¸öÒ³
+						ULONG Flags = Atttrubute | 0x20;//Aä½è¡¨ç¤ºæ˜¯å¦è®¿é—®äº†è¿™ä¸ªé¡µ
 						if ((PhysicalAddr & 0x20) == 0)
 						{
 							Flags = (UCHAR)Atttrubute;
@@ -201,17 +201,17 @@ ULONG64 MmIsAddressValidEx0(ULONG64 SrcLinearAddress)
 				}
 			}
 
-			//ÅĞ¶ÏPÎ»ÊÇ·ñÊÇÓĞĞ§Ò³
+			//åˆ¤æ–­Pä½æ˜¯å¦æ˜¯æœ‰æ•ˆé¡µ
 			if ((*Addr & 1) == 0)
 			{
 				return FALSE;
 			}
-			//ÅĞ¶ÏÒ³Ãæ´óĞ¡ PSÎ»
+			//åˆ¤æ–­é¡µé¢å¤§å° PSä½
 			if ((*Addr & 0x80) != 0)
 			{
 				break;
 			}
-			//µ±ÒÔÉÏÌõ¼ş¶¼²»Âú×ãÊ±·µ»ØÕæ,ÇÒÑ­»·Íê
+			//å½“ä»¥ä¸Šæ¡ä»¶éƒ½ä¸æ»¡è¶³æ—¶è¿”å›çœŸ,ä¸”å¾ªç¯å®Œ
 			if (!i)
 			{
 				return TRUE;
@@ -228,18 +228,18 @@ ULONG64 MmIsAddressValidEx0(ULONG64 SrcLinearAddress)
 
 ULONG64 MmIsAddressValidEx1(ULONG64 SrcLinearAddress, ULONG64 nLen)
 {
-#define Kernel_Addr	0xFFFF	/*ÄÚºËÄ£Ê½µØÖ·*/
-#define User_Addr	0x0000	/*ÓÃ»§Ä£Ê½µØÖ·*/
+#define Kernel_Addr	0xFFFF	/*å†…æ ¸æ¨¡å¼åœ°å€*/
+#define User_Addr	0x0000	/*ç”¨æˆ·æ¨¡å¼åœ°å€*/
 
 	ULONG64 Val = ((ULONG64)SrcLinearAddress >> 47) & 0xFFFF;
-	//ÑéÖ¤²ÎÊıÊÇ·ñÕıÈ· //FFFF800000000000Çé¿ö ºÍ0000700000000000Çé¿ö
+	//éªŒè¯å‚æ•°æ˜¯å¦æ­£ç¡® //FFFF800000000000æƒ…å†µ å’Œ0000700000000000æƒ…å†µ
 	if ((Val == Kernel_Addr) || (Val == User_Addr))
 	{
-		ULONG64 SrcStartAddr = SrcLinearAddress & ~0xFFF;				//»òÈ¡¿ªÊ¼µØÖ·µÄ¿ªÊ¼µØÖ·
-		ULONG64 EndStartAddr = (SrcLinearAddress + nLen) & ~0xFFF;		//»ñÈ¡½áÊøµØÖ·µÄ¿ªÊ¼µØÖ·
-		ULONG64 PoolIndex = ((EndStartAddr - SrcStartAddr) >> 12/*ÓÒÒÆ12Î»  »ñÈ¡¿çÁË¼¸¸öÒ³*/) + 1/*²îÖµ´óÓÚµÈÓÚ0x1000¶à+1*/;
+		ULONG64 SrcStartAddr = SrcLinearAddress & ~0xFFF;				//æˆ–å–å¼€å§‹åœ°å€çš„å¼€å§‹åœ°å€
+		ULONG64 EndStartAddr = (SrcLinearAddress + nLen) & ~0xFFF;		//è·å–ç»“æŸåœ°å€çš„å¼€å§‹åœ°å€
+		ULONG64 PoolIndex = ((EndStartAddr - SrcStartAddr) >> 12/*å³ç§»12ä½  è·å–è·¨äº†å‡ ä¸ªé¡µ*/) + 1/*å·®å€¼å¤§äºç­‰äº0x1000å¤š+1*/;
 
-		for (int i = 0; i < PoolIndex; i++, SrcLinearAddress += 0x1000 /*Ö¸ÏòÏÂÒ»¸öÒ³*/)
+		for (int i = 0; i < PoolIndex; i++, SrcLinearAddress += 0x1000 /*æŒ‡å‘ä¸‹ä¸€ä¸ªé¡µ*/)
 		{
 			if (!MmIsAddressValidEx0(SrcLinearAddress))
 			{

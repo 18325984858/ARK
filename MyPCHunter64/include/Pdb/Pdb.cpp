@@ -1,4 +1,4 @@
-#include "Pdb.h"
+ï»¿#include "Pdb.h"
 
 #define _NO_CVCONST_H
 
@@ -942,52 +942,52 @@ namespace Pdb
 		unsigned short* result = NULL;
 		unsigned int code_point;
 
-		// ¼ÆËãËùĞèµÄUTF-16»º³åÇø´óĞ¡
+		// è®¡ç®—æ‰€éœ€çš„UTF-16ç¼“å†²åŒºå¤§å°
 		for (size_t i = 0; i < len; ) {
 			unsigned char byte = p[i];
 			if ((byte & 0x80) == 0) {
-				// µ¥×Ö½Ú×Ö·û (0xxxxxxx)
+				// å•å­—èŠ‚å­—ç¬¦ (0xxxxxxx)
 				code_point = byte;
 				i += 1;
 			}
 			else if ((byte & 0xE0) == 0xC0) {
-				// Ë«×Ö½Ú×Ö·û (110xxxxx 10xxxxxx)
+				// åŒå­—èŠ‚å­—ç¬¦ (110xxxxx 10xxxxxx)
 				code_point = ((byte & 0x1F) << 6) | (p[i + 1] & 0x3F);
 				i += 2;
 			}
 			else if ((byte & 0xF0) == 0xE0) {
-				// Èı×Ö½Ú×Ö·û (1110xxxx 10xxxxxx 10xxxxxx)
+				// ä¸‰å­—èŠ‚å­—ç¬¦ (1110xxxx 10xxxxxx 10xxxxxx)
 				code_point = ((byte & 0x0F) << 12) | ((p[i + 1] & 0x3F) << 6) | (p[i + 2] & 0x3F);
 				i += 3;
 			}
 			else if ((byte & 0xF8) == 0xF0) {
-				// ËÄ×Ö½Ú×Ö·û (11110xxx 10xxxxxx 10xxxxxx 10xxxxxx)
+				// å››å­—èŠ‚å­—ç¬¦ (11110xxx 10xxxxxx 10xxxxxx 10xxxxxx)
 				code_point = ((byte & 0x07) << 18) | ((p[i + 1] & 0x3F) << 12) |
 					((p[i + 2] & 0x3F) << 6) | (p[i + 3] & 0x3F);
 				i += 4;
 			}
 			else {
-				// ÎŞĞ§µÄUTF-8ĞòÁĞ
+				// æ— æ•ˆçš„UTF-8åºåˆ—
 				return -1;
 			}
 
-			// ¼ÆËãUTF-16ËùĞèµÄ´úÂëµ¥ÔªÊıÁ¿
+			// è®¡ç®—UTF-16æ‰€éœ€çš„ä»£ç å•å…ƒæ•°é‡
 			if (code_point <= 0xFFFF) {
 				utf16_len += 1;
 			}
 			else {
-				// ¸ß´úÀíÏîºÍµÍ´úÀíÏî
+				// é«˜ä»£ç†é¡¹å’Œä½ä»£ç†é¡¹
 				utf16_len += 2;
 			}
 		}
 
-		// ·ÖÅäÄÚ´æ
+		// åˆ†é…å†…å­˜
 		result = (unsigned short*)malloc((utf16_len + 1) * sizeof(unsigned short));
 		if (!result) {
 			return -1;
 		}
 
-		// Ö´ĞĞ×ª»»
+		// æ‰§è¡Œè½¬æ¢
 		size_t pos = 0;
 		for (size_t i = 0; i < len; ) {
 			unsigned char byte = p[i];
@@ -1013,113 +1013,113 @@ namespace Pdb
 				return -1;
 			}
 
-			// ×ª»»ÎªUTF-16
+			// è½¬æ¢ä¸ºUTF-16
 			if (code_point <= 0xFFFF) {
 				result[pos++] = (unsigned short)code_point;
 			}
 			else {
-				// ¼ÆËã¸ß´úÀíÏîºÍµÍ´úÀíÏî
+				// è®¡ç®—é«˜ä»£ç†é¡¹å’Œä½ä»£ç†é¡¹
 				code_point -= 0x10000;
 				result[pos++] = (unsigned short)((code_point >> 10) + 0xD800);
 				result[pos++] = (unsigned short)((code_point & 0x3FF) + 0xDC00);
 			}
 		}
 
-		// Ìí¼ÓÖÕÖ¹·û
+		// æ·»åŠ ç»ˆæ­¢ç¬¦
 		result[pos] = 0;
 		*utf16_str = result;
 		return (int)utf16_len;
 	}
 
-	// ½«UTF-16×Ö·û´®×ª»»ÎªUTF-8
+	// å°†UTF-16å­—ç¬¦ä¸²è½¬æ¢ä¸ºUTF-8
 	int utf16_to_utf8(const unsigned short* utf16_str, char** utf8_str) {
 		size_t utf16_len = 0;
 		while (utf16_str[utf16_len] != 0) utf16_len++;
 
-		// ¼ÆËãËùĞèµÄUTF-8»º³åÇø´óĞ¡
+		// è®¡ç®—æ‰€éœ€çš„UTF-8ç¼“å†²åŒºå¤§å°
 		size_t utf8_len = 0;
 		for (size_t i = 0; i < utf16_len; i++) {
 			unsigned short code_unit = utf16_str[i];
 
-			// ¼ì²éÊÇ·ñÎª¸ß´úÀíÏî
+			// æ£€æŸ¥æ˜¯å¦ä¸ºé«˜ä»£ç†é¡¹
 			if (code_unit >= 0xD800 && code_unit <= 0xDBFF) {
-				// ¸ß´úÀíÏî + µÍ´úÀíÏî => ²¹³ä×Ö·û
+				// é«˜ä»£ç†é¡¹ + ä½ä»£ç†é¡¹ => è¡¥å……å­—ç¬¦
 				if (i + 1 < utf16_len) {
 					unsigned short low_surrogate = utf16_str[i + 1];
 					if (low_surrogate >= 0xDC00 && low_surrogate <= 0xDFFF) {
-						// ¼ÆËãÂëµã
+						// è®¡ç®—ç ç‚¹
 						unsigned int code_point = 0x10000 +
 							((code_unit - 0xD800) << 10) + (low_surrogate - 0xDC00);
 
-						// 4×Ö½ÚUTF-8
+						// 4å­—èŠ‚UTF-8
 						utf8_len += 4;
-						i++; // Ìø¹ıµÍ´úÀíÏî
+						i++; // è·³è¿‡ä½ä»£ç†é¡¹
 						continue;
 					}
 				}
 			}
 
-			// ÆÕÍ¨BMP×Ö·û
+			// æ™®é€šBMPå­—ç¬¦
 			if (code_unit < 0x80) {
-				utf8_len += 1; // 1×Ö½ÚUTF-8
+				utf8_len += 1; // 1å­—èŠ‚UTF-8
 			}
 			else if (code_unit < 0x800) {
-				utf8_len += 2; // 2×Ö½ÚUTF-8
+				utf8_len += 2; // 2å­—èŠ‚UTF-8
 			}
 			else {
-				utf8_len += 3; // 3×Ö½ÚUTF-8
+				utf8_len += 3; // 3å­—èŠ‚UTF-8
 			}
 		}
 
-		// ·ÖÅäÄÚ´æ
+		// åˆ†é…å†…å­˜
 		*utf8_str = (char*)malloc((utf8_len + 1) * sizeof(char));
 		if (!*utf8_str) return -1;
 
-		// Ö´ĞĞ×ª»»
+		// æ‰§è¡Œè½¬æ¢
 		char* p = *utf8_str;
 		for (size_t i = 0; i < utf16_len; i++) {
 			unsigned short code_unit = utf16_str[i];
 
-			// ´¦Àí´úÀíÏî¶Ô
+			// å¤„ç†ä»£ç†é¡¹å¯¹
 			if (code_unit >= 0xD800 && code_unit <= 0xDBFF) {
 				if (i + 1 < utf16_len) {
 					unsigned short low_surrogate = utf16_str[i + 1];
 					if (low_surrogate >= 0xDC00 && low_surrogate <= 0xDFFF) {
-						// ¼ÆËãÂëµã
+						// è®¡ç®—ç ç‚¹
 						unsigned int code_point = 0x10000 +
 							((code_unit - 0xD800) << 10) + (low_surrogate - 0xDC00);
 
-						// ±àÂëÎª4×Ö½ÚUTF-8
+						// ç¼–ç ä¸º4å­—èŠ‚UTF-8
 						*p++ = (char)(0xF0 | ((code_point >> 18) & 0x07));
 						*p++ = (char)(0x80 | ((code_point >> 12) & 0x3F));
 						*p++ = (char)(0x80 | ((code_point >> 6) & 0x3F));
 						*p++ = (char)(0x80 | (code_point & 0x3F));
 
-						i++; // Ìø¹ıµÍ´úÀíÏî
+						i++; // è·³è¿‡ä½ä»£ç†é¡¹
 						continue;
 					}
 				}
 			}
 
-			// ´¦ÀíÆÕÍ¨BMP×Ö·û
+			// å¤„ç†æ™®é€šBMPå­—ç¬¦
 			if (code_unit < 0x80) {
-				// 1×Ö½ÚUTF-8: 0xxxxxxx
+				// 1å­—èŠ‚UTF-8: 0xxxxxxx
 				*p++ = (char)code_unit;
 			}
 			else if (code_unit < 0x800) {
-				// 2×Ö½ÚUTF-8: 110xxxxx 10xxxxxx
+				// 2å­—èŠ‚UTF-8: 110xxxxx 10xxxxxx
 				*p++ = (char)(0xC0 | ((code_unit >> 6) & 0x1F));
 				*p++ = (char)(0x80 | (code_unit & 0x3F));
 			}
 			else {
-				// 3×Ö½ÚUTF-8: 1110xxxx 10xxxxxx 10xxxxxx
+				// 3å­—èŠ‚UTF-8: 1110xxxx 10xxxxxx 10xxxxxx
 				*p++ = (char)(0xE0 | ((code_unit >> 12) & 0x0F));
 				*p++ = (char)(0x80 | ((code_unit >> 6) & 0x3F));
 				*p++ = (char)(0x80 | (code_unit & 0x3F));
 			}
 		}
 
-		// Ìí¼ÓÖÕÖ¹·û
+		// æ·»åŠ ç»ˆæ­¢ç¬¦
 		*p = '\0';
 		return (int)utf8_len;
 	}

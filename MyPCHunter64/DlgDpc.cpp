@@ -6,6 +6,8 @@
 #include "afxdialogex.h"
 #include "DlgDpc.h"
 #include "Thread.h"
+#include <unordered_map>
+#include <string>
 
 // DlgDpc 对话框
 
@@ -97,8 +99,16 @@ void DlgDpc::OnDpcRefresh()
 
 void DlgDpc::InsertCtrlListControl(PCDPcInfo pInfo)
 {
+	// 本次刷新的厂商名缓存，避免重复对同一路径的 GetFileVersionInfo 磁盘 I/O。
+	std::unordered_map<std::wstring, CString> companyCache;
+
+	// 批量插入期间关闭重绘，避免每行一次 WM_PAINT 风暴。
+	m_CListCtrl.SetRedraw(FALSE);
+
 	if (pInfo == NULL)
 	{
+		m_CListCtrl.SetRedraw(TRUE);
+		m_CListCtrl.Invalidate();
 		return;
 	}
 	PCLIST_ENTRY pCurList = &pInfo->List.List;
@@ -129,12 +139,22 @@ void DlgDpc::InsertCtrlListControl(PCDPcInfo pInfo)
 		CString FilePath = PathTransForm(Info->ModulePath);
 		m_CListCtrl.SetItemText(i, um_Dpc_ModulePath, FilePath.GetBuffer());
 
-		CString szDstFileName;
-		m_CListCtrl.SetItemText(i, um_Dpc_CompanyName, TEXT("--"));
-		if (this->GetCompanyName(FilePath, szDstFileName))
+		CString company = TEXT("--");
+		auto it = companyCache.find(std::wstring(FilePath.GetString()));
+		if (it != companyCache.end())
 		{
-			m_CListCtrl.SetItemText(i, um_Dpc_CompanyName, (LPWSTR)szDstFileName.GetString());
+			company = it->second;
 		}
+		else
+		{
+			CString szDstFileName;
+			if (this->GetCompanyName(FilePath, szDstFileName))
+			{
+				company = szDstFileName;
+			}
+			companyCache.emplace(std::wstring(FilePath.GetString()), company);
+		}
+		m_CListCtrl.SetItemText(i, um_Dpc_CompanyName, (LPWSTR)company.GetString());
 
 		pCurList = pCurList->Blink;
 		//释放内存
@@ -145,4 +165,7 @@ void DlgDpc::InsertCtrlListControl(PCDPcInfo pInfo)
 		}
 
 	} while (pCurList != &pInfo->List.List);
+
+	m_CListCtrl.SetRedraw(TRUE);
+	m_CListCtrl.Invalidate();
 }

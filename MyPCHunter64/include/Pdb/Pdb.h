@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include <Windows.h>
 #include <dbghelp.h>
@@ -1382,10 +1382,10 @@ namespace Pdb
 
 	class PdbFunInfo {
 	public:
-		// Ä¬ÈÏ¹¹Ôìº¯Êı
+		// é»˜è®¤æ„é€ å‡½æ•°
 		PdbFunInfo() {}
 
-		// ´ø²ÎÊıµÄ¹¹Ôìº¯Êı
+		// å¸¦å‚æ•°çš„æ„é€ å‡½æ•°
 		PdbFunInfo(ULONG64 start, ULONG64 end, ULONG64 size, PSYMBOL_INFO funInfo)
 			: m_functionStart(start), m_functionEnd(end), m_funSize(size)
 		{
@@ -1417,7 +1417,7 @@ namespace Pdb
 			}
 		}
 
-		// ¿½±´¹¹Ôìº¯Êı
+		// æ‹·è´æ„é€ å‡½æ•°
 		PdbFunInfo(const PdbFunInfo& other)
 			: m_functionStart(other.m_functionStart), m_functionEnd(other.m_functionEnd), m_funSize(other.m_funSize) {
 			std::memcpy(&m_funInfo, &other.m_funInfo, sizeof(SYMBOL_INFO));
@@ -1450,7 +1450,7 @@ namespace Pdb
 			}
 		}
 
-		// ÒÆ¶¯¹¹Ôìº¯Êı
+		// ç§»åŠ¨æ„é€ å‡½æ•°
 		PdbFunInfo(PdbFunInfo&& other) noexcept
 			: m_functionStart(other.m_functionStart), m_functionEnd(other.m_functionEnd), m_funSize(other.m_funSize)
 		{
@@ -1498,7 +1498,7 @@ namespace Pdb
 			strcpy_s(szSrcBuf, m_funInfo->NameLen, (char*)m_funInfo->Name);
 			strcpy_s(szDstBuf, other.m_funInfo->NameLen, (char*)other.m_funInfo->Name);
 
-			return strcmp(szSrcBuf, szDstBuf) < 0; // °´ÕÕÃû×Ö½øĞĞ±È½Ï
+			return strcmp(szSrcBuf, szDstBuf) < 0; // æŒ‰ç…§åå­—è¿›è¡Œæ¯”è¾ƒ
 		}
 
 		bool operator<(const PdbFunInfo* other)const {
@@ -1508,7 +1508,7 @@ namespace Pdb
 			strcpy_s(szSrcBuf, m_funInfo->NameLen, (char*)m_funInfo->Name);
 			strcpy_s(szDstBuf, other->m_funInfo->NameLen, (char*)other->m_funInfo->Name);
 
-			return strcmp(szSrcBuf, szDstBuf) < 0; // °´ÕÕÃû×Ö½øĞĞ±È½Ï
+			return strcmp(szSrcBuf, szDstBuf) < 0; // æŒ‰ç…§åå­—è¿›è¡Œæ¯”è¾ƒ
 		}
 
 
@@ -1520,7 +1520,7 @@ namespace Pdb
 			strcpy_s(szSrcBuf, m_funInfo->NameLen, (char*)m_funInfo->Name);
 			strcpy_s(szDstBuf, other.m_funInfo->NameLen, (char*)other.m_funInfo->Name);
 
-			return strcmp(szSrcBuf, szDstBuf) == 0; // °´ÕÕÃû×Ö½øĞĞ±È½Ï
+			return strcmp(szSrcBuf, szDstBuf) == 0; // æŒ‰ç…§åå­—è¿›è¡Œæ¯”è¾ƒ
 		}
 
 
@@ -1530,26 +1530,26 @@ namespace Pdb
 
 			strcpy_s(szSrcBuf, m_funInfo->NameLen, (char*)m_funInfo->Name);
 
-			return strcmp(szSrcBuf, other) == 0; // °´ÕÕÃû×Ö½øĞĞ±È½Ï
+			return strcmp(szSrcBuf, other) == 0; // æŒ‰ç…§åå­—è¿›è¡Œæ¯”è¾ƒ
 		}
 
 
-		// »ñÈ¡º¯ÊıÆğÊ¼µØÖ·
+		// è·å–å‡½æ•°èµ·å§‹åœ°å€
 		ULONG64 getFunctionStart() const {
 			return m_functionStart;
 		}
 
-		// »ñÈ¡º¯Êı½áÊøµØÖ·
+		// è·å–å‡½æ•°ç»“æŸåœ°å€
 		ULONG64 getFunctionEnd() const {
 			return m_functionEnd;
 		}
 
-		// »ñÈ¡º¯Êı´óĞ¡
+		// è·å–å‡½æ•°å¤§å°
 		ULONG64 getFunctionSize() const {
 			return m_funSize;
 		}
 
-		// »ñÈ¡º¯ÊıĞÅÏ¢
+		// è·å–å‡½æ•°ä¿¡æ¯
 		PSYMBOL_INFO getFunctionInfo() const {
 			return m_funInfo;
 		}
@@ -1569,7 +1569,7 @@ namespace Pdb
 		PSYMBOL_INFO m_funInfo = { 0 };
 	};
 
-	// ½µĞò±È½ÏÆ÷
+	// é™åºæ¯”è¾ƒå™¨
 	struct Greater {
 		bool operator()(const std::shared_ptr<PdbFunInfo>& a, const std::shared_ptr<PdbFunInfo>& b) const {
 

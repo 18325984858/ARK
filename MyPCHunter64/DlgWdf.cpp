@@ -6,6 +6,8 @@
 #include "afxdialogex.h"
 #include "DlgWdf.h"
 #include "Thread.h"
+#include <unordered_map>
+#include <string>
 
 // DlgWdf 对话框
 
@@ -152,8 +154,14 @@ void DlgWdf::OnHaltableRefresh()
 
 void DlgWdf::InsertCtrlListControl(PCWdfInfo pWdfInfo)
 {
+	std::unordered_map<std::wstring, CString> companyCache;
+
+	m_CListCtrl.SetRedraw(FALSE);
+
 	if (pWdfInfo == NULL)
 	{
+		m_CListCtrl.SetRedraw(TRUE);
+		m_CListCtrl.Invalidate();
 		return;
 	}
 
@@ -170,28 +178,51 @@ void DlgWdf::InsertCtrlListControl(PCWdfInfo pWdfInfo)
 
 
 		CString StrBuf;
-		StrBuf.Format(L"%04X", pInfo->pFunOrder);
+		StrBuf.Format(L"%04X", (USHORT)pInfo->pFunOrder);
 		m_CListCtrl.InsertItem(i, StrBuf);
-// 
-// 		if (NameTable[nPerSel] != NULL)
-// 		{
-// 			m_CListCtrl.SetItemText(i, um_HalTableDlgInfo_FunName, (NameTable[nPerSel])[i % LengthTable[nPerSel]]);
-// 		}
-// 
-// 		StrBuf.Format(L"%016I64X", pInfo->pFunAddr);
-// 		m_CListCtrl.SetItemText(i, um_HalTableDlgInfo_CurFunAddr, StrBuf);
-// 
-// 
-// 		CString FilePath = PathTransForm(pInfo->ModulePath);
-// 		m_CListCtrl.SetItemText(i, um_HalTableDlgInfo_CurModule, pInfo->pFunAddr == NULL ? L"--" : FilePath.GetBuffer());
-// 
-// 		CString szDstFileName;
-// 		m_CListCtrl.SetItemText(i, um_HalTableDlgInfo_FileVender, TEXT("--"));
-// 		if (GetCompanyName(FilePath, szDstFileName))
-// 		{
-// 			m_CListCtrl.SetItemText(i, um_HalTableDlgInfo_FileVender, (LPWSTR)szDstFileName.GetString());
-// 		}
 
+		// 函数名称：尚未引入 WDK wdffuncenum.h 的名字表，先用 WdfFunctions[idx] 占位。
+		// 后续可生成 g_WdfFunctionName[] 数组替换。
+		StrBuf.Format(L"WdfFunctions[%u]", (UINT)pInfo->pFunOrder);
+		m_CListCtrl.SetItemText(i, um_WdfDlgInfo_FunctionName, StrBuf);
+
+		StrBuf.Format(L"%016I64X", pInfo->pFunAddr);
+		m_CListCtrl.SetItemText(i, um_WdfDlgInfo_FunctionAddr, StrBuf);
+
+		m_CListCtrl.SetItemText(i, um_WdfDlgInfo_Hook, pInfo->HookType ? L"已HOOK" : L"未HOOK");
+
+		if (pInfo->pSrcFunAddr)
+		{
+			StrBuf.Format(L"%016I64X", pInfo->pSrcFunAddr);
+			m_CListCtrl.SetItemText(i, um_WdfDlgInfo_SourceFunctionAddr, StrBuf);
+		}
+		else
+		{
+			m_CListCtrl.SetItemText(i, um_WdfDlgInfo_SourceFunctionAddr, L"--");
+		}
+
+		CString FilePath = pInfo->ModulePath[0] ? PathTransForm(pInfo->ModulePath) : CString(L"--");
+		m_CListCtrl.SetItemText(i, um_WdfDlgInfo_Module, FilePath.GetBuffer());
+
+		CString company = TEXT("--");
+		if (pInfo->ModulePath[0])
+		{
+			auto it = companyCache.find(std::wstring(FilePath.GetString()));
+			if (it != companyCache.end())
+			{
+				company = it->second;
+			}
+			else
+			{
+				CString szDstFileName;
+				if (GetCompanyName(FilePath, szDstFileName))
+				{
+					company = szDstFileName;
+				}
+				companyCache.emplace(std::wstring(FilePath.GetString()), company);
+			}
+		}
+		m_CListCtrl.SetItemText(i, um_WdfDlgInfo_FileVender, (LPWSTR)company.GetString());
 
 		pCurList = pCurList->Blink;
 		//释放资源
@@ -202,4 +233,6 @@ void DlgWdf::InsertCtrlListControl(PCWdfInfo pWdfInfo)
 		}
 	} while (pCurList != &pWdfInfo->List.List);
 
+	m_CListCtrl.SetRedraw(TRUE);
+	m_CListCtrl.Invalidate();
 }

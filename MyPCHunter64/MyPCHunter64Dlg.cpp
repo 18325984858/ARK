@@ -121,15 +121,18 @@ BOOL CMyPCHunter64Dlg::OnInitDialog()
 		HANDLE hEvent = CreateEventW(NULL, TRUE, FALSE, INITDATA_EVENT);
 		if (hEvent)
 		{
+			LOGI("OnInitDialog: posting InitData task.");
 			g_ThreadPool.AddTask(new _CThreadPack{ _LoadDriver::Um_UserCallBackType_InitData, this });
 
 			if (WaitForSingleObject(hEvent, INFINITE) != WAIT_OBJECT_0)
 			{
+				LOGE("OnInitDialog: InitData wait failed.");
 				g_LoadDriver.~_LoadDriver();
 				OnClose();
 				exit(1);
 
 			}
+			LOGI("OnInitDialog: InitData done.");
 
 			g_ThreadPool.AddTask(new _CThreadPack{ _LoadDriver::Um_UserCallBackType_Test, this });
 		}

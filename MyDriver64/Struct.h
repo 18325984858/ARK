@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -23,14 +23,14 @@ typedef struct _CLIST_ENTRY
 typedef struct _CLIST_ENTRY_EX
 {
 	CLIST_ENTRY List;
-	ULONG64 IsInitialize;													//ÊÇ·ñ³õÊ¼»¯¹ýÁË
+	ULONG64 IsInitialize;													//æ˜¯å¦åˆå§‹åŒ–è¿‡äº†
 } CLIST_ENTRY_EX, * PCLIST_ENTRY_EX;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 typedef struct _HandleInfo
 {
-	CLIST_ENTRY_EX	List;													//´æ´¢½ø³ÌÁ´±í
+	CLIST_ENTRY_EX	List;													//å­˜å‚¨è¿›ç¨‹é“¾è¡¨
 	ULONG64			Object;
 } CHandleInfo, * PCHandleInfo;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -49,7 +49,7 @@ typedef struct _CTIME_FIELDS {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//ÃüÁîÃ¶¾ÙÌå																													
+//å‘½ä»¤æžšä¸¾ä½“																													
 enum _CommunicatOpCode
 {
 	um_Cmd_Enum_Process_info,
@@ -88,106 +88,107 @@ enum _CommunicatOpCode
 	um_Cmd_Test,
 	um_Cmd_Enum_Wdf01000_info,
 	um_Cmd_Enum_WdfFunction_info,
+	um_Cmd_Enum_WorkerThread_info,											//æžšä¸¾å†…æ ¸å·¥ä½œçº¿ç¨‹é˜Ÿåˆ—
 
 };
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//Í¨ÐÅ½á¹¹Ìå	
+//é€šä¿¡ç»“æž„ä½“	
 typedef struct _CCommunicationInfo
 {
-	IN ULONG64 m_Cmd;														//ÃüÁî
-	IN ULONG64 m_pIndata;													//´æ´¢ÊäÈëÊý¾Ý
-	OUT PVOID64 m_pOutData;													//´æ´¢·µ»ØµÄÊý¾Ý
-	OUT PVOID64 m_nRet;														//´æ´¢·µ»ØÖµ
-	IN PVOID64 m_pParam;													//±¸ÓÃ
+	IN ULONG64 m_Cmd;														//å‘½ä»¤
+	IN ULONG64 m_pIndata;													//å­˜å‚¨è¾“å…¥æ•°æ®
+	OUT PVOID64 m_pOutData;													//å­˜å‚¨è¿”å›žçš„æ•°æ®
+	OUT PVOID64 m_nRet;														//å­˜å‚¨è¿”å›žå€¼
+	IN PVOID64 m_pParam;													//å¤‡ç”¨
 }CCommunicationInfo, * PCCommunicationInfo;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//´æ´¢»ñÈ¡µ½µÄ½ø³ÌÐÅÏ¢
+//å­˜å‚¨èŽ·å–åˆ°çš„è¿›ç¨‹ä¿¡æ¯
 typedef struct _ProcessInfo
 {
-	CHandleInfo	HandleInfo;													//´æ´¢½ø³ÌÁ´±í
-	CTIME_FIELDS CreateTime;												//ÔËÐÐÊ±¼ä
-	ULONG32 FullFileNameLength;												//´æ´¢½ø³ÌÎÄ¼þÎ»ÖÃ×Ö·û³¤¶È
-	ULONG32 FullFileNameDrviceLength;										//´æ´¢½ø³ÌÎÄ¼þÎ»ÖÃ×Ö·û³¤¶È
-	ULONG64 ProcessId;														//´æ´¢½ø³ÌID
-	ULONG64 ParentPId;														//´æ´¢½ø³Ì¸¸ID
-	ULONG64 Eprocess;														//½ø³ÌEPROCESS
+	CHandleInfo	HandleInfo;													//å­˜å‚¨è¿›ç¨‹é“¾è¡¨
+	CTIME_FIELDS CreateTime;												//è¿è¡Œæ—¶é—´
+	ULONG32 FullFileNameLength;												//å­˜å‚¨è¿›ç¨‹æ–‡ä»¶ä½ç½®å­—ç¬¦é•¿åº¦
+	ULONG32 FullFileNameDrviceLength;										//å­˜å‚¨è¿›ç¨‹æ–‡ä»¶ä½ç½®å­—ç¬¦é•¿åº¦
+	ULONG64 ProcessId;														//å­˜å‚¨è¿›ç¨‹ID
+	ULONG64 ParentPId;														//å­˜å‚¨è¿›ç¨‹çˆ¶ID
+	ULONG64 Eprocess;														//è¿›ç¨‹EPROCESS
 	union
 	{
-		ULONG64 Flag1;														//´æ´¢½ø³Ì±êÖ¾
+		ULONG64 Flag1;														//å­˜å‚¨è¿›ç¨‹æ ‡å¿—
 		struct
 		{
-			ULONG64 DebugPort : 1;											//ÊÇ·ñµ÷ÊÔ×´Ì¬
-			ULONG64 IsUserVisit : 1;										//´æ´¢½ø³ÌÊÇ·ñ¿ÉÒÔÓÃ»§²ã·ÃÎÊ
-			ULONG64 Session : 4;											//»á»°ID
-			ULONG64 Is64Process : 1;										//ÊÇ·ñÊÇ64Î»½ø³Ì 1:x64  0:x32
+			ULONG64 DebugPort : 1;											//æ˜¯å¦è°ƒè¯•çŠ¶æ€
+			ULONG64 IsUserVisit : 1;										//å­˜å‚¨è¿›ç¨‹æ˜¯å¦å¯ä»¥ç”¨æˆ·å±‚è®¿é—®
+			ULONG64 Session : 4;											//ä¼šè¯ID
+			ULONG64 Is64Process : 1;										//æ˜¯å¦æ˜¯64ä½è¿›ç¨‹ 1:x64  0:x32
 		};
 	};
-	ULONG64 Peb;															//½ø³ÌÈý»·PEB
-	ULONG64 ImageBaseAddr;													//µØÖ·
-	ULONG64 ImageBaseAddress;												//½ø³Ì¼ÓÔØµØÖ·
+	ULONG64 Peb;															//è¿›ç¨‹ä¸‰çŽ¯PEB
+	ULONG64 ImageBaseAddr;													//åœ°å€
+	ULONG64 ImageBaseAddress;												//è¿›ç¨‹åŠ è½½åœ°å€
 
-	WCHAR CommandLine[0x500];												//ÃüÁîÐÐ²ÎÊý
-	WCHAR UserName[MAX_BASE_FILE_NAME];										//´æ´¢½ø³ÌÓÃ»§Ãû
-	CHAR ImageBaseName[MAX_BASE_FILE_NAME];									//´æ´¢½ø³ÌÃû×Ö
-	WCHAR FullFileName[MY_MAX_PATH];										//´æ´¢½ø³ÌÎÄ¼þÎ»ÖÃ
-	WCHAR FullFileNameDrvice[MY_MAX_PATH];									//´æ´¢½ø³ÌÎÄ¼þÎ»ÖÃ
+	WCHAR CommandLine[0x500];												//å‘½ä»¤è¡Œå‚æ•°
+	WCHAR UserName[MAX_BASE_FILE_NAME];										//å­˜å‚¨è¿›ç¨‹ç”¨æˆ·å
+	CHAR ImageBaseName[MAX_BASE_FILE_NAME];									//å­˜å‚¨è¿›ç¨‹åå­—
+	WCHAR FullFileName[MY_MAX_PATH];										//å­˜å‚¨è¿›ç¨‹æ–‡ä»¶ä½ç½®
+	WCHAR FullFileNameDrvice[MY_MAX_PATH];									//å­˜å‚¨è¿›ç¨‹æ–‡ä»¶ä½ç½®
 }CProcessInfo, * PCProcessInfo;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//´æ´¢»ñÈ¡µ½µÄÎÄ¼þÐÅÏ¢
+//å­˜å‚¨èŽ·å–åˆ°çš„æ–‡ä»¶ä¿¡æ¯
 typedef struct _FileInfo
 {
-	CLIST_ENTRY List;														//Á´±í½á¹¹,´æ´¢Õû¸öÐÅÏ¢
-	ULONG64				IsInitialize;										//ÊÇ·ñ³õÊ¼»¯¹ýÁË
-	CTIME_FIELDS		CreationTime;										//´´½¨Ê±¼ä
-	CTIME_FIELDS		ChangeTime;											//·ÃÎÊÊ±¼ä
-	ULONG64				AllocationSize;										//ÎÄ¼þ´óÐ¡
-	ULONG				FileAttributes;										//ÎÄ¼þÊôÐÔ
-	WCHAR				FileFullName[MY_MAX_PATH];							//ÎÄ¼þÃû
+	CLIST_ENTRY List;														//é“¾è¡¨ç»“æž„,å­˜å‚¨æ•´ä¸ªä¿¡æ¯
+	ULONG64				IsInitialize;										//æ˜¯å¦åˆå§‹åŒ–è¿‡äº†
+	CTIME_FIELDS		CreationTime;										//åˆ›å»ºæ—¶é—´
+	CTIME_FIELDS		ChangeTime;											//è®¿é—®æ—¶é—´
+	ULONG64				AllocationSize;										//æ–‡ä»¶å¤§å°
+	ULONG				FileAttributes;										//æ–‡ä»¶å±žæ€§
+	WCHAR				FileFullName[MY_MAX_PATH];							//æ–‡ä»¶å
 }CFileInfo, * PCFileInfo;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//´æ´¢»ñÈ¡µ½µÄ×¢²á±íÐÅÏ¢
+//å­˜å‚¨èŽ·å–åˆ°çš„æ³¨å†Œè¡¨ä¿¡æ¯
 typedef struct _RegistryInfo
 {
-	CLIST_ENTRY List;														//Á´±í½á¹¹,´æ´¢Õû¸öÐÅÏ¢
+	CLIST_ENTRY List;														//é“¾è¡¨ç»“æž„,å­˜å‚¨æ•´ä¸ªä¿¡æ¯
 
-	ULONG64 nType;															//½á¹¹ÌåÀàÐÍ
-	//0Îª _KeyInfo½á¹¹
-	//1Îª _ValueInfo½á¹¹
+	ULONG64 nType;															//ç»“æž„ä½“ç±»åž‹
+	//0ä¸º _KeyInfoç»“æž„
+	//1ä¸º _ValueInfoç»“æž„
 
-	ULONG64 IsInitialize;													//ÊÇ·ñ³õÊ¼»¯¹ýÁË
+	ULONG64 IsInitialize;													//æ˜¯å¦åˆå§‹åŒ–è¿‡äº†
 
 	union
 	{
 		struct
 		{
-			WCHAR KeyName[MY_MAX_PATH];										//Â·¾¶
+			WCHAR KeyName[MY_MAX_PATH];										//è·¯å¾„
 		};
 
 		struct
 		{
-			ULONG64 ValueType;												//ÖµÀàÐÍ
-			WCHAR ValueName[MY_MAX_PATH];									//ÖµÃû³Æ
-			WCHAR ValueData[MY_MAX_PATH];									//ÖµÊý¾Ý
+			ULONG64 ValueType;												//å€¼ç±»åž‹
+			WCHAR ValueName[MY_MAX_PATH];									//å€¼åç§°
+			WCHAR ValueData[MY_MAX_PATH];									//å€¼æ•°æ®
 		};
 	};
 }CRegistryInfo, * PCRegistryInfo;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//GDTÃèÊö·û
+//GDTæè¿°ç¬¦
 typedef struct _CGdt
 {
 	union
 	{
-		ULONG32 dwBaseAddr;													//64Î»Ê¹ÓÃ
+		ULONG32 dwBaseAddr;													//64ä½ä½¿ç”¨
 		struct
 		{
 			ULONG32 SegLimit0 : 16;
@@ -197,19 +198,19 @@ typedef struct _CGdt
 
 	union
 	{
-		ULONG32 dwBaseLimit;												//64Î»Ê¹ÓÃ
+		ULONG32 dwBaseLimit;												//64ä½ä½¿ç”¨
 		struct
 		{
 			ULONG32 BaseAddr1 : 8;
-			ULONG32 Type : 4;												//µ± s==1Ê± ²é(3.4.5.1 Code- and Data-Segment Descriptor Types) µ±s==0Ê± ²é(3.5 SYSTEM DESCRIPTOR TYPES)
+			ULONG32 Type : 4;												//å½“ s==1æ—¶ æŸ¥(3.4.5.1 Code- and Data-Segment Descriptor Types) å½“s==0æ—¶ æŸ¥(3.5 SYSTEM DESCRIPTOR TYPES)
 			ULONG32 S : 1;													//0 = system; 1 = code or data
-			ULONG32 Dpl : 2;												//¶ÎÈ¨ÏÞµÈ¼¶ 0-3
-			ULONG32 P : 1;													//ÊÇ·ñÊÇÓÐÓÐÐ§µØÖ·
+			ULONG32 Dpl : 2;												//æ®µæƒé™ç­‰çº§ 0-3
+			ULONG32 P : 1;													//æ˜¯å¦æ˜¯æœ‰æœ‰æ•ˆåœ°å€
 			ULONG32 SegLimit1 : 4;
 			ULONG32 AVL : 1;
-			ULONG32 L : 1;													//0 == 32Î»Ä£Ê½; 1 == 64Î»³¤Ä£Ê½
+			ULONG32 L : 1;													//0 == 32ä½æ¨¡å¼; 1 == 64ä½é•¿æ¨¡å¼
 			ULONG32 DB : 1;													//0 = 16-bit segment; 1 = 32-bit segment
-			ULONG32 G : 1;													//Á£¶È 0 == Byte ; 1 == PAGE
+			ULONG32 G : 1;													//ç²’åº¦ 0 == Byte ; 1 == PAGE
 			ULONG32 BaseAddr2 : 8;
 		};
 	};
@@ -219,17 +220,17 @@ typedef struct _CGdt
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//´æ´¢±éÀúµ½µÄGDTÐÅÏ¢
+//å­˜å‚¨éåŽ†åˆ°çš„GDTä¿¡æ¯
 typedef struct _GdtInfo
 {
 	CLIST_ENTRY List;														//
-	ULONG64 IsInitialize;													//ÊÇ·ñ³õÊ¼»¯¹ýÁË
-	ULONG64 nCpuId;															//´æ´¢ÔÚµÚ¼¸ºÅCPUÉÏ
-	ULONG64 GdtBase;														//´æ´¢GDTµØÖ·
-	ULONG64 nIndex;															//´æ´¢µÚ¼¸¸öÃèÊö·û
-	ULONG64 Is64Segment;													//ÊÇ·ñÊÇ64Î»¶Î
-	CGdt GdtData;															//´æ´¢Êý¾Ý
-	CGdt GdtData1;															//64Î»¶ÎÊ¹ÓÃ
+	ULONG64 IsInitialize;													//æ˜¯å¦åˆå§‹åŒ–è¿‡äº†
+	ULONG64 nCpuId;															//å­˜å‚¨åœ¨ç¬¬å‡ å·CPUä¸Š
+	ULONG64 GdtBase;														//å­˜å‚¨GDTåœ°å€
+	ULONG64 nIndex;															//å­˜å‚¨ç¬¬å‡ ä¸ªæè¿°ç¬¦
+	ULONG64 Is64Segment;													//æ˜¯å¦æ˜¯64ä½æ®µ
+	CGdt GdtData;															//å­˜å‚¨æ•°æ®
+	CGdt GdtData1;															//64ä½æ®µä½¿ç”¨
 }CGdtInfo, * PCGdtInfo;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -254,10 +255,10 @@ typedef struct _CIdt
 		struct
 		{
 			ULONG32 Reserve0 : 8;
-			ULONG32 Type : 4;												//ÀàÐÍ CallGate(1100) TSSAvailable(1001) TSSBusy(1011) InterruptGate(1110) TrapGate(1111)
+			ULONG32 Type : 4;												//ç±»åž‹ CallGate(1100) TSSAvailable(1001) TSSBusy(1011) InterruptGate(1110) TrapGate(1111)
 
 			ULONG32 S : 1;													//0
-			ULONG32 Dpl : 2;												//¶ÎÈ¨ÏÞµÈ¼¶ 0-3
+			ULONG32 Dpl : 2;												//æ®µæƒé™ç­‰çº§ 0-3
 			ULONG32 P : 1;													//0
 			ULONG32 Offset1 : 16;
 		};
@@ -270,147 +271,147 @@ typedef struct _CIdt
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//´æ´¢±éÀúµ½µÄGDTÐÅÏ¢
+//å­˜å‚¨éåŽ†åˆ°çš„GDTä¿¡æ¯
 typedef struct _IdtInfo
 {
 	CLIST_ENTRY_EX List;													//
-	ULONG64 nCpuId;															//´æ´¢ÔÚµÚ¼¸ºÅCPUÉÏ
-	ULONG64 IdtBase;														//´æ´¢IDTµØÖ·
-	ULONG64 nIndex;															//´æ´¢ÖÐ¶ÏºÅ
-	CIdt IdtData;															//´æ´¢Êý¾Ý
-	WCHAR szPath[MY_MAX_PATH];												//´æ´¢º¯ÊýËùÔÚÄ£¿éÂ·¾¶
-	//WCHAR [MY_MAX_PATH];													//¹«Ë¾Ãû
+	ULONG64 nCpuId;															//å­˜å‚¨åœ¨ç¬¬å‡ å·CPUä¸Š
+	ULONG64 IdtBase;														//å­˜å‚¨IDTåœ°å€
+	ULONG64 nIndex;															//å­˜å‚¨ä¸­æ–­å·
+	CIdt IdtData;															//å­˜å‚¨æ•°æ®
+	WCHAR szPath[MY_MAX_PATH];												//å­˜å‚¨å‡½æ•°æ‰€åœ¨æ¨¡å—è·¯å¾„
+	//WCHAR [MY_MAX_PATH];													//å…¬å¸å
 }CIdtInfo, * PCIdtInfo;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//´æ´¢±éÀúµ½µÄVADÐÅÏ¢
+//å­˜å‚¨éåŽ†åˆ°çš„VADä¿¡æ¯
 typedef struct _ProcessVadInfo
 {
 	CLIST_ENTRY_EX List;													//
-	ULONG64 VadNode;														//´æ´¢Êý½ÚµãµØÖ·
-	ULONG64 StartingVpn;													//ÄÚ´æÆðÊ¼µØÖ·
-	ULONG64 EndingVpn;														//ÄÚ´æ½áÊøµØÖ·
-	ULONG64 CommitCharge;													//ÒýÓÃ¼ÆÊý
+	ULONG64 VadNode;														//å­˜å‚¨æ•°èŠ‚ç‚¹åœ°å€
+	ULONG64 StartingVpn;													//å†…å­˜èµ·å§‹åœ°å€
+	ULONG64 EndingVpn;														//å†…å­˜ç»“æŸåœ°å€
+	ULONG64 CommitCharge;													//å¼•ç”¨è®¡æ•°
 	union
 	{
-		ULONG64 Flags;														//±êÖ¾
+		ULONG64 Flags;														//æ ‡å¿—
 		struct
 		{
 			ULONG64 PrivateMemory : 1;										//Private : 1 Mapped : 0
-			ULONG64 Protection : 5;											//Ò³±£»¤±êÖ¾ : ¶Á Ð´ Ö´ÐÐ
+			ULONG64 Protection : 5;											//é¡µä¿æŠ¤æ ‡å¿— : è¯» å†™ æ‰§è¡Œ
 		};
 	};
-	WCHAR ExeFilePath[MY_MAX_PATH];											//ÎÄ¼þÃû
+	WCHAR ExeFilePath[MY_MAX_PATH];											//æ–‡ä»¶å
 }CProcessVadInfo, * PCProcessVadInfo;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//´æ´¢±éÀúµ½µÄThreadÐÅÏ¢
+//å­˜å‚¨éåŽ†åˆ°çš„Threadä¿¡æ¯
 typedef struct _ProcessThreadInfo
 {
 	CLIST_ENTRY_EX List;													//
-	CHAR Priority;															//´æ´¢ÓÅÏÈ¼¶
-	UCHAR State;															//´æ´¢×´Ì¬
-	ULONG32 ContextSwitches;												//´æ´¢ÇÐ»»´ÎÊý
-	ULONG64 UniqueThread;													//´æ´¢Ïß³ÌID
-	ULONG64 Ethread;														//´æ´¢Ïß³Ì¶ÔÏó
-	ULONG64 Teb;															//´æ´¢TEB
-	ULONG64 StartAddress;													//´æ´¢Èë¿ÚµØÖ·
-	CTIME_FIELDS CreateTime;												//´æ´¢´´½¨Ê±¼ä
-	//WCHAR FileVendor[0x20];												//ÎÄ¼þ³§ÉÌ
-	WCHAR MoudleName[MY_MAX_PATH];											//´æ´¢Ä£¿éÃû
-	UCHAR ThreadTypeFlag;													//´æ´¢Ïß³ÌÀàÐÍ
+	CHAR Priority;															//å­˜å‚¨ä¼˜å…ˆçº§
+	UCHAR State;															//å­˜å‚¨çŠ¶æ€
+	ULONG32 ContextSwitches;												//å­˜å‚¨åˆ‡æ¢æ¬¡æ•°
+	ULONG64 UniqueThread;													//å­˜å‚¨çº¿ç¨‹ID
+	ULONG64 Ethread;														//å­˜å‚¨çº¿ç¨‹å¯¹è±¡
+	ULONG64 Teb;															//å­˜å‚¨TEB
+	ULONG64 StartAddress;													//å­˜å‚¨å…¥å£åœ°å€
+	CTIME_FIELDS CreateTime;												//å­˜å‚¨åˆ›å»ºæ—¶é—´
+	//WCHAR FileVendor[0x20];												//æ–‡ä»¶åŽ‚å•†
+	WCHAR MoudleName[MY_MAX_PATH];											//å­˜å‚¨æ¨¡å—å
+	UCHAR ThreadTypeFlag;													//å­˜å‚¨çº¿ç¨‹ç±»åž‹
 }CProcessThreadInfo, * PCProcessThreadInfo;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//´æ´¢±éÀúµ½µÄModuleÐÅÏ¢
+//å­˜å‚¨éåŽ†åˆ°çš„Moduleä¿¡æ¯
 typedef struct _ProcessModuleInfo
 {
 	CLIST_ENTRY_EX List;													//
-	WCHAR ModuleName[MY_MAX_PATH];											//Ä£¿éÃû
-	ULONG64 ModuleBaseAddr;													//Ä£¿é»ùÖ·
-	ULONG64 ModuleSize;														//Ä£¿é´óÐ¡
-	WCHAR ModuleFullPath[MY_MAX_PATH];										//Ä£¿éÂ·¾¶
-	//WCHAR Signature[MAX_BASE_FILE_NAME];									//Êý×ÖÇ©Ãû
-	//WCHAR CoparyName[MAX_BASE_FILE_NAME];									//¹«Ë¾Ãû
+	WCHAR ModuleName[MY_MAX_PATH];											//æ¨¡å—å
+	ULONG64 ModuleBaseAddr;													//æ¨¡å—åŸºå€
+	ULONG64 ModuleSize;														//æ¨¡å—å¤§å°
+	WCHAR ModuleFullPath[MY_MAX_PATH];										//æ¨¡å—è·¯å¾„
+	//WCHAR Signature[MAX_BASE_FILE_NAME];									//æ•°å­—ç­¾å
+	//WCHAR CoparyName[MAX_BASE_FILE_NAME];									//å…¬å¸å
 }CProcessModuleInfo, * PCProcessModuleInfo;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//´æ´¢±éÀúµ½µÄHandleÐÅÏ¢
+//å­˜å‚¨éåŽ†åˆ°çš„Handleä¿¡æ¯
 typedef struct _ProcessHandleInfo
 {
 	CLIST_ENTRY_EX List;													//
-	ULONG64 Quote;															//ÒýÓÃ
-	ULONG64 Index;															//Ë÷Òý
-	ULONG64 Power;															//È¨ÏÞ
-	ULONG64 HandleObject;													//¾ä±ú¶ÔÏó
-	ULONG64 Handle;															//¾ä±ú
-	WCHAR HandleName[MY_MAX_PATH];											//´æ´¢¾ä±úÃû
-	WCHAR HandleType[MAX_BASE_FILE_NAME];									//´æ´¢¾ä±úÀàÐÍÃû
+	ULONG64 Quote;															//å¼•ç”¨
+	ULONG64 Index;															//ç´¢å¼•
+	ULONG64 Power;															//æƒé™
+	ULONG64 HandleObject;													//å¥æŸ„å¯¹è±¡
+	ULONG64 Handle;															//å¥æŸ„
+	WCHAR HandleName[MY_MAX_PATH];											//å­˜å‚¨å¥æŸ„å
+	WCHAR HandleType[MAX_BASE_FILE_NAME];									//å­˜å‚¨å¥æŸ„ç±»åž‹å
 }CProcessHandleInfo, * PCProcessHandleInfo;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//´æ´¢±éÀúµ½Çý¶¯¶ÔÏóÐÅÏ¢
+//å­˜å‚¨éåŽ†åˆ°é©±åŠ¨å¯¹è±¡ä¿¡æ¯
 typedef struct _DriverInfo
 {
 	CLIST_ENTRY_EX List;													//
-	ULONG32 ImageFullBaseNameLength;										//´æ´¢¶ÔÏóÂ·¾¶³¤¶È
-	ULONG32 LoadOrder;														//¼ÓÔØË³Ðò
-	ULONG64 ImageBaseAddr;													//´æ´¢»ùµØÖ·
-	ULONG64 Size;															//´óÐ¡
-	ULONG64 DriverObject;													//Çý¶¯¶ÔÏó
-	ULONG64 DriverStart;													//Çý¶¯¿ªÊ¼µØÖ·
-	//WCHAR FileVendor[100];												//ÎÄ¼þ³§ÉÌ
-	WCHAR DriverName[MY_MAX_PATH];											//Çý¶¯Ãû
-	WCHAR ServerName[MY_MAX_PATH];											//·þÎñÃû
-	WCHAR ImageFullBaseName[MY_MAX_PATH];									//¶ÔÏóÂ·¾¶
-	WCHAR ImageBaseName[MAX_BASE_FILE_NAME];								//´æ´¢½ø³ÌÃû×Ö
+	ULONG32 ImageFullBaseNameLength;										//å­˜å‚¨å¯¹è±¡è·¯å¾„é•¿åº¦
+	ULONG32 LoadOrder;														//åŠ è½½é¡ºåº
+	ULONG64 ImageBaseAddr;													//å­˜å‚¨åŸºåœ°å€
+	ULONG64 Size;															//å¤§å°
+	ULONG64 DriverObject;													//é©±åŠ¨å¯¹è±¡
+	ULONG64 DriverStart;													//é©±åŠ¨å¼€å§‹åœ°å€
+	//WCHAR FileVendor[100];												//æ–‡ä»¶åŽ‚å•†
+	WCHAR DriverName[MY_MAX_PATH];											//é©±åŠ¨å
+	WCHAR ServerName[MY_MAX_PATH];											//æœåŠ¡å
+	WCHAR ImageFullBaseName[MY_MAX_PATH];									//å¯¹è±¡è·¯å¾„
+	WCHAR ImageBaseName[MAX_BASE_FILE_NAME];								//å­˜å‚¨è¿›ç¨‹åå­—
 }CDriverInfo, * PCDriverInfo;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//´æ´¢ SSSDTÐÅÏ¢
+//å­˜å‚¨ SSSDTä¿¡æ¯
 typedef struct _SsdtInfo
 {
 	CLIST_ENTRY_EX List;													//
-	ULONG64 NumberOrder;													//º¯ÊýÐòºÅ
-	ULONG64 ServiceNumber;													//º¯Êý·þÎñºÅ
-	ULONG64 NtFunAddr;														//ÄÚºËº¯ÊýµØÖ·
-	ULONG64 UsFunAddr;														//ÓÃ»§º¯ÊýµØÖ·
-	ULONG64 SrcNtFunAddr;													//ÐÂµÄÄÚºËµØÖ·
-	UCHAR IsHook;															//ÊÇ·ñ±»HOOK
-	WCHAR FunName[MAX_BASE_FILE_NAME];										//º¯ÊýÃû
-	WCHAR Path[MY_MAX_PATH];												//º¯ÊýËùÔÚÄ£¿é
+	ULONG64 NumberOrder;													//å‡½æ•°åºå·
+	ULONG64 ServiceNumber;													//å‡½æ•°æœåŠ¡å·
+	ULONG64 NtFunAddr;														//å†…æ ¸å‡½æ•°åœ°å€
+	ULONG64 UsFunAddr;														//ç”¨æˆ·å‡½æ•°åœ°å€
+	ULONG64 SrcNtFunAddr;													//æ–°çš„å†…æ ¸åœ°å€
+	UCHAR IsHook;															//æ˜¯å¦è¢«HOOK
+	WCHAR FunName[MAX_BASE_FILE_NAME];										//å‡½æ•°å
+	WCHAR Path[MY_MAX_PATH];												//å‡½æ•°æ‰€åœ¨æ¨¡å—
 }CSsdtInfo, * PCSsdtInfo;
 
 typedef struct _HookSsdtInfo
 {
-	ULONG32 State;															//×´Ì¬
-	ULONG32 Level;															//²ã¼¶
-	ULONG32 CallNumber;														//µ÷ÓÃºÅ
-	WCHAR FunName[MAX_BASE_FILE_NAME];										//º¯ÊýÃû
+	ULONG32 State;															//çŠ¶æ€
+	ULONG32 Level;															//å±‚çº§
+	ULONG32 CallNumber;														//è°ƒç”¨å·
+	WCHAR FunName[MAX_BASE_FILE_NAME];										//å‡½æ•°å
 }CHookSsdtInfo, * PCHookSsdtInfo;
 
 typedef struct _AlterHookSsdtInfo
 {
-	ULONG32 Index;															//ÒªÐÞ¸ÄµÄË÷Òý
-	CHookSsdtInfo BaseSsdtInfo;												//ÒªÐÞ¸ÄµÄÊý¾Ý
+	ULONG32 Index;															//è¦ä¿®æ”¹çš„ç´¢å¼•
+	CHookSsdtInfo BaseSsdtInfo;												//è¦ä¿®æ”¹çš„æ•°æ®
 }CAlterHookSsdtInfo, * PCAlterHookSsdtInfo;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//»Øµ÷ÀàÐÍ
+//å›žè°ƒç±»åž‹
 enum _KernalCallBackType
 {
 	um_KernalCallBackType_ShutDown = 0,
@@ -423,36 +424,36 @@ enum _KernalCallBackType
 	um_KernalCallBackType_IoTime,
 };
 
-//´æ´¢ ÄÚºË»Øµ÷ÐÅÏ¢
+//å­˜å‚¨ å†…æ ¸å›žè°ƒä¿¡æ¯
 typedef struct _KernelCallBackInfo
 {
 	CLIST_ENTRY_EX List;													//
-	ULONG64 CallBackType;													//»Øµ÷ÀàÐÍ
-	ULONG64 CallBackAddr;													//»Øµ÷µØÖ·
-	ULONG64 ModuleOffset;													//ËùÔÚÄ£¿éÆ«ÒÆ
-	ULONG64 Descr;															//±¸×¢
-	WCHAR ModulePath[MY_MAX_PATH];											//ËùÔÚÄ£¿éÂ·¾¶
+	ULONG64 CallBackType;													//å›žè°ƒç±»åž‹
+	ULONG64 CallBackAddr;													//å›žè°ƒåœ°å€
+	ULONG64 ModuleOffset;													//æ‰€åœ¨æ¨¡å—åç§»
+	ULONG64 Descr;															//å¤‡æ³¨
+	WCHAR ModulePath[MY_MAX_PATH];											//æ‰€åœ¨æ¨¡å—è·¯å¾„
 }CKernelCallBackInfo, * PCKernelCallBackInfo;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//´æ´¢¶ÔÏóÀàÐÍ»Øµ÷ÐÅÏ¢
+//å­˜å‚¨å¯¹è±¡ç±»åž‹å›žè°ƒä¿¡æ¯
 typedef struct _ObjectTypeCallBackInfo
 {
 	CLIST_ENTRY_EX List;													//
-	UCHAR ObjectCallBackType;												//0´ú±í×¢²áµÄ»Øµ÷ _ObjectTypeCallBackInfo 1´ú±í¶ÔÏó´æ´¢µÄ»Øµ÷_ObjectCallBackExInfo
-	WCHAR szObjectTypeName[MAX_BASE_FILE_NAME];								//ÀàÐÍÃû
+	UCHAR ObjectCallBackType;												//0ä»£è¡¨æ³¨å†Œçš„å›žè°ƒ _ObjectTypeCallBackInfo 1ä»£è¡¨å¯¹è±¡å­˜å‚¨çš„å›žè°ƒ_ObjectCallBackExInfo
+	WCHAR szObjectTypeName[MAX_BASE_FILE_NAME];								//ç±»åž‹å
 	ULONG64 PreOperation;													//PreOperation
 	ULONG64 PostOperation;													//PostOperation
-	ULONG64 pHandle;														//¾ä±ú
-	WCHAR Altitude[MAX_BASE_FILE_NAME];										//º£°Î
-	WCHAR ModulePath[MY_MAX_PATH];											//ËùÔÚÄ£¿éÂ·¾¶
+	ULONG64 pHandle;														//å¥æŸ„
+	WCHAR Altitude[MAX_BASE_FILE_NAME];										//æµ·æ‹”
+	WCHAR ModulePath[MY_MAX_PATH];											//æ‰€åœ¨æ¨¡å—è·¯å¾„
 }CObjectTypeCallBackInfo, * PCObjectTypeCallBackInfo;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//´æ´¢¶ÔÏóÀàÐÍ»Øµ÷ÐÅÏ¢
-#define OBJECT_TYPE_CALLBACK_MAX_NUMBER		0x8		//¶ÔÏóÀàÐÍ»Øµ÷×î´óÊýÁ¿
+//å­˜å‚¨å¯¹è±¡ç±»åž‹å›žè°ƒä¿¡æ¯
+#define OBJECT_TYPE_CALLBACK_MAX_NUMBER		0x8		//å¯¹è±¡ç±»åž‹å›žè°ƒæœ€å¤§æ•°é‡
 enum ObjectCallBackExFunType
 {
 	um_ObjectTypeName_DumpProcedure = 0,
@@ -467,66 +468,66 @@ enum ObjectCallBackExFunType
 
 typedef struct _ObjectTypeCallBackExFunInfo
 {
-	ULONG64 FunAddr;														//´æ´¢º¯ÊýµØÖ·
-	ULONG64 FunType;														//»Øµ÷ÀàÐÍ		ObjectCallBackExFunType
-	WCHAR ModulePath[MY_MAX_PATH];											//»Øµ÷ËùÔÚÄ£¿é
+	ULONG64 FunAddr;														//å­˜å‚¨å‡½æ•°åœ°å€
+	ULONG64 FunType;														//å›žè°ƒç±»åž‹		ObjectCallBackExFunType
+	WCHAR ModulePath[MY_MAX_PATH];											//å›žè°ƒæ‰€åœ¨æ¨¡å—
 }CObjectCallBackExFunInfo, * PCObjectCallBackExFunInfo;
 
 typedef struct _ObjectCallBackExInfo
 {
 	CLIST_ENTRY_EX List;													//
-	UCHAR ObjectCallBackType;												//0´ú±í×¢²áµÄ»Øµ÷ _ObjectTypeCallBackInfo 1´ú±í¶ÔÏó´æ´¢µÄ»Øµ÷_ObjectCallBackExInfo
+	UCHAR ObjectCallBackType;												//0ä»£è¡¨æ³¨å†Œçš„å›žè°ƒ _ObjectTypeCallBackInfo 1ä»£è¡¨å¯¹è±¡å­˜å‚¨çš„å›žè°ƒ_ObjectCallBackExInfo
 	ULONG32 ValidAccessMask;
-	CObjectCallBackExFunInfo FunAddr[OBJECT_TYPE_CALLBACK_MAX_NUMBER];		//Êý×é
+	CObjectCallBackExFunInfo FunAddr[OBJECT_TYPE_CALLBACK_MAX_NUMBER];		//æ•°ç»„
 
 	//CLIST_ENTRY_EX FunAddrList;											//
-	ULONG64 Object;															//´æ´¢¶ÔÏó
-	WCHAR TypeName[MAX_BASE_FILE_NAME];										//´æ´¢ÀàÐÍÃû
+	ULONG64 Object;															//å­˜å‚¨å¯¹è±¡
+	WCHAR TypeName[MAX_BASE_FILE_NAME];										//å­˜å‚¨ç±»åž‹å
 }CObjectTypeCallBackExInfo, * PCObjectTypeCallBackExInfo;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//´æ´¢»Øµ÷ÀàÐÍÐÅÏ¢
+//å­˜å‚¨å›žè°ƒç±»åž‹ä¿¡æ¯
 typedef struct _CallBackInfo
 {
 	CLIST_ENTRY_EX List;													//
-	ULONG64 dqFunctionAddr;													//»Øµ÷µØÖ·
-	ULONG64 dqObjectAddr;													//¶ÔÏóµØÖ·
-	WCHAR szTypeName[MAX_BASE_FILE_NAME];									//ÀàÐÍÃû
-	WCHAR szPath[MY_MAX_PATH];												//ËùÔÚÄ£¿éÂ·¾¶
+	ULONG64 dqFunctionAddr;													//å›žè°ƒåœ°å€
+	ULONG64 dqObjectAddr;													//å¯¹è±¡åœ°å€
+	WCHAR szTypeName[MAX_BASE_FILE_NAME];									//ç±»åž‹å
+	WCHAR szPath[MY_MAX_PATH];												//æ‰€åœ¨æ¨¡å—è·¯å¾„
 }CCallBackInfo, * PCCallBackInfo;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//´æ´¢MiniFilter»Øµ÷ÐÅÏ¢
+//å­˜å‚¨MiniFilterå›žè°ƒä¿¡æ¯
 typedef struct _MiniFilterCallBackInfo
 {
 	CLIST_ENTRY_EX List;													//
-	WCHAR szFilterTypeName[MAX_BASE_FILE_NAME];								//ÀàÐÍÃû
+	WCHAR szFilterTypeName[MAX_BASE_FILE_NAME];								//ç±»åž‹å
 	ULONG64 PreOperation;													//PreOperation
 	ULONG64 PostOperation;													//PostOperation
-	ULONG64 pFilterAddr;													//¹ýÂËÆ÷µØÖ·
-	WCHAR Altitude[MAX_BASE_FILE_NAME];										//º£°Î
-	WCHAR ModulePath[MY_MAX_PATH];											//ËùÔÚÄ£¿éÂ·¾¶
+	ULONG64 pFilterAddr;													//è¿‡æ»¤å™¨åœ°å€
+	WCHAR Altitude[MAX_BASE_FILE_NAME];										//æµ·æ‹”
+	WCHAR ModulePath[MY_MAX_PATH];											//æ‰€åœ¨æ¨¡å—è·¯å¾„
 }CMiniFilterCallBackInfo, * PCMiniFilterCallBackInfo;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//´æ´¢MiniFilter»Øµ÷ÐÅÏ¢
-#define MAJORFUNCTION_MAX_NUMBER	(0x1C)									//IRPº¯Êý×î´óÖµ
+//å­˜å‚¨MiniFilterå›žè°ƒä¿¡æ¯
+#define MAJORFUNCTION_MAX_NUMBER	(0x1C)									//IRPå‡½æ•°æœ€å¤§å€¼
 typedef struct _SysMajorFunctionInfo
 {
 	CLIST_ENTRY_EX List;													//
-	ULONG32 Ord;															//ÐòºÅ
-	ULONG32 Type;															//IRPÀàÐÍ
-	ULONG64 FunAddr;														//IRPº¯ÊýµØÖ·
-	WCHAR ModulePath[MY_MAX_PATH];											//ËùÔÚÄ£¿éÂ·¾¶
+	ULONG32 Ord;															//åºå·
+	ULONG32 Type;															//IRPç±»åž‹
+	ULONG64 FunAddr;														//IRPå‡½æ•°åœ°å€
+	WCHAR ModulePath[MY_MAX_PATH];											//æ‰€åœ¨æ¨¡å—è·¯å¾„
 }CSysMajorFunctionInfo, * PCSysMajorFunctionInfo;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//·¢°ü·½ÐèÒªÌîµÄ
+//å‘åŒ…æ–¹éœ€è¦å¡«çš„
 enum  UmFilterMessageDataType
 {
 	um_FilterMessageDataType_HookSSDT,
@@ -537,16 +538,16 @@ enum  UmFilterMessageDataType
 
 typedef struct _FilterGetMessageHeadInfo
 {
-	FILTER_REPLY_HEADER Header;												//±ØÐë½á¹¹
-	ULONG64 PackType;														//°üÀàÐÍ ¾ö¶¨½á¹¹Ìå
-	ULONG64 PackSize;														//°ü´óÐ¡
+	FILTER_REPLY_HEADER Header;												//å¿…é¡»ç»“æž„
+	ULONG64 PackType;														//åŒ…ç±»åž‹ å†³å®šç»“æž„ä½“
+	ULONG64 PackSize;														//åŒ…å¤§å°
 }CFilterGetMessageHeadInfo, * PCFilterGetMessageHeadInfo;
 
 typedef struct _FilterUserGetMessageHeadInfo
 {
-	FILTER_MESSAGE_HEADER  Header;											//±ØÐë½á¹¹
-	ULONG64 PackType;														//°üÀàÐÍ ¾ö¶¨½á¹¹Ìå
-	ULONG64 PackSize;														//°ü´óÐ¡
+	FILTER_MESSAGE_HEADER  Header;											//å¿…é¡»ç»“æž„
+	ULONG64 PackType;														//åŒ…ç±»åž‹ å†³å®šç»“æž„ä½“
+	ULONG64 PackSize;														//åŒ…å¤§å°
 }CFilterUserGetMessageHeadInfo, * PCFilterUserGetMessageHeadInfo;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -555,62 +556,62 @@ typedef struct _FilterUserGetMessageHeadInfo
 typedef struct _StructInfo
 {
 #define MAXBYTE     0x20 
-	WCHAR szModuleName[MAXBYTE];											//Òª»ñÈ¡µÄÄ£¿éÃû
-	WCHAR szmemberName[MAXBYTE];											//Òª»ñÈ¡µÄ½á¹¹Ìå³ÉÔ±Ãû
-	WCHAR szClassType[MAXBYTE];												//Òª»ñÈ¡µÄ½á¹¹ÌåÀàÐÍÃû
-	ULONG64 nOffset;														//Òª»ñÈ¡µÄÆ«ÒÆÁ¿
+	WCHAR szModuleName[MAXBYTE];											//è¦èŽ·å–çš„æ¨¡å—å
+	WCHAR szmemberName[MAXBYTE];											//è¦èŽ·å–çš„ç»“æž„ä½“æˆå‘˜å
+	WCHAR szClassType[MAXBYTE];												//è¦èŽ·å–çš„ç»“æž„ä½“ç±»åž‹å
+	ULONG64 nOffset;														//è¦èŽ·å–çš„åç§»é‡
 }CStructInfo, * PCStructInfo;
 
 typedef struct _FilterUserGetMessageStructInfo
 {
 	CFilterUserGetMessageHeadInfo Header;
-	CStructInfo	StructInfo;													//´æ´¢Òª»ñÈ¡µÄ½á¹¹ÌåÐÅÏ¢
+	CStructInfo	StructInfo;													//å­˜å‚¨è¦èŽ·å–çš„ç»“æž„ä½“ä¿¡æ¯
 }CFilterUserGetMessageStructInfo, * PCFilterUserGetMessageStructInfo;
 
 typedef struct _GlobalVariables
 {
 #define MAXBYTE     0x20 
-	WCHAR szModuleName[MAXBYTE];											//Òª»ñÈ¡µÄÄ£¿éÃû
-	WCHAR szVarName[MAXBYTE];												//Òª»ñÈ¡µÄ½á¹¹ÌåÀàÐÍÃû
-	ULONG64 nOffset;														//Òª»ñÈ¡µÄÆ«ÒÆÁ¿
+	WCHAR szModuleName[MAXBYTE];											//è¦èŽ·å–çš„æ¨¡å—å
+	WCHAR szVarName[MAXBYTE];												//è¦èŽ·å–çš„ç»“æž„ä½“ç±»åž‹å
+	ULONG64 nOffset;														//è¦èŽ·å–çš„åç§»é‡
 }CGlobalVariables, * PCGlobalVariables;
 
 typedef struct _FilterUserGetMessageGlobalVariables
 {
 	CFilterUserGetMessageHeadInfo Header;
-	CGlobalVariables	VarInfo;											//´æ´¢Òª»ñÈ¡µÄ½á¹¹ÌåÐÅÏ¢
+	CGlobalVariables	VarInfo;											//å­˜å‚¨è¦èŽ·å–çš„ç»“æž„ä½“ä¿¡æ¯
 }CFilterUserGetMessageGlobalVariables, * PCFilterUserGetMessageGlobalVariables;
 
 typedef struct _FilterUserSendMessageGlobalVariables
 {
 	CFilterGetMessageHeadInfo Header;
-	CGlobalVariables VarInfo;											//´æ´¢Òª»ñÈ¡µÄ½á¹¹ÌåÐÅÏ¢
+	CGlobalVariables VarInfo;											//å­˜å‚¨è¦èŽ·å–çš„ç»“æž„ä½“ä¿¡æ¯
 }CFilterUserSendMessageGlobalVariables, * PCFilterUserSendMessageGlobalVariables;
 
 typedef struct _FilterUserSendtMessageStructInfo
 {
 	CFilterGetMessageHeadInfo Header;
-	CStructInfo	StructInfo;													//´æ´¢Òª»ñÈ¡µÄ½á¹¹ÌåÐÅÏ¢
+	CStructInfo	StructInfo;													//å­˜å‚¨è¦èŽ·å–çš„ç»“æž„ä½“ä¿¡æ¯
 }CFilterUserSendtMessageStructInfo, * PCFilterUserSendtMessageStructInfo;
 
 typedef struct _StructSize
 {
 #define MAXBYTE     0x20 
-	WCHAR szModuleName[MAXBYTE];											//Òª»ñÈ¡µÄÄ£¿éÃû
-	WCHAR szClassName[MAXBYTE];												//Òª»ñÈ¡µÄ½á¹¹ÌåÀàÐÍÃû
-	ULONG64 nSize;															//Òª»ñÈ¡µÄÆ«ÒÆÁ¿
+	WCHAR szModuleName[MAXBYTE];											//è¦èŽ·å–çš„æ¨¡å—å
+	WCHAR szClassName[MAXBYTE];												//è¦èŽ·å–çš„ç»“æž„ä½“ç±»åž‹å
+	ULONG64 nSize;															//è¦èŽ·å–çš„åç§»é‡
 }CStructSize, * PCStructSize;
 
 typedef struct _FilterUserGetMessageStructSize
 {
 	CFilterUserGetMessageHeadInfo Header;
-	CStructSize	StructInfo;													//´æ´¢Òª»ñÈ¡µÄ½á¹¹ÌåÐÅÏ¢
+	CStructSize	StructInfo;													//å­˜å‚¨è¦èŽ·å–çš„ç»“æž„ä½“ä¿¡æ¯
 }CFilterUserGetMessageStructSize, * PCFilterUserGetMessageStructSize;
 
 typedef struct _FilterUserSendtMessageStructSize
 {
 	CFilterGetMessageHeadInfo Header;
-	CStructSize	StructInfo;													//´æ´¢Òª»ñÈ¡µÄ½á¹¹ÌåÐÅÏ¢
+	CStructSize	StructInfo;													//å­˜å‚¨è¦èŽ·å–çš„ç»“æž„ä½“ä¿¡æ¯
 }CFilterUserSendtMessageStructSize, * PCFilterUserSendtMessageStructSize;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -630,62 +631,62 @@ enum UmPragmaType
 
 typedef struct _PragmaType
 {
-	ULONG64 Type;															//²ÎÊýÀàÐÍ 1:´ú±í1×Ö½ÚÀàÐÍ 2:´ú±í2×Ö½ÚÀàÐÍ 3:´ú±í4×Ö½ÚÀàÐÍ 
-	// 4:´ú±í8×Ö½ÚÀàÐÍ 5:´ú±íµØÖ· 6:´ú±íchar×Ö·û´®µØÖ· 
-	// 7:´ú±íwchar×Ö·û´®µØÖ· 8:´ú±íµ¥¸¡µã 9:´ú±íË«¸¡µã
-	ULONG64 pPragma;														//µØÖ·»òÖµ
+	ULONG64 Type;															//å‚æ•°ç±»åž‹ 1:ä»£è¡¨1å­—èŠ‚ç±»åž‹ 2:ä»£è¡¨2å­—èŠ‚ç±»åž‹ 3:ä»£è¡¨4å­—èŠ‚ç±»åž‹ 
+	// 4:ä»£è¡¨8å­—èŠ‚ç±»åž‹ 5:ä»£è¡¨åœ°å€ 6:ä»£è¡¨charå­—ç¬¦ä¸²åœ°å€ 
+	// 7:ä»£è¡¨wcharå­—ç¬¦ä¸²åœ°å€ 8:ä»£è¡¨å•æµ®ç‚¹ 9:ä»£è¡¨åŒæµ®ç‚¹
+	ULONG64 pPragma;														//åœ°å€æˆ–å€¼
 }CPragmaType, * PCPragmaType;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//´æ´¢·þÎñµ÷ÓÃ×î´ó²ÎÊýÊýÁ¿
+//å­˜å‚¨æœåŠ¡è°ƒç”¨æœ€å¤§å‚æ•°æ•°é‡
 #define SSDT_PARAGMA_MAX_NUMBER		(14)
-//¼ÇÂ¼ÒªHoookµÄº¯ÊýÐÅÏ¢
+//è®°å½•è¦Hoookçš„å‡½æ•°ä¿¡æ¯
 typedef struct _SSDTHookInfo
 {
 	CFilterUserGetMessageHeadInfo Header;
-	DWORD PID;																//µ±Ç°½ø³ÌID
-	DWORD TID;																//Ïß³ÌID
-	ULONG64 FunCallNumber;													//º¯Êýµ÷ÓÃºÅ
-	ULONG64 FunAddr;														//0»·º¯ÊýµØÖ·
-	ULONG64 RetValue;														//´æ´¢·µ»ØÖµ
-	ULONG64 ParagmaNumber;													//ÓÐ¼¸¸ö²ÎÊý
-	WCHAR FunName[MY_MAX_PATH];												//º¯ÊýÃû
-	//WCHAR StrFormat[MY_MAX_PATH];											//²ÎÊý¸ñÊ½
-	//WCHAR ProcessName[MY_MAX_PATH];										//½ø³ÌÃû
-	CProcessInfo ProcessInfo;												//´æ´¢½ø³ÌÐÅÏ¢
-	CPragmaType Paragma[SSDT_PARAGMA_MAX_NUMBER];							//´æ´¢²ÎÊý //Èç¹ûÊÇ×Ö·û´®
+	DWORD PID;																//å½“å‰è¿›ç¨‹ID
+	DWORD TID;																//çº¿ç¨‹ID
+	ULONG64 FunCallNumber;													//å‡½æ•°è°ƒç”¨å·
+	ULONG64 FunAddr;														//0çŽ¯å‡½æ•°åœ°å€
+	ULONG64 RetValue;														//å­˜å‚¨è¿”å›žå€¼
+	ULONG64 ParagmaNumber;													//æœ‰å‡ ä¸ªå‚æ•°
+	WCHAR FunName[MY_MAX_PATH];												//å‡½æ•°å
+	//WCHAR StrFormat[MY_MAX_PATH];											//å‚æ•°æ ¼å¼
+	//WCHAR ProcessName[MY_MAX_PATH];										//è¿›ç¨‹å
+	CProcessInfo ProcessInfo;												//å­˜å‚¨è¿›ç¨‹ä¿¡æ¯
+	CPragmaType Paragma[SSDT_PARAGMA_MAX_NUMBER];							//å­˜å‚¨å‚æ•° //å¦‚æžœæ˜¯å­—ç¬¦ä¸²
 }CSSDTHookInfo, * PCSSDTHookInfo;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//´æ´¢DPCÐÅÏ¢
+//å­˜å‚¨DPCä¿¡æ¯
 typedef struct _DpcInfo
 {
 	CLIST_ENTRY_EX List;													//
-	ULONG64 DpcObject;														//´æ´¢µ±Ç°DPC¶ÔÏó
-	ULONG64 TimeObject;														//´æ´¢µ±Ç°Time¶ÔÏó
-	ULONG64 TriggerCycle;													//´¥·¢ÖÜÆÚ
-	ULONG64 FunCtionStartAddr;												//º¯ÊýÈë¿Ú
-	WCHAR ModulePath[MY_MAX_PATH];											//º¯ÊýËùÔÚÄ£¿éÂ·¾¶
+	ULONG64 DpcObject;														//å­˜å‚¨å½“å‰DPCå¯¹è±¡
+	ULONG64 TimeObject;														//å­˜å‚¨å½“å‰Timeå¯¹è±¡
+	ULONG64 TriggerCycle;													//è§¦å‘å‘¨æœŸ
+	ULONG64 FunCtionStartAddr;												//å‡½æ•°å…¥å£
+	WCHAR ModulePath[MY_MAX_PATH];											//å‡½æ•°æ‰€åœ¨æ¨¡å—è·¯å¾„
 }CDPcInfo, * PCDPcInfo;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//´æ´¢¶ÁÐ´ÄÚ´æµÄÐÅÏ¢
-#define MAX_READ_SIZE				0x1000									/*´æ´¢¶ÁÈ¡µÄ×î´ó´óÐ¡*/
-#define RWMEMORY_READ				0x00									/*¶Á*/
-#define RWMEMORY_WRITE				0x01									/*Ð´*/
+//å­˜å‚¨è¯»å†™å†…å­˜çš„ä¿¡æ¯
+#define MAX_READ_SIZE				0x1000									/*å­˜å‚¨è¯»å–çš„æœ€å¤§å¤§å°*/
+#define RWMEMORY_READ				0x00									/*è¯»*/
+#define RWMEMORY_WRITE				0x01									/*å†™*/
 typedef struct _RWMemoryInfo
 {
-	ULONG64 Eprocess;														//Ä¿±ê½ø³Ì¶ÔÏó
-	ULONG64 DstAddr;														//Ä¿±êµØÖ·
-	ULONG64 offset;															//Æ«ÒÆ
-	ULONG64 dqSize;															//´óÐ¡		
-	ULONG64 Mode;															//Ä£Ê½,1:Ð´  0:¶Á
-	PUCHAR  Buf;															//»º³åÇø
+	ULONG64 Eprocess;														//ç›®æ ‡è¿›ç¨‹å¯¹è±¡
+	ULONG64 DstAddr;														//ç›®æ ‡åœ°å€
+	ULONG64 offset;															//åç§»
+	ULONG64 dqSize;															//å¤§å°		
+	ULONG64 Mode;															//æ¨¡å¼,1:å†™  0:è¯»
+	PUCHAR  Buf;															//ç¼“å†²åŒº
 }CRWMemoryInfo, * PCRWMemoryInfo;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -697,15 +698,15 @@ enum HalTableType
 	HalPrivateDispatchTable_Type,
 };
 
-//´æ´¢±éÀúµ½µÄHal±íº¯ÊýµØÖ·ÐÅÏ¢
+//å­˜å‚¨éåŽ†åˆ°çš„Halè¡¨å‡½æ•°åœ°å€ä¿¡æ¯
 typedef struct _HalFunTableInfo
 {
 	CLIST_ENTRY_EX List;													//
-	ULONG64 pFunOrder;														//´æ´¢º¯ÊýÐòºÅ
-	ULONG64 pFunAddr;														//´æ´¢µ±Ç°º¯ÊýµØÖ·
-	ULONG64 pSrcFunAddr;													//´æ´¢Ô­º¯ÊýµØÖ·
-	ULONG64 HookType;														//´æ´¢HookÀàÐÍ
-	WCHAR ModulePath[MY_MAX_PATH];											//ËùÔÚÄ£¿éÂ·¾¶
+	ULONG64 pFunOrder;														//å­˜å‚¨å‡½æ•°åºå·
+	ULONG64 pFunAddr;														//å­˜å‚¨å½“å‰å‡½æ•°åœ°å€
+	ULONG64 pSrcFunAddr;													//å­˜å‚¨åŽŸå‡½æ•°åœ°å€
+	ULONG64 HookType;														//å­˜å‚¨Hookç±»åž‹
+	WCHAR ModulePath[MY_MAX_PATH];											//æ‰€åœ¨æ¨¡å—è·¯å¾„
 }CHalFunTableInfo, * PCHalFunTableInfo;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -720,36 +721,36 @@ enum FileSystemDeviceType
 	um_FileSystemDeviceType_Tape,
 };
 
-//ÎÄ¼þÏµÍ³ÐÅÏ¢
+//æ–‡ä»¶ç³»ç»Ÿä¿¡æ¯
 typedef struct _FileSystemDeviceInfo
 {
 	CLIST_ENTRY_EX List;													//
-	ULONG64 nType;															//FileSystemDeviceType ÀàÐÍ
-	ULONG64 DeviceObject;													//Éè±¸¶ÔÏó
-	ULONG64 DriverObject;													//Çý¶¯¶ÔÏó
-	WCHAR DeviceName[MY_MAX_PATH];											//Éè±¸Ãû³Æ
-	WCHAR DriverName[MY_MAX_PATH];											//Çý¶¯Ãû³Æ
+	ULONG64 nType;															//FileSystemDeviceType ç±»åž‹
+	ULONG64 DeviceObject;													//è®¾å¤‡å¯¹è±¡
+	ULONG64 DriverObject;													//é©±åŠ¨å¯¹è±¡
+	WCHAR DeviceName[MY_MAX_PATH];											//è®¾å¤‡åç§°
+	WCHAR DriverName[MY_MAX_PATH];											//é©±åŠ¨åç§°
 }CFileSystemDeviceInfo, * PCFileSystemDeviceInfo;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//´æ´¢ WDF Çý¶¯µÄÐÅÏ¢
+//å­˜å‚¨ WDF é©±åŠ¨çš„ä¿¡æ¯
 typedef struct _WdfInfo
 {
 	CLIST_ENTRY_EX List;													//
-	ULONG64 pFunOrder;														//´æ´¢º¯ÊýÐòºÅ
-	ULONG64 pFunAddr;														//´æ´¢µ±Ç°º¯ÊýµØÖ·
-	ULONG64 pSrcFunAddr;													//´æ´¢Ô­º¯ÊýµØÖ·
-	ULONG64 HookType;														//´æ´¢HookÀàÐÍ
-	WCHAR ModulePath[MY_MAX_PATH];											//ËùÔÚÄ£¿éÂ·¾¶
+	ULONG64 pFunOrder;														//å­˜å‚¨å‡½æ•°åºå·
+	ULONG64 pFunAddr;														//å­˜å‚¨å½“å‰å‡½æ•°åœ°å€
+	ULONG64 pSrcFunAddr;													//å­˜å‚¨åŽŸå‡½æ•°åœ°å€
+	ULONG64 HookType;														//å­˜å‚¨Hookç±»åž‹
+	WCHAR ModulePath[MY_MAX_PATH];											//æ‰€åœ¨æ¨¡å—è·¯å¾„
 }CWdfInfo, * PCWdfInfo;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//SSDT±íÖÐAPIË÷Òý
+//SSDTè¡¨ä¸­APIç´¢å¼•
 enum UmSSDTMonitor
 {
 	um_SSDT_Monitor_NtAccessCheck = 0,
@@ -766,11 +767,11 @@ enum UmSSDTMonitor
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//ÉèÖÃHookSsdtµÄ½á¹¹
+//è®¾ç½®HookSsdtçš„ç»“æž„
 typedef struct _HookSsdtTableInfo
 {
-	ULONG32 FunNumber;														//ÒªÉèÖÃµÄº¯Êýµ÷ÓÃºÅ
-	ULONG32 State;															//ÒªÉèÖÃµÄº¯Êý×´Ì¬0¹Ø±ÕHook,1¿ªÆôHook
+	ULONG32 FunNumber;														//è¦è®¾ç½®çš„å‡½æ•°è°ƒç”¨å·
+	ULONG32 State;															//è¦è®¾ç½®çš„å‡½æ•°çŠ¶æ€0å…³é—­Hook,1å¼€å¯Hook
 }CHookSsdtTableInfo, * PCHookSsdtTableInfo;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -785,29 +786,29 @@ enum umUserWmMonitorMessageType
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-#define PS_PROTECTION_TYPE_MASK     0x07    // µÍ 3 Î» (0b00000111)
-#define PS_PROTECTION_AUDIT_MASK    0x08    // µÚ 4 Î» (0b00001000)
-#define PS_PROTECTION_SIGNER_MASK   0xF0    // ¸ß 4 Î» (0b11110000)
+#define PS_PROTECTION_TYPE_MASK     0x07    // ä½Ž 3 ä½ (0b00000111)
+#define PS_PROTECTION_AUDIT_MASK    0x08    // ç¬¬ 4 ä½ (0b00001000)
+#define PS_PROTECTION_SIGNER_MASK   0xF0    // é«˜ 4 ä½ (0b11110000)
 
-// ÌáÈ¡ Type£¨bit 0-2£©
+// æå– Typeï¼ˆbit 0-2ï¼‰
 #define PS_PROTECTION_GET_TYPE(Level)        ((Level) & PS_PROTECTION_TYPE_MASK)
 
-// ÌáÈ¡ Audit£¨bit 3£©
+// æå– Auditï¼ˆbit 3ï¼‰
 #define PS_PROTECTION_GET_AUDIT(Level)       (((Level) & PS_PROTECTION_AUDIT_MASK) >> 3)
 
-// ÌáÈ¡ Signer£¨bit 4-7£©
+// æå– Signerï¼ˆbit 4-7ï¼‰
 #define PS_PROTECTION_GET_SIGNER(Level)      (((Level) & PS_PROTECTION_SIGNER_MASK) >> 4)
 
-// ÉèÖÃ Type£¨bit 0-2£©
+// è®¾ç½® Typeï¼ˆbit 0-2ï¼‰
 #define PS_PROTECTION_SET_TYPE(Level, Type)  ((Level) = ((Level) & ~PS_PROTECTION_TYPE_MASK) | ((Type) & PS_PROTECTION_TYPE_MASK))
 
-// ÉèÖÃ Audit£¨bit 3£©
+// è®¾ç½® Auditï¼ˆbit 3ï¼‰
 #define PS_PROTECTION_SET_AUDIT(Level, Audit) ((Level) = ((Level) & ~PS_PROTECTION_AUDIT_MASK) | (((Audit) & 1) << 3))
 
-// ÉèÖÃ Signer£¨bit 4-7£©
+// è®¾ç½® Signerï¼ˆbit 4-7ï¼‰
 #define PS_PROTECTION_SET_SIGNER(Level, Signer) ((Level) = ((Level) & ~PS_PROTECTION_SIGNER_MASK) | (((Signer) & 0xF) << 4))
 
-// ±£»¤ÀàÐÍ£¨Type£©
+// ä¿æŠ¤ç±»åž‹ï¼ˆTypeï¼‰
 typedef enum _PS_PROTECTED_TYPE {
 	PsProtectedTypeNone = 0,
 	PsProtectedTypeProtectedLight = 1,
@@ -815,7 +816,7 @@ typedef enum _PS_PROTECTED_TYPE {
 	PsProtectedTypeMax = 3
 } PS_PROTECTED_TYPE;
 
-// Ç©Ãû¼¶±ð£¨Signer£©
+// ç­¾åçº§åˆ«ï¼ˆSignerï¼‰
 typedef enum _PS_PROTECTED_SIGNER {
 	PsProtectedSignerNone = 0,
 	PsProtectedSignerAuthenticode = 1,
@@ -833,33 +834,33 @@ typedef enum _PS_PROTECTED_SIGNER {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #define FILTER_DEVICE_TYPENAME_LEN 0x20
 #define FILTER_DEVICE_NAME_LEN FILTER_DEVICE_TYPENAME_LEN
-//´æ´¢ÎÄ¼þ¹ýÂËÉè±¸ÐÅÏ¢
+//å­˜å‚¨æ–‡ä»¶è¿‡æ»¤è®¾å¤‡ä¿¡æ¯
 typedef struct _FilterDeviceInfo
 {
 	CLIST_ENTRY_EX List;													//
-	WCHAR TypeName[FILTER_DEVICE_TYPENAME_LEN];								//¹ýÂËÇý¶¯ÀàÐÍ
-	WCHAR FilterDriverName[MY_MAX_PATH];									//¹ýÂËÇý¶¯Ãû
-	WCHAR FilterDriverPath[MY_MAX_PATH];									//¹ýÂËÇý¶¯Â·¾¶
-	WCHAR SrcDriverName[MY_MAX_PATH];										//Ô­Çý¶¯Ãû
-	ULONG64 FilterDeviceObject;												//¹ýÂËÉè±¸¶ÔÏó
-	WCHAR FilterDeviceName[FILTER_DEVICE_NAME_LEN];							//¹ýÂËÉè±¸Ãû																														  //ÎÄ¼þ³§ÉÌ
+	WCHAR TypeName[FILTER_DEVICE_TYPENAME_LEN];								//è¿‡æ»¤é©±åŠ¨ç±»åž‹
+	WCHAR FilterDriverName[MY_MAX_PATH];									//è¿‡æ»¤é©±åŠ¨å
+	WCHAR FilterDriverPath[MY_MAX_PATH];									//è¿‡æ»¤é©±åŠ¨è·¯å¾„
+	WCHAR SrcDriverName[MY_MAX_PATH];										//åŽŸé©±åŠ¨å
+	ULONG64 FilterDeviceObject;												//è¿‡æ»¤è®¾å¤‡å¯¹è±¡
+	WCHAR FilterDeviceName[FILTER_DEVICE_NAME_LEN];							//è¿‡æ»¤è®¾å¤‡å																														  //æ–‡ä»¶åŽ‚å•†
 }CFilterDeviceInfo, * PCFilterDeviceInfo;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//´æ´¢µ÷ÊÔ±êÖ¾½á¹¹Ìå
-#define USER_GET_DEBUG_FLAG		0x1		//»ñÈ¡µ÷ÊÔ±êÖ¾
-#define USER_SET_DEBUG_FLAG		0x0		//ÉèÖÃµ÷ÊÔ±êÖ¾
+//å­˜å‚¨è°ƒè¯•æ ‡å¿—ç»“æž„ä½“
+#define USER_GET_DEBUG_FLAG		0x1		//èŽ·å–è°ƒè¯•æ ‡å¿—
+#define USER_SET_DEBUG_FLAG		0x0		//è®¾ç½®è°ƒè¯•æ ‡å¿—
 
 typedef struct _DebugFlagInfo
 {
 	union
 	{
-		ULONG64 DebugFlag;														//´æ´¢±êÖ¾
+		ULONG64 DebugFlag;														//å­˜å‚¨æ ‡å¿—
 		struct
 		{
-			ULONG64 UserOperate : 1;											//ÓÃ»§²Ù×÷ 1£º´ú±í»ñÈ¡ 0£º´ú±íÉèÖÃ
+			ULONG64 UserOperate : 1;											//ç”¨æˆ·æ“ä½œ 1ï¼šä»£è¡¨èŽ·å– 0ï¼šä»£è¡¨è®¾ç½®
 			ULONG64 kdDebuggerEnable : 1;
 			ULONG64 KdDebuggerNotPresent : 1;
 			ULONG64 SharedDataKdDebuggerEnabled : 1;

@@ -120,6 +120,9 @@
     <ClInclude Include="DlgDpc.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="DlgWorkerThread.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
     <ClInclude Include="DlgRWMemory.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -321,6 +324,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="DlgDpc.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DlgWorkerThread.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="DlgRWMemory.cpp">

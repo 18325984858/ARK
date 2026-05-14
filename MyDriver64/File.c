@@ -1,6 +1,6 @@
-#include "DefineArea.h"
+ï»¿#include "DefineArea.h"
 #include "KernelStruct.h"
-#include <ntimage.h>    /*PEÍ·ÎÄ¼ş*/
+#include <ntimage.h>    /*PEå¤´æ–‡ä»¶*/
 #include "FunctionPtr.h"
 
 NTSTATUS SkillSetFileCompletion(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp, IN PVOID Context)
@@ -22,10 +22,10 @@ ULONG64 MyDeleteRunFile(PUNICODE_STRING pFullName)
 
 	InitializeObjectAttributes(&objAttribus, pFullName, OBJ_KERNEL_HANDLE | OBJ_CASE_INSENSITIVE, NULL, NULL);
 
-	//´ò¿ªÎÄ¼ş»ñÈ¡ÎÄ¼ş¾ä±ú//ÊôĞÔÎª ¶Á
+	//æ‰“å¼€æ–‡ä»¶è·å–æ–‡ä»¶å¥æŸ„//å±æ€§ä¸º è¯»
 	//NTSTATUS nStatus = ZwOpenFile(&FileHandle, GENERIC_READ, &objAttribus, &IoStatusBlock, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, FILE_NON_DIRECTORY_FILE);
 	//__debugbreak();
-	//´ò¿ªÎÄ¼ş
+	//æ‰“å¼€æ–‡ä»¶
 	IO_STATUS_BLOCK ioStatus = { 0 };
 	nStatus = IoCreateFile(&FileHandle, FILE_READ_ATTRIBUTES, &objAttribus, &ioStatus, 0, FILE_ATTRIBUTE_NORMAL, FILE_SHARE_DELETE, FILE_OPEN, 0, NULL, 0, 0, NULL, IO_NO_PARAMETER_CHECKING);
 	if (!NT_SUCCESS(nStatus))
@@ -33,7 +33,7 @@ ULONG64 MyDeleteRunFile(PUNICODE_STRING pFullName)
 		return nStatus;
 	}
 
-	//»ñÈ¡ÎÄ¼ş¶ÔÏó
+	//è·å–æ–‡ä»¶å¯¹è±¡
 	PFILE_OBJECT pFileObj = NULL;
 	nStatus = ObReferenceObjectByHandle(FileHandle, DELETE, *IoFileObjectType, KernelMode, &pFileObj, NULL);
 	if (!NT_SUCCESS(nStatus))
@@ -42,7 +42,7 @@ ULONG64 MyDeleteRunFile(PUNICODE_STRING pFullName)
 		return nStatus;
 	}
 
-	//¹Ø±ÕÎÄ¼ş¾ä±ú
+	//å…³é—­æ–‡ä»¶å¥æŸ„
 	if (FileHandle)
 	{
 		ZwClose(FileHandle);
@@ -51,19 +51,19 @@ ULONG64 MyDeleteRunFile(PUNICODE_STRING pFullName)
 	PDEVICE_OBJECT pFileDeviceObj = IoGetRelatedDeviceObject(pFileObj);
 	if (MmIsAddressValid(pFileDeviceObj))
 	{
-		//	//È¥µôÖ»¶ÁÊôĞÔ
+		//	//å»æ‰åªè¯»å±æ€§
 		{
-			//ÉêÇëÒ»¸öIRPÇëÇó
+			//ç”³è¯·ä¸€ä¸ªIRPè¯·æ±‚
 			PIRP pIrp = IoAllocateIrp(pFileDeviceObj->StackSize, TRUE);
 			if (MmIsAddressValid(pIrp))
 			{
-				//³õÊ¼»¯Ò»¸öÍ¨Öª¶ÔÏó
+				//åˆå§‹åŒ–ä¸€ä¸ªé€šçŸ¥å¯¹è±¡
 				KEVENT nEvent = { 0 };
 				KeInitializeEvent(&nEvent, SynchronizationEvent, FALSE);
 
-				//ÌîĞ´IPRÇëÇó°ü
+				//å¡«å†™IPRè¯·æ±‚åŒ…
 				FILE_BASIC_INFORMATION FileInformation = { 0 };
-				FileInformation.FileAttributes = FILE_ATTRIBUTE_NORMAL; /*ĞŞ¸ÄÎÄ¼şÊôĞÔÎª ÎŞÊôĞÔ*/
+				FileInformation.FileAttributes = FILE_ATTRIBUTE_NORMAL; /*ä¿®æ”¹æ–‡ä»¶å±æ€§ä¸º æ— å±æ€§*/
 				pIrp->AssociatedIrp.SystemBuffer = &FileInformation;
 				pIrp->UserEvent = &nEvent;
 				pIrp->UserIosb = &nStatus;
@@ -73,7 +73,7 @@ ULONG64 MyDeleteRunFile(PUNICODE_STRING pFullName)
 
 				PIO_STACK_LOCATION irpSp = { 0 };
 				irpSp = IoGetNextIrpStackLocation(pIrp);
-				irpSp->MajorFunction = IRP_MJ_SET_INFORMATION;  /*ÒªÇëÇóµÄÏûÏ¢*/
+				irpSp->MajorFunction = IRP_MJ_SET_INFORMATION;  /*è¦è¯·æ±‚çš„æ¶ˆæ¯*/
 				irpSp->DeviceObject = pFileDeviceObj;
 				irpSp->FileObject = pFileObj;
 				irpSp->Parameters.SetFile.Length = sizeof(FILE_BASIC_INFORMATION);
@@ -84,13 +84,13 @@ ULONG64 MyDeleteRunFile(PUNICODE_STRING pFullName)
 
 				IoCallDriver(pFileDeviceObj, pIrp);
 
-				//µÈ´ı´¦ÀíÍê³É
+				//ç­‰å¾…å¤„ç†å®Œæˆ
 				KeWaitForSingleObject(&nEvent, Executive, KernelMode, TRUE, NULL);
 			}
 		}
 	}
 	/*
-	//ÏòÎÄ¼şÇı¶¯¹¹½¨É¾³ıÇëÇó
+	//å‘æ–‡ä»¶é©±åŠ¨æ„å»ºåˆ é™¤è¯·æ±‚
 	{
 		KEVENT nEvent = { 0 };
 		KeInitializeEvent(&nEvent, SynchronizationEvent, FALSE);
@@ -119,8 +119,8 @@ ULONG64 MyDeleteRunFile(PUNICODE_STRING pFullName)
 
 			IoSetCompletionRoutine(pIrp, SkillSetFileCompletion, &nEvent, TRUE, TRUE, TRUE);
 
-			//ÔÙ¼ÓÉÏÏÂÃæÕâÈıĞĞ´úÂë £¬MmFlushImageSection    º¯ÊıÍ¨¹ıÕâ¸ö½á¹¹À´¼ì²éÊÇ·ñ¿ÉÒÔÉ¾³ıÎÄ¼ş¡£
-			//Õâ¸öºÍHook
+			//å†åŠ ä¸Šä¸‹é¢è¿™ä¸‰è¡Œä»£ç  ï¼ŒMmFlushImageSection    å‡½æ•°é€šè¿‡è¿™ä¸ªç»“æ„æ¥æ£€æŸ¥æ˜¯å¦å¯ä»¥åˆ é™¤æ–‡ä»¶ã€‚
+			//è¿™ä¸ªå’ŒHook
 			PULONG64 ImageSectionObject = NULL;
 			PULONG64 DataSectionObject = NULL;
 			PULONG64 SharedCacheMap = NULL;
@@ -128,28 +128,28 @@ ULONG64 MyDeleteRunFile(PUNICODE_STRING pFullName)
 			PSECTION_OBJECT_POINTERS pSectionObjectPointer = pFileObj->SectionObjectPointer;
 			if (MmIsAddressValid(pSectionObjectPointer))
 			{
-				ImageSectionObject = pSectionObjectPointer->ImageSectionObject;			 // ±¸·İÖ®~~~
-				pSectionObjectPointer->ImageSectionObject = NULL;						 //ÇåÁã£¬×¼±¸É¾³ı
+				ImageSectionObject = pSectionObjectPointer->ImageSectionObject;			 // å¤‡ä»½ä¹‹~~~
+				pSectionObjectPointer->ImageSectionObject = NULL;						 //æ¸…é›¶ï¼Œå‡†å¤‡åˆ é™¤
 
-				DataSectionObject = pSectionObjectPointer->DataSectionObject;			//±¸·İÖ®
-				pSectionObjectPointer->DataSectionObject = NULL;						//ÇåÁã£¬×¼±¸É¾³ı
+				DataSectionObject = pSectionObjectPointer->DataSectionObject;			//å¤‡ä»½ä¹‹
+				pSectionObjectPointer->DataSectionObject = NULL;						//æ¸…é›¶ï¼Œå‡†å¤‡åˆ é™¤
 
 				SharedCacheMap = pSectionObjectPointer->SharedCacheMap;
 				pSectionObjectPointer->SharedCacheMap = NULL;
 			}
 
-			//·¢irpÉ¾³ı
+			//å‘irpåˆ é™¤
 			IoCallDriver(pFileDeviceObj, pIrp);
 
-			//µÈ´ı²Ù×÷Íê±Ï
+			//ç­‰å¾…æ“ä½œå®Œæ¯•
 			KeWaitForSingleObject(&nEvent, Executive, KernelMode, TRUE, NULL);
 
-			//É¾³ıÎÄ¼şÖ®ºó£¬´Ó±¸·İÄÇÀïÌî³ä»ØÀ´
+			//åˆ é™¤æ–‡ä»¶ä¹‹åï¼Œä»å¤‡ä»½é‚£é‡Œå¡«å……å›æ¥
 			pSectionObjectPointer = pFileObj->SectionObjectPointer;
 
 			if (MmIsAddressValid(pSectionObjectPointer))
 			{
-				//Ìî³ä»ØÀ´£¬²»È»À¶ÆÁÅ¶
+				//å¡«å……å›æ¥ï¼Œä¸ç„¶è“å±å“¦
 				if (ImageSectionObject)
 				{
 					pSectionObjectPointer->ImageSectionObject = ImageSectionObject;
@@ -169,10 +169,10 @@ ULONG64 MyDeleteRunFile(PUNICODE_STRING pFullName)
 	}
 	*/
 
-	//µ÷ÓÃAPIÉ¾³ı
+	//è°ƒç”¨APIåˆ é™¤
 	{
-		//ÔÙ¼ÓÉÏÏÂÃæÕâÈıĞĞ´úÂë £¬MmFlushImageSection    º¯ÊıÍ¨¹ıÕâ¸ö½á¹¹À´¼ì²éÊÇ·ñ¿ÉÒÔÉ¾³ıÎÄ¼ş¡£
-		//Õâ¸öºÍHook
+		//å†åŠ ä¸Šä¸‹é¢è¿™ä¸‰è¡Œä»£ç  ï¼ŒMmFlushImageSection    å‡½æ•°é€šè¿‡è¿™ä¸ªç»“æ„æ¥æ£€æŸ¥æ˜¯å¦å¯ä»¥åˆ é™¤æ–‡ä»¶ã€‚
+		//è¿™ä¸ªå’ŒHook
 		PULONG64 ImageSectionObject = NULL;
 		PULONG64 DataSectionObject = NULL;
 		PULONG64 SharedCacheMap = NULL;
@@ -180,32 +180,32 @@ ULONG64 MyDeleteRunFile(PUNICODE_STRING pFullName)
 		PSECTION_OBJECT_POINTERS pSectionObjectPointer = pFileObj->SectionObjectPointer;
 		if (MmIsAddressValid(pSectionObjectPointer))
 		{
-			ImageSectionObject = pSectionObjectPointer->ImageSectionObject;			 // ±¸·İÖ®~~~
-			pSectionObjectPointer->ImageSectionObject = NULL;						 //ÇåÁã£¬×¼±¸É¾³ı
+			ImageSectionObject = pSectionObjectPointer->ImageSectionObject;			 // å¤‡ä»½ä¹‹~~~
+			pSectionObjectPointer->ImageSectionObject = NULL;						 //æ¸…é›¶ï¼Œå‡†å¤‡åˆ é™¤
 
-			DataSectionObject = pSectionObjectPointer->DataSectionObject;			//±¸·İÖ®
-			pSectionObjectPointer->DataSectionObject = NULL;						//ÇåÁã£¬×¼±¸É¾³ı
+			DataSectionObject = pSectionObjectPointer->DataSectionObject;			//å¤‡ä»½ä¹‹
+			pSectionObjectPointer->DataSectionObject = NULL;						//æ¸…é›¶ï¼Œå‡†å¤‡åˆ é™¤
 
 			SharedCacheMap = pSectionObjectPointer->SharedCacheMap;
 			pSectionObjectPointer->SharedCacheMap = NULL;
 		}
 
-		//ĞŞ¸ÄÎÄ¼şÊôĞÔ
+		//ä¿®æ”¹æ–‡ä»¶å±æ€§
 		pFileObj->DeletePending = FALSE;
 		pFileObj->DeleteAccess = TRUE;
 
-		//Ë¢ĞÂÎÄ¼ş
+		//åˆ·æ–°æ–‡ä»¶
 		MmFlushImageSection(pFileObj->SectionObjectPointer, MmFlushForDelete);
 
-		//ĞŞ¸ÄÊôĞÔÖ®ºóÔÙµ÷ÓÃAPIÉ¾³ı
+		//ä¿®æ”¹å±æ€§ä¹‹åå†è°ƒç”¨APIåˆ é™¤
 		nStatus = ZwDeleteFile(&objAttribus);
 
-		//É¾³ıÎÄ¼şÖ®ºó£¬´Ó±¸·İÄÇÀïÌî³ä»ØÀ´
+		//åˆ é™¤æ–‡ä»¶ä¹‹åï¼Œä»å¤‡ä»½é‚£é‡Œå¡«å……å›æ¥
 		pSectionObjectPointer = pFileObj->SectionObjectPointer;
 
 		if (MmIsAddressValid(pSectionObjectPointer))
 		{
-			//Ìî³ä»ØÀ´£¬²»È»À¶ÆÁÅ¶
+			//å¡«å……å›æ¥ï¼Œä¸ç„¶è“å±å“¦
 			if (ImageSectionObject)
 			{
 				pSectionObjectPointer->ImageSectionObject = ImageSectionObject;
@@ -223,7 +223,7 @@ ULONG64 MyDeleteRunFile(PUNICODE_STRING pFullName)
 		}
 	}
 
-	//ÊÍ·ÅÒıÓÃ¼ÆÊı
+	//é‡Šæ”¾å¼•ç”¨è®¡æ•°
 	if (pFileObj)
 	{
 		ObDereferenceObject(pFileObj);
@@ -239,7 +239,7 @@ ULONG64 MyReadFile(PVOID* pOutFileBuf, PULONG64 pOutFileSize, PUNICODE_STRING Fi
 	OBJECT_ATTRIBUTES objAttribus = { 0 };
 	InitializeObjectAttributes(&objAttribus, FilePath, OBJ_CASE_INSENSITIVE | OBJ_KERNEL_HANDLE, NULL, NULL);
 
-	//´ò¿ªÒ»¸öÎÄ¼ş
+	//æ‰“å¼€ä¸€ä¸ªæ–‡ä»¶
 	NTSTATUS nStatus = ZwOpenFile(&FileHandle, GENERIC_READ, &objAttribus, &IoStatusBlock, FILE_SHARE_READ, FILE_NON_DIRECTORY_FILE);
 	if (!NT_SUCCESS(nStatus))
 	{
@@ -261,10 +261,10 @@ ULONG64 MyReadFile(PVOID* pOutFileBuf, PULONG64 pOutFileSize, PUNICODE_STRING Fi
 		return nStatus;
 	}
 
-	//»ñÈ¡ÎÄ¼ş´óĞ¡
+	//è·å–æ–‡ä»¶å¤§å°
 	ULONG64 FileSize = FileInfo.EndOfFile.QuadPart;
 
-	//ÉêÇë¿Õ¼ä
+	//ç”³è¯·ç©ºé—´
 	PUCHAR pFileBuf = ExAllocatePool2(POOL_FLAG_NON_PAGED, FileSize, 'Tag');
 	if (MmIsAddressValid(pFileBuf))
 	{
@@ -285,13 +285,13 @@ ULONG64 MyReadFile(PVOID* pOutFileBuf, PULONG64 pOutFileSize, PUNICODE_STRING Fi
 		ZwClose(FileHandle);
 	}
 
-	//·µ»ØÎÄ¼ş´óĞ¡
+	//è¿”å›æ–‡ä»¶å¤§å°
 	if (MmIsAddressValid(pOutFileSize))
 	{
 		*pOutFileSize = FileSize;
 	}
 
-	//·µ»ØÎÄ¼ş»º³åÇø
+	//è¿”å›æ–‡ä»¶ç¼“å†²åŒº
 	if (MmIsAddressValid(pOutFileBuf))
 	{
 		*pOutFileBuf = pFileBuf;
@@ -302,7 +302,7 @@ ULONG64 MyReadFile(PVOID* pOutFileBuf, PULONG64 pOutFileSize, PUNICODE_STRING Fi
 
 ULONG64 DllDeCodeFun(PUCHAR szDllBuf, ULONG64 DlllBufSize, PUCHAR* pOutBuf, PULONG64 pOutSize)
 {
-	//ÑéÖ¤µØÖ·ÊÇ·ñÓĞĞ§
+	//éªŒè¯åœ°å€æ˜¯å¦æœ‰æ•ˆ
 	if (!MmIsAddressValid(szDllBuf) || !MmIsAddressValid(pOutBuf) || DlllBufSize <= 0)
 	{
 		return FALSE;
@@ -319,7 +319,7 @@ ULONG64 DllDeCodeFun(PUCHAR szDllBuf, ULONG64 DlllBufSize, PUCHAR* pOutBuf, PULO
 	int i = 0;
 	for (i = 0; i < DlllBufSize; i++)
 	{
-		//½âÃÜ Á½´ÎÒì»ò ·ÀÖ¹Ò»´Î½âÎö¹æÂÉ
+		//è§£å¯† ä¸¤æ¬¡å¼‚æˆ– é˜²æ­¢ä¸€æ¬¡è§£æè§„å¾‹
 		pVarOutBuf[i] = (szDllBuf[i] ^ 0x46) ^ 0x89;
 	}
 
@@ -337,13 +337,13 @@ ULONG64 DllDeCodeFun(PUCHAR szDllBuf, ULONG64 DlllBufSize, PUCHAR* pOutBuf, PULO
 
 ULONG64 RepairBaseReloc(PCHAR pVirtualBuf, ULONG64 ImageBase)
 {
-	//ÑéÖ¤²ÎÊı
+	//éªŒè¯å‚æ•°
 	if (!MmIsAddressValid(pVirtualBuf))
 	{
 		return FALSE;
 	}
 
-	//ÖØ¶¨Î»±í½á¹¹
+	//é‡å®šä½è¡¨ç»“æ„
 	typedef struct BaseReloctionData
 	{
 		union
@@ -351,8 +351,8 @@ ULONG64 RepairBaseReloc(PCHAR pVirtualBuf, ULONG64 ImageBase)
 			USHORT m_wData;
 			struct
 			{
-				USHORT m_byOffset : 12;		/*Æ«ÒÆ*/
-				USHORT m_byType : 4;		/*ÀàĞÍ*/
+				USHORT m_byOffset : 12;		/*åç§»*/
+				USHORT m_byType : 4;		/*ç±»å‹*/
 			};
 
 		};
@@ -364,9 +364,9 @@ ULONG64 RepairBaseReloc(PCHAR pVirtualBuf, ULONG64 ImageBase)
 	PIMAGE_DOS_HEADER pDos = (PIMAGE_DOS_HEADER)pVirtualBuf;
 	PIMAGE_NT_HEADERS64 pNt = (PIMAGE_NT_HEADERS64)(pVirtualBuf + pDos->e_lfanew);
 
-	//ÖØ¶¨Î»±íµØÖ·
+	//é‡å®šä½è¡¨åœ°å€
 	PIMAGE_BASE_RELOCATION pRelocTable = (PIMAGE_BASE_RELOCATION)(pVirtualBuf + pNt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress);
-	//ÖØ¶¨Î»±í´óĞ¡
+	//é‡å®šä½è¡¨å¤§å°
 	ULONG64 pRelocTableSize = pNt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].Size;
 
 
@@ -376,14 +376,14 @@ ULONG64 RepairBaseReloc(PCHAR pVirtualBuf, ULONG64 ImageBase)
 		return -1;
 	}
 
-	//¼ÆËãimage²îÖµ				/*´Ë´¦ÅĞ¶Ï²ÎÊı¶şÊÇ·ñÎª¿Õ Îª¿ÕÖ¸¶¨imagebaseÎªµ±Ç°»º³åÇøµÄÊ×µØÖ· ·ñÔòÎª²ÎÊı¶ş*/
+	//è®¡ç®—imageå·®å€¼				/*æ­¤å¤„åˆ¤æ–­å‚æ•°äºŒæ˜¯å¦ä¸ºç©º ä¸ºç©ºæŒ‡å®šimagebaseä¸ºå½“å‰ç¼“å†²åŒºçš„é¦–åœ°å€ å¦åˆ™ä¸ºå‚æ•°äºŒ*/
 	ULONG64 dqImageDifference = (ImageBase ? ImageBase : pVirtualBuf) - pNt->OptionalHeader.ImageBase;
 
 	ULONG64 CurSize = 0;
 
 	while (pRelocTableSize > CurSize && pRelocTable->SizeOfBlock != NULL && pRelocTable->VirtualAddress != NULL)
 	{
-		//¼ÆËãÃ¿¸ö¿éµÄÊıÁ¿
+		//è®¡ç®—æ¯ä¸ªå—çš„æ•°é‡
 		ULONG32 dwNumber = (pRelocTable->SizeOfBlock - sizeof(IMAGE_BASE_RELOCATION)) / sizeof(USHORT);
 		PBaseReloctionData pBeginAddr = (PBaseReloctionData)((ULONG64)pRelocTable + sizeof(IMAGE_BASE_RELOCATION));
 
@@ -392,12 +392,12 @@ ULONG64 RepairBaseReloc(PCHAR pVirtualBuf, ULONG64 ImageBase)
 			PBaseReloctionData pCurinAddr = &pBeginAddr[i];
 
 			USHORT Offset = pCurinAddr->m_byOffset;
-			if (pCurinAddr->m_byType == IMAGE_REL_BASED_DIR64)			//ĞŞ¸´64Î»µØÖ·
+			if (pCurinAddr->m_byType == IMAGE_REL_BASED_DIR64)			//ä¿®å¤64ä½åœ°å€
 			{
 				PULONG64 dwBaseAddr = (PULONG64)((ULONG64)pVirtualBuf + pRelocTable->VirtualAddress + Offset);
 				*dwBaseAddr = *dwBaseAddr + dqImageDifference;
 			}
-			else if (pCurinAddr->m_byType == IMAGE_REL_BASED_HIGHLOW)	//ĞŞ¸´32Î»µØÖ·
+			else if (pCurinAddr->m_byType == IMAGE_REL_BASED_HIGHLOW)	//ä¿®å¤32ä½åœ°å€
 			{
 				PULONG32 dwBaseAddr = (PULONG32)((ULONG64)pVirtualBuf + pRelocTable->VirtualAddress + Offset);
 				*dwBaseAddr = *dwBaseAddr + dqImageDifference;
@@ -422,11 +422,11 @@ ULONG64 QuerySysModule(PUCHAR moduleName, ULONG_PTR* moduleSize)
 	RTL_PROCESS_MODULES rtlMoudles = { 0 };
 	PRTL_PROCESS_MODULES SystemMoudles = &rtlMoudles;
 	BOOLEAN isAllocate = FALSE;
-	//²âÁ¿³¤¶È
+	//æµ‹é‡é•¿åº¦
 	ULONG* retLen = 0;
 	NTSTATUS status = ZwQuerySystemInformation(SystemModuleInformation, SystemMoudles, sizeof(RTL_PROCESS_MODULES), &retLen);
 
-	//·ÖÅäÊµ¼Ê³¤¶ÈÄÚ´æ
+	//åˆ†é…å®é™…é•¿åº¦å†…å­˜
 	if (status == STATUS_INFO_LENGTH_MISMATCH)
 	{
 		SystemMoudles = ExAllocatePool(PagedPool, retLen + sizeof(RTL_PROCESS_MODULES));
@@ -454,7 +454,7 @@ ULONG64 QuerySysModule(PUCHAR moduleName, ULONG_PTR* moduleSize)
 		{
 			PRTL_PROCESS_MODULE_INFORMATION moudleInfo = &SystemMoudles->Modules[0];
 
-			//»ñÈ¡Ä£¿é»ùÖ·
+			//è·å–æ¨¡å—åŸºå€
 			moudleBase = moudleInfo->ImageBase;
 			if (moduleSize)
 			{
@@ -504,7 +504,7 @@ ULONG64 QuerySysModule(PUCHAR moduleName, ULONG_PTR* moduleSize)
 
 ULONG64 ExportTableFuncByName(PUCHAR pModuleBaseAddr, PUCHAR pFuncName)
 {
-	//ÑéÖ¤²ÎÊı
+	//éªŒè¯å‚æ•°
 	if (!MmIsAddressValid(pModuleBaseAddr) || !MmIsAddressValid(pFuncName))
 	{
 		return NULL;
@@ -555,14 +555,14 @@ ULONG64 RepairIatTable(PUCHAR pVirtualBuf)
 	PIMAGE_DOS_HEADER pDos = (PIMAGE_DOS_HEADER)pVirtualBuf;
 	PIMAGE_NT_HEADERS64 pNt = (PIMAGE_NT_HEADERS64)(pVirtualBuf + pDos->e_lfanew);
 
-	//Ã»ÓĞµ¼Èë±í·µ»Ø
+	//æ²¡æœ‰å¯¼å…¥è¡¨è¿”å›
 	if (pNt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress == NULL)
 	{
 		return -1;
 	}
 
 
-	//µ¼Èë±íµØÖ·
+	//å¯¼å…¥è¡¨åœ°å€
 	PIMAGE_IMPORT_DESCRIPTOR pImportTable = (PIMAGE_IMPORT_DESCRIPTOR)(pVirtualBuf + pNt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
 	IMAGE_IMPORT_DESCRIPTOR ZeroImportTable = { 0 };
 
@@ -573,21 +573,21 @@ ULONG64 RepairIatTable(PUCHAR pVirtualBuf)
 			PCHAR pModuleName = (PCHAR)((ULONG64)pVirtualBuf + pImportTable->Name);
 			if (pModuleName != NULL)
 			{
-				//»ñÈ¡Ä£¿éµØÖ·
+				//è·å–æ¨¡å—åœ°å€
 				ULONG64 BaseModuleAddr = QuerySysModule(pModuleName, NULL);
 				if (NULL < BaseModuleAddr)
 				{
-					//ÅĞ¶ÏÊÇ·ñÊÇ
+					//åˆ¤æ–­æ˜¯å¦æ˜¯
 					PIMAGE_THUNK_DATA64 pFirstThunk = (PIMAGE_THUNK_DATA64)((ULONG64)pVirtualBuf + pImportTable->FirstThunk);
 					PIMAGE_THUNK_DATA64 pThuckName = (PIMAGE_THUNK_DATA64)((ULONG64)pVirtualBuf + pImportTable->OriginalFirstThunk);
 
-					//±éÀúÃû³Æ±í 
+					//éå†åç§°è¡¨ 
 					for (; pThuckName->u1.ForwarderString != NULL; ++pFirstThunk, ++pThuckName)
 					{
 						PIMAGE_IMPORT_BY_NAME FuncName = (PIMAGE_IMPORT_BY_NAME)((ULONG64)pVirtualBuf + pThuckName->u1.AddressOfData);
 
 						ULONG_PTR func = NULL;
-						//ÅĞ¶ÏÊÇ·ñÊÇÄÚºËÄ£¿é
+						//åˆ¤æ–­æ˜¯å¦æ˜¯å†…æ ¸æ¨¡å—
 						if (_stricmp(pModuleName, "hal.dll") == 0 ||
 							_stricmp(pModuleName, "ntoskrnl.exe") == 0 ||
 							_stricmp(pModuleName, "ntkrnlpa.exe") == 0)
@@ -603,18 +603,18 @@ ULONG64 RepairIatTable(PUCHAR pVirtualBuf)
 						}
 						else
 						{
-							//±éÀúµ¼³ö±í»ñÈ¡APIµØÖ·»ñÈ¡º¯ÊıÃû  	//×¢:ÄÚºËÄ£¿éÖĞ»ù±¾Ã»ÓĞÓÃĞòºÅµ¼³öµÄ
+							//éå†å¯¼å‡ºè¡¨è·å–APIåœ°å€è·å–å‡½æ•°å  	//æ³¨:å†…æ ¸æ¨¡å—ä¸­åŸºæœ¬æ²¡æœ‰ç”¨åºå·å¯¼å‡ºçš„
 							func = ExportTableFuncByName((PUCHAR)BaseModuleAddr, FuncName->Name);
 						}
 
-						//ÓĞĞŞ¸´
+						//æœ‰ä¿®å¤
 						if (NULL < func)
 						{
 							pFirstThunk->u1.Function = (ULONG_PTR)func;
 						}
 						else
 						{
-							//Î´ÕÒµ½º¯ÊıÃû
+							//æœªæ‰¾åˆ°å‡½æ•°å
 							dqRet = FALSE;
 							break;
 						}
@@ -622,13 +622,13 @@ ULONG64 RepairIatTable(PUCHAR pVirtualBuf)
 				}
 				else
 				{
-					//Î´ÕÒµ½Ä£¿é
+					//æœªæ‰¾åˆ°æ¨¡å—
 					dqRet = FALSE;
 					break;
 				}
 			}
 		}
-		//»ñÈ¡ÏÂÒ»¸öµ¼Èë±í
+		//è·å–ä¸‹ä¸€ä¸ªå¯¼å…¥è¡¨
 		pImportTable = (PIMAGE_IMPORT_DESCRIPTOR)((ULONG64)pImportTable + sizeof(IMAGE_IMPORT_DESCRIPTOR));
 	}
 
@@ -653,9 +653,9 @@ VOID UpdateCookie(PUCHAR imageBuffer)
 
 	if (MmIsAddressValid(p))
 	{
-		//¿ÉËæ»ú¼Ó¸öÊıÖµ Ö»Òª Cookie²»µÈÓÚ 2B992DDFA232h ¾ÍĞĞ
+		//å¯éšæœºåŠ ä¸ªæ•°å€¼ åªè¦ Cookieä¸ç­‰äº 2B992DDFA232h å°±è¡Œ
 
-		//INIT : 0000000140005000                               sub_140005000 proc near; CODE XREF : DriverEntry + 10¡üp
+		//INIT : 0000000140005000                               sub_140005000 proc near; CODE XREF : DriverEntry + 10â†‘p
 		//INIT : 0000000140005000 48 8B 05 29 E0 FF FF          mov     rax, cs : __security_cookie
 		//INIT : 0000000140005007 48 85 C0                      test    rax, rax
 		//INIT : 000000014000500A 74 1B                         jz      short loc_140005027
@@ -683,10 +683,10 @@ ULONG64 LoadPE(PUCHAR* pDllBuf, ULONG64 dqNewImageBase)
 	PIMAGE_DOS_HEADER pDos = (PIMAGE_DOS_HEADER)pDllBuf1;
 	PIMAGE_NT_HEADERS64 pNt = (PIMAGE_NT_HEADERS64)((ULONG64)pDllBuf1 + pDos->e_lfanew);
 
-	//»ñÈ¡ÄÚ´æ´óĞ¡
+	//è·å–å†…å­˜å¤§å°
 	ULONG SizeOfImage = pNt->OptionalHeader.SizeOfImage;
 
-	//ÉêÇëÄÚ´æ
+	//ç”³è¯·å†…å­˜
 	PUCHAR pDllBase = (PUCHAR)ExAllocatePool(NonPagedPool, SizeOfImage);
 	if (NULL == pDllBase)
 	{
@@ -694,13 +694,13 @@ ULONG64 LoadPE(PUCHAR* pDllBuf, ULONG64 dqNewImageBase)
 	}
 	memset(pDllBase, 0, SizeOfImage);
 
-	//¿½±´Í·
+	//æ‹·è´å¤´
 	memcpy_s(pDllBase, SizeOfImage, pDllBuf1, pNt->OptionalHeader.SizeOfHeaders);
 
 	PIMAGE_SECTION_HEADER psection = (PIMAGE_SECTION_HEADER)((ULONG64)&pNt->OptionalHeader + pNt->FileHeader.SizeOfOptionalHeader);
 
 
-	//¿½±´½ÚÇø
+	//æ‹·è´èŠ‚åŒº
 	for (int i = 0; i < pNt->FileHeader.NumberOfSections; i++)
 	{
 		PVOID64 pDstAddr = pDllBase + psection[i].VirtualAddress;
@@ -714,21 +714,21 @@ ULONG64 LoadPE(PUCHAR* pDllBuf, ULONG64 dqNewImageBase)
 		}
 	}
 
-	//ĞŞ¸´ÖØ¶¨Î»±í
+	//ä¿®å¤é‡å®šä½è¡¨
 	if (RepairBaseReloc(pDllBase, dqNewImageBase) <= 0)
 	{
 		ExFreePool(pDllBase);
 		return FALSE;
 	}
 
-	////ĞŞ¸´IAT Î´Íê³É
+	////ä¿®å¤IAT æœªå®Œæˆ
 	//if (RepairIatTable(pDllBase) <= 0)
 	//{
 	//	ExFreePool(pDllBase);
 	//	return FALSE;
 	//}
 
-	//ĞŞ¸´Cooick //Õâ¶«Î÷ÔİÊ±ÓĞBUG
+	//ä¿®å¤Cooick //è¿™ä¸œè¥¿æš‚æ—¶æœ‰BUG
 	//UpdateCookie(pDllBase);
 
 
@@ -774,7 +774,7 @@ retry:
 		ExFreePool(ObjectNameInfo);
 		return STATUS_NO_MEMORY;
 	}
-	//»ñÈ¡ÏµÍ³ËùÓĞ¾ä±ú
+	//è·å–ç³»ç»Ÿæ‰€æœ‰å¥æŸ„
 	Status = ZwQuerySystemInformation(SystemHandleInformation, Buffer, BufferSize, &ReturnLength);
 
 	if (Status == STATUS_INFO_LENGTH_MISMATCH)
@@ -792,7 +792,7 @@ retry:
 		{
 			HandleInfo = &Handles->Handles[i];
 
-			//»ñÈ¡ÎÄ¼ş¶ÔÏó
+			//è·å–æ–‡ä»¶å¯¹è±¡
 			Status = ObReferenceObjectByPointer(
 				HandleInfo->Object,
 				FILE_ALL_ACCESS,
@@ -802,7 +802,7 @@ retry:
 			if (NT_SUCCESS(Status))
 			{
 				FileHandleCount++;
-				//»ñÈ¡¶ÔÏóÂ·¾¶
+				//è·å–å¯¹è±¡è·¯å¾„
 				Status = ObQueryNameString(HandleInfo->Object, ObjectNameInfo, 4096, &ReturnLength);
 				if (NT_SUCCESS(Status))
 				{
@@ -812,11 +812,11 @@ retry:
 						Status = PsLookupProcessByProcessId(HandleInfo->UniqueProcessId, &Process);
 						if (NT_SUCCESS(Status))
 						{
-							//ÇĞ»»½ø³Ì
+							//åˆ‡æ¢è¿›ç¨‹
 							KAPC_STATE ApcState;
 							KeStackAttachProcess(Process, &ApcState);
 
-							//µ÷ÓÃZwClose
+							//è°ƒç”¨ZwClose
 							ZwClose(HandleInfo->HandleValue);
 							KeUnstackDetachProcess(&ApcState);
 							ObDereferenceObject(Process);

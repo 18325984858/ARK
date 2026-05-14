@@ -1,4 +1,4 @@
-#include "Head.h"
+ï»¿#include "Head.h"
 #include "CommunCation.h"
 #include "DefineArea.h"
 #include "Interface.h"
@@ -18,12 +18,12 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath)
 	g_CurDriverObject = (ULONG64)DriverObject;
 
 	/*
-	{	//É¸Ñ¡°æ±¾
+	{	//ç­›é€‰ç‰ˆæœ¬
 		RTL_OSVERSIONINFOEXW version = { 0 };
 		RtlGetVersion(&version);
 
 
-		//°æ±¾Win10 19045 °æ±¾
+		//ç‰ˆæœ¬Win10 19045 ç‰ˆæœ¬
 		if (version.dwBuildNumber == 19045)
 		{
 
@@ -42,15 +42,15 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath)
 	*/
 
 
-	{	//´´½¨Ò»¸öÊÂ¼ş¶ÔÏó,µ±Èı»·½ø³ÌÍË³öÊ±ÓÃÓÚÍ¨Öª
+	{	//åˆ›å»ºä¸€ä¸ªäº‹ä»¶å¯¹è±¡,å½“ä¸‰ç¯è¿›ç¨‹é€€å‡ºæ—¶ç”¨äºé€šçŸ¥
 		UNICODE_STRING eventName;
 		RtlInitUnicodeString(&eventName, L"\\BaseNamedObjects\\MyExitEvent");
 
-		// ³õÊ¼»¯°²È«ÃèÊö·û
+		// åˆå§‹åŒ–å®‰å…¨æè¿°ç¬¦
 		SECURITY_DESCRIPTOR securityDescriptor;
 		RtlCreateSecurityDescriptor(&securityDescriptor, SECURITY_DESCRIPTOR_REVISION);
 
-		// ÉèÖÃDACL£¬ÔÊĞíËùÓĞÓÃ»§·ÃÎÊ
+		// è®¾ç½®DACLï¼Œå…è®¸æ‰€æœ‰ç”¨æˆ·è®¿é—®
 		ULONG daclSize = sizeof(ACL) + sizeof(ACCESS_ALLOWED_ACE) - sizeof(ULONG) + RtlLengthSid(SeExports->SeWorldSid);
 		PACL pDacl = (PACL)ExAllocatePoolWithTag(PagedPool, daclSize, 'dacl');
 		RtlCreateAcl(pDacl, daclSize, ACL_REVISION);
@@ -61,11 +61,11 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath)
 		InitializeObjectAttributes(&objAttr, &eventName, OBJ_KERNEL_HANDLE, NULL, &securityDescriptor);
 
 		status = ZwCreateEvent(
-			&g_hExitEvent,															// Êä³ö¾ä±ú
-			EVENT_ALL_ACCESS,														// ·ÃÎÊÈ¨ÏŞ
-			&objAttr,																// ¶ÔÏóÊôĞÔ
-			NotificationEvent,														// ÊÂ¼şÀàĞÍ
-			FALSE																	// ³õÊ¼×´Ì¬
+			&g_hExitEvent,															// è¾“å‡ºå¥æŸ„
+			EVENT_ALL_ACCESS,														// è®¿é—®æƒé™
+			&objAttr,																// å¯¹è±¡å±æ€§
+			NotificationEvent,														// äº‹ä»¶ç±»å‹
+			FALSE																	// åˆå§‹çŠ¶æ€
 		);
 
 		if (MmIsAddressValid(pDacl))
@@ -74,39 +74,39 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath)
 		}
 
 		if (!NT_SUCCESS(status)) {
-			// ´¦Àí´íÎó
+			// å¤„ç†é”™è¯¯
 
-			MyDbgPrintfEx("´´½¨ÍË³öÍ¨ÖªÊÂ¼şÊ§°Ü! Status:%08X\n", status);
+			MyDbgPrintfEx("åˆ›å»ºé€€å‡ºé€šçŸ¥äº‹ä»¶å¤±è´¥! Status:%08X\n", status);
 			return status;
 		}
 	}
 
-	//³õÊ¼»¯ĞèÒªÓÃµ½µÄÈ«¾Ö±äÁ¿
+	//åˆå§‹åŒ–éœ€è¦ç”¨åˆ°çš„å…¨å±€å˜é‡
 	status = InitGlobalVariable(g_CurDriverObject);
 	if (!NT_SUCCESS(status))
 	{
-		MyDbgPrintfEx("%ws InitGlobalVariable º¯ÊıÊ§°Ü£¡\n", __FUNCTION__);
+		MyDbgPrintfEx("%ws InitGlobalVariable å‡½æ•°å¤±è´¥ï¼\n", __FUNCTION__);
 		return status;
 	}
 
-	if (InitRegistryInfo(DriverObject, RegistryPath) != STATUS_SUCCESS)					// ³õÊ¼»¯×¢²á±í
+	if (InitRegistryInfo(DriverObject, RegistryPath) != STATUS_SUCCESS)					// åˆå§‹åŒ–æ³¨å†Œè¡¨
 	{
 		return FALSE;
 	}
 
-	status = FltRegisterFilter(DriverObject, &FilterRegistration, &g_pFilter);			//×¢²áÎÄ¼ş¹ıÂËÆ÷
+	status = FltRegisterFilter(DriverObject, &FilterRegistration, &g_pFilter);			//æ³¨å†Œæ–‡ä»¶è¿‡æ»¤å™¨
 
 	if (NT_SUCCESS(status))
 	{
 
-		{//	´´½¨Ä¬ÈÏ¶Ë¿ÚÃû
+		{//	åˆ›å»ºé»˜è®¤ç«¯å£å
 #define MINIFILTER_PORT_NAME L"\\58DF4FB5-D464-4DF9-B14E-3565FDE02AED"
 			UNICODE_STRING PortName = { 0 };
 			RtlInitUnicodeString(&PortName, MINIFILTER_PORT_NAME);
-			RegisteredCominterface(&PortName);											//×¢²áÍ¨ĞÅº¯Êı
+			RegisteredCominterface(&PortName);											//æ³¨å†Œé€šä¿¡å‡½æ•°
 		}
 
-		status = FltStartFiltering(g_pFilter);											//ÔËĞĞÎÄ¼ş¹ıÂËÆ÷
+		status = FltStartFiltering(g_pFilter);											//è¿è¡Œæ–‡ä»¶è¿‡æ»¤å™¨
 
 		if (!NT_SUCCESS(status)) {
 
@@ -115,11 +115,11 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath)
 		}
 
 		/*
-		//¿ªÆôETW HOOK
+		//å¼€å¯ETW HOOK
 		if (EtwInit((ULONG64)&call_back))
 		{
 
-			//³õÊ¼»¯Hook
+			//åˆå§‹åŒ–Hook
 			InitRootSsdtHook();
 
 			EtwStart();

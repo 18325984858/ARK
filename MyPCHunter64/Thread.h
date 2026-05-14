@@ -1,21 +1,21 @@
-#pragma once
+ï»¿#pragma once
 
 #include <Winsock2.h>
 #include "CLoadDriver.h"
 #include "CThreadPool.h"
 //
 //
-// ÉùÃ÷:ÎªÊ²Ã´Ñ¡Ôñ¶à¸ãÒ»¸öÏß³ÌÀ´²Ù×÷ÄØ
-// Ä¿µÄÒ»:ÊµÏÖ¶Ô²Ù×÷µÄÍ¬²½,Ò»´ÎÖ»ÄÜÓĞÒ»¸ö²Ù×÷½øÈëÄÚºË
-// Ä¿µÄ¶ş:Ò»´Î²Ù×÷Ö»ÄÜ¶ÔÒ»¸ö¿Ø¼şÉúĞ§,±ÜÃâ¶à¸ö²Ù×÷À´²Ù×÷Ò»¸ö¿Ø¼ş
+// å£°æ˜:ä¸ºä»€ä¹ˆé€‰æ‹©å¤šæä¸€ä¸ªçº¿ç¨‹æ¥æ“ä½œå‘¢
+// ç›®çš„ä¸€:å®ç°å¯¹æ“ä½œçš„åŒæ­¥,ä¸€æ¬¡åªèƒ½æœ‰ä¸€ä¸ªæ“ä½œè¿›å…¥å†…æ ¸
+// ç›®çš„äºŒ:ä¸€æ¬¡æ“ä½œåªèƒ½å¯¹ä¸€ä¸ªæ§ä»¶ç”Ÿæ•ˆ,é¿å…å¤šä¸ªæ“ä½œæ¥æ“ä½œä¸€ä¸ªæ§ä»¶
 // 
 //
 
-//Ïß³Ì½á¹¹Ìå²ÎÊı
+//çº¿ç¨‹ç»“æ„ä½“å‚æ•°
 typedef struct _ThreadInfo
 {
-	_LoadDriver::UserCallBackType CallNumber;	//µ÷ÓÃºÅ
-	PVOID Paragma;								//²ÎÊı
+	_LoadDriver::UserCallBackType CallNumber;	//è°ƒç”¨å·
+	PVOID Paragma;								//å‚æ•°
 }CThreadInfo, PCThreadInfo;
 
 DWORD WINAPI UniversalThreadFunction(PVOID lpThreadParameter/*PCThreadInfo*/);
@@ -32,6 +32,6 @@ public:
 	_CThreadPack(_LoadDriver::UserCallBackType dwCallNumber, PVOID pParagma);
 	virtual ~_CThreadPack();
 private:
-	_LoadDriver::UserCallBackType CallNumber;	//µ÷ÓÃºÅ
-	PVOID Paragma;								//²ÎÊı
+	_LoadDriver::UserCallBackType CallNumber;	//è°ƒç”¨å·
+	PVOID Paragma;								//å‚æ•°
 };

@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include "framework.h"
 #include "DlgProcess.h"
 #include "DlgEnumFile.h"
@@ -66,7 +66,7 @@ public:
 		TypeName[26] = L"IRP_MJ_SET_QUOTA";
 		TypeName[27] = L"IRP_MJ_PNP";
 
-		//¿ìËÙIO
+		//å¿«é€ŸIO
 		TypeName[28] = L"FastIoCheckIfPossible";
 		TypeName[29] = L"FastIoRead";
 		TypeName[30] = L"FastIoWrite";
@@ -96,10 +96,10 @@ public:
 		TypeName[54] = L"ReleaseForCcFlush";
 	}
 public:
-	WCHAR MajorFunctionDriverName[MY_MAX_PATH] = { 0 };					//´æ·ÅÇı¶¯Ãû³Æ
-	CString TypeName[IRP_MJ_MAXIMUM_FUNCTION_EX];						//´æ´¢IRPÀàĞÍÃû
-	ULONG64 m_ObjectType;												//¶ÔÏóÀàĞÍ
-	ULONG64	m_Object;													//´æ·Å¶ÔÏóÀàĞÍ
+	WCHAR MajorFunctionDriverName[MY_MAX_PATH] = { 0 };					//å­˜æ”¾é©±åŠ¨åç§°
+	CString TypeName[IRP_MJ_MAXIMUM_FUNCTION_EX];						//å­˜å‚¨IRPç±»å‹å
+	ULONG64 m_ObjectType;												//å¯¹è±¡ç±»å‹
+	ULONG64	m_Object;													//å­˜æ”¾å¯¹è±¡ç±»å‹
 };
 
 using DriverMajorFunctionInfo = _DriverMajorFunctionInfo;
@@ -112,31 +112,31 @@ public:
 	~_LoadDriver();
 
 public:
-	//ÉèÖÃÇı¶¯Ãû³ÆºÍÇı¶¯Â·¾¶
-	//²ÎÊıÒ»:Çı¶¯ÎÄ¼şÃû
-	//²ÎÊı¶ş:Çı¶¯È«Â·¾¶
+	//è®¾ç½®é©±åŠ¨åç§°å’Œé©±åŠ¨è·¯å¾„
+	//å‚æ•°ä¸€:é©±åŠ¨æ–‡ä»¶å
+	//å‚æ•°äºŒ:é©±åŠ¨å…¨è·¯å¾„
 	VOID _LoadDriver::SetFileNameAndPath(PWCHAR Driver_Name, PWCHAR Driver_Path);
-	//¹¦ÄÜ :Í£Ö¹ Ğ¶ÔØ Çı¶¯
+	//åŠŸèƒ½ :åœæ­¢ å¸è½½ é©±åŠ¨
 	BOOL _LoadDriver::UnLoadDriverFun();
-	//¹¦ÄÜ :×¢²á ¼ÓÔØ Çı¶¯
+	//åŠŸèƒ½ :æ³¨å†Œ åŠ è½½ é©±åŠ¨
 	BOOL _LoadDriver::LoadDriverFun();
 public:
-	//¹¦ÄÜ:ÓëÇı¶¯½¨Á¢Í¨ĞÅ
-	//²ÎÊıÒ»:Ãû³Æ
+	//åŠŸèƒ½:ä¸é©±åŠ¨å»ºç«‹é€šä¿¡
+	//å‚æ•°ä¸€:åç§°
 	ULONG64 _LoadDriver::ConnectDriver(CString Name);
 
-	//¹¦ÄÜ:ÏòÇı¶¯·¢ËÍĞÅÏ¢
-	//²ÎÊıÒ»:Òª·¢ËÍµÄÊı¾İ»º³åÇø
-	//²ÎÊı¶ş:Òª·¢ËÍµÄ´óĞ¡
-	//²ÎÊıÈı:Êä³ö»º³åÇø
-	//²ÎÊıËÄ:·µ»ØÊä³öµÄ»º³åÇø´óĞ¡
-	//²ÎÊıÎå:Ô¤Áô²ÎÊı
-	//·µ»ØÖµ:·µ»ØÇı¶¯·µ»ØµÄĞÅÏ¢,Ôò·µ»Ø»º³åÇø´óĞ¡
+	//åŠŸèƒ½:å‘é©±åŠ¨å‘é€ä¿¡æ¯
+	//å‚æ•°ä¸€:è¦å‘é€çš„æ•°æ®ç¼“å†²åŒº
+	//å‚æ•°äºŒ:è¦å‘é€çš„å¤§å°
+	//å‚æ•°ä¸‰:è¾“å‡ºç¼“å†²åŒº
+	//å‚æ•°å››:è¿”å›è¾“å‡ºçš„ç¼“å†²åŒºå¤§å°
+	//å‚æ•°äº”:é¢„ç•™å‚æ•°
+	//è¿”å›å€¼:è¿”å›é©±åŠ¨è¿”å›çš„ä¿¡æ¯,åˆ™è¿”å›ç¼“å†²åŒºå¤§å°
 	ULONG64 _LoadDriver::SendMsg(IN ULONG64 dqCmd, IN LPVOID ilpBuffer = NULL, OUT LPVOID* OlpBuffer = NULL, OUT PDWORD nNumberOfBytesToWrite = NULL, IN OUT PVOID Param = NULL);
 public:
-#define MAX_USER_CALL_BACK_COUNT 0x50											/*´æ´¢º¯ÊıÖ¸Õë×î´óÊıÁ¿*/
+#define MAX_USER_CALL_BACK_COUNT 0x50											/*å­˜å‚¨å‡½æ•°æŒ‡é’ˆæœ€å¤§æ•°é‡*/
 
-	/*´ËÀàĞÍÎª¹¦ÄÜºÅ*/
+	/*æ­¤ç±»å‹ä¸ºåŠŸèƒ½å·*/
 	enum UserCallBackType
 	{
 		Um_UserCallBackType_UserEnumProcessInfo,
@@ -168,96 +168,99 @@ public:
 		Um_UserCallBackType_UserEnumFilterDriver,
 		Um_UserCallBackType_UserGetDebugFlags,
 		Um_UserCallBackType_UserSetDebugFlags,
+		Um_UserCallBackType_UserEnumWorkerThreadInfo,										//æšä¸¾å·¥ä½œçº¿ç¨‹é˜Ÿåˆ—
 
 		Um_UserCallBackType_Test,
 		Um_UserCallBackType_NULL,
 	};
-	typedef ULONG64(__thiscall _LoadDriver::* PUSERCALLBAKC)(PVOID Pragma);					//º¯ÊıÖ¸Õë
-	PUSERCALLBAKC m_pUserCallBackFun[MAX_USER_CALL_BACK_COUNT] = { NULL };					//´æ´¢»Øµ÷Ö¸Õë
+	typedef ULONG64(__thiscall _LoadDriver::* PUSERCALLBAKC)(PVOID Pragma);					//å‡½æ•°æŒ‡é’ˆ
+	PUSERCALLBAKC m_pUserCallBackFun[MAX_USER_CALL_BACK_COUNT] = { NULL };					//å­˜å‚¨å›è°ƒæŒ‡é’ˆ
 public:
-	//½Ó¿Úº¯Êı
-	ULONG64 _LoadDriver::BaseInterfaceFun(ULONG64 Index/*¹¦ÄÜºÅ*/, PVOID Pragma/*²ÎÊı*/);
+	//æ¥å£å‡½æ•°
+	ULONG64 _LoadDriver::BaseInterfaceFun(ULONG64 Index/*åŠŸèƒ½å·*/, PVOID Pragma/*å‚æ•°*/);
 public:
-	//¹¦ÄÜ:ÏòÇı¶¯·¢ËÍÏûÏ¢ ÓÃÓÚ³õÊ¼»¯Êı¾İ
+	//åŠŸèƒ½:å‘é©±åŠ¨å‘é€æ¶ˆæ¯ ç”¨äºåˆå§‹åŒ–æ•°æ®
 	ULONG64 _LoadDriver::InitData(PVOID pInfo);
-	//¹¦ÄÜ:ÏòÇı¶¯·¢ÏûÏ¢ Ã¶¾Ù½ø³ÌĞÅÏ¢ ²¢Ğ´µ½ListControlÖĞ
+	//åŠŸèƒ½:å‘é©±åŠ¨å‘æ¶ˆæ¯ æšä¸¾è¿›ç¨‹ä¿¡æ¯ å¹¶å†™åˆ°ListControlä¸­
 	ULONG64 _LoadDriver::UserEnumProcessInfo(PVOID pDlgProcessInfo);
-	//¹¦ÄÜ:ÏòÇı¶¯·¢ËÍĞÅÏ¢ Ç¿ÖÆ½áÊø½ø³Ì
+	//åŠŸèƒ½:å‘é©±åŠ¨å‘é€ä¿¡æ¯ å¼ºåˆ¶ç»“æŸè¿›ç¨‹
 	ULONG64 _LoadDriver::UserKillProcess(PVOID pDlgProcessInfo);
-	//¹¦ÄÜ:ÏòÇı¶¯·¢ÏûÏ¢ Ã¶¾ÙÇı¶¯ĞÅÏ¢ ²¢Ğ´µ½ListControlÖĞ
+	//åŠŸèƒ½:å‘é©±åŠ¨å‘æ¶ˆæ¯ æšä¸¾é©±åŠ¨ä¿¡æ¯ å¹¶å†™åˆ°ListControlä¸­
 	ULONG64 _LoadDriver::UserEnumDriverInfo(PVOID pDlgDriverInfo);
-	//¹¦ÄÜ:ÏòÇı¶¯·¢ËÍÏûÏ¢ Ã¶¾Ù½ø³ÌVadÄÚ´æĞÅÏ¢,Ğ´Èëµ½ListControlÖĞ
+	//åŠŸèƒ½:å‘é©±åŠ¨å‘é€æ¶ˆæ¯ æšä¸¾è¿›ç¨‹Vadå†…å­˜ä¿¡æ¯,å†™å…¥åˆ°ListControlä¸­
 	ULONG64  _LoadDriver::UserEnumProcessVadInfo(PVOID pDlgProcessVadInfo);
-	//¹¦ÄÜ:ÏòÇı¶¯·¢ËÍÏûÏ¢ Ã¶¾Ù½ø³ÌThreadĞÅÏ¢,Ğ´Èëµ½ListControlÖĞ
+	//åŠŸèƒ½:å‘é©±åŠ¨å‘é€æ¶ˆæ¯ æšä¸¾è¿›ç¨‹Threadä¿¡æ¯,å†™å…¥åˆ°ListControlä¸­
 	ULONG64  _LoadDriver::UserEnumProcessThreadInfo(PVOID pDlgProcessThreadInfo);
-	//¹¦ÄÜ:ÏòÇı¶¯·¢ËÍÏûÏ¢ Ã¶¾Ù½ø³ÌË½ÓĞ¾ä±ú±íĞÅÏ¢,Ğ´Èëµ½ListControlÖĞ
+	//åŠŸèƒ½:å‘é©±åŠ¨å‘é€æ¶ˆæ¯ æšä¸¾è¿›ç¨‹ç§æœ‰å¥æŸ„è¡¨ä¿¡æ¯,å†™å…¥åˆ°ListControlä¸­
 	ULONG64  _LoadDriver::UserEnumProcessHandleInfo(PVOID pDlgProcessHandleInfo);
-	//¹¦ÄÜ:ÏòÇı¶¯·¢ËÍÏûÏ¢ Ã¶¾Ù½ø³ÌÄ£¿éĞÅÏ¢,Ğ´Èëµ½ListControlÖĞ
+	//åŠŸèƒ½:å‘é©±åŠ¨å‘é€æ¶ˆæ¯ æšä¸¾è¿›ç¨‹æ¨¡å—ä¿¡æ¯,å†™å…¥åˆ°ListControlä¸­
 	ULONG64  _LoadDriver::UserEnumProcessModuleInfo(PVOID pDlgProcessHandleInfo);
-	//¹¦ÄÜ:ÏòÇı¶¯·¢ÏûÏ¢ Ã¶¾ÙÎÄ¼şĞÅÏ¢ ²¢Ğ´µ½ListControlºÍTreeÖĞ
+	//åŠŸèƒ½:å‘é©±åŠ¨å‘æ¶ˆæ¯ æšä¸¾æ–‡ä»¶ä¿¡æ¯ å¹¶å†™åˆ°ListControlå’ŒTreeä¸­
 	ULONG64 _LoadDriver::UserEnumFileInfo(PVOID pDlgFileInfo);
-	//¹¦ÄÜ:ÏòÇı¶¯·¢ËÍÏûÏ¢ ½â³ıµ±Ç°Ñ¡ÔñµÄÎÄ¼şÕ¼ÓÃÇé¿ö
+	//åŠŸèƒ½:å‘é©±åŠ¨å‘é€æ¶ˆæ¯ è§£é™¤å½“å‰é€‰æ‹©çš„æ–‡ä»¶å ç”¨æƒ…å†µ
 	ULONG64 _LoadDriver::UserFileDeoccupy(PVOID pDlgFileInfo);
-	//¹¦ÄÜ:ÏòÇı¶¯·¢ÏûÏ¢ Ç¿ÖÆÉ¾³ıÖ¸¶¨µÄÎÄ¼şÂ·¾¶
+	//åŠŸèƒ½:å‘é©±åŠ¨å‘æ¶ˆæ¯ å¼ºåˆ¶åˆ é™¤æŒ‡å®šçš„æ–‡ä»¶è·¯å¾„
 	ULONG64 _LoadDriver::UserDelteFileInfo(PVOID pDlgFileInfo);
-	//¹¦ÄÜ:ÏòÇı¶¯·¢ÏûÏ¢ Ã¶¾Ù×¢²á±íĞÅÏ¢ ²¢Ğ´µ½ListControlºÍTreeÖĞ
+	//åŠŸèƒ½:å‘é©±åŠ¨å‘æ¶ˆæ¯ æšä¸¾æ³¨å†Œè¡¨ä¿¡æ¯ å¹¶å†™åˆ°ListControlå’ŒTreeä¸­
 	ULONG64 _LoadDriver::UserEnumRegistryInfo(PVOID pDlgRegistryInfo);
-	//¹¦ÄÜ:ÏòÇı¶¯·¢ÏûÏ¢ Ã¶¾ÙGDT±íĞÅÏ¢ ²¢Ğ´Èëµ½ListControlÖĞ
+	//åŠŸèƒ½:å‘é©±åŠ¨å‘æ¶ˆæ¯ æšä¸¾GDTè¡¨ä¿¡æ¯ å¹¶å†™å…¥åˆ°ListControlä¸­
 	ULONG64 _LoadDriver::UserEnumGdtInfo(PVOID pDlgGdtInfo);
-	//¹¦ÄÜ:ÏòÇı¶¯·¢ÏûÏ¢ Ã¶¾ÙIDT±íĞÅÏ¢ ²¢Ğ´Èëµ½ListControlÖĞ
+	//åŠŸèƒ½:å‘é©±åŠ¨å‘æ¶ˆæ¯ æšä¸¾IDTè¡¨ä¿¡æ¯ å¹¶å†™å…¥åˆ°ListControlä¸­
 	ULONG64 _LoadDriver::UserEnumIdtInfo(PVOID pDlgIdtInfo);
-	//¹¦ÄÜ:ÏòÇı¶¯·¢ÏûÏ¢ Ã¶¾ÙSSDT±íĞÅÏ¢ ²¢Ğ´Èëµ½ListControlÖĞ
+	//åŠŸèƒ½:å‘é©±åŠ¨å‘æ¶ˆæ¯ æšä¸¾SSDTè¡¨ä¿¡æ¯ å¹¶å†™å…¥åˆ°ListControlä¸­
 	ULONG64 _LoadDriver::UserEnumSsdtInfo(PVOID pDlgSsdtInfo);
-	//¹¦ÄÜ:ÏòÇı¶¯·¢ÏûÏ¢ Ã¶¾ÙSSDTShadow±íĞÅÏ¢ ²¢Ğ´Èëµ½ListControlÖĞ
+	//åŠŸèƒ½:å‘é©±åŠ¨å‘æ¶ˆæ¯ æšä¸¾SSDTShadowè¡¨ä¿¡æ¯ å¹¶å†™å…¥åˆ°ListControlä¸­
 	ULONG64 _LoadDriver::UserEnumSsdtShadowInfo(PVOID pDlgSsdtShadowInfo);
-	//¹¦ÄÜ:ÏòÇı¶¯·¢ÏûÏ¢ Ã¶¾ÙKernelCallBack±íĞÅÏ¢ ²¢Ğ´Èëµ½ListControlÖĞ
+	//åŠŸèƒ½:å‘é©±åŠ¨å‘æ¶ˆæ¯ æšä¸¾KernelCallBackè¡¨ä¿¡æ¯ å¹¶å†™å…¥åˆ°ListControlä¸­
 	ULONG64 _LoadDriver::UserEnumKernelCallBackInfo(PVOID pDlgKernelCallBackInfo);
-	//¹¦ÄÜ:ÏòÇı¶¯·¢ÏûÏ¢ Ã¶¾ÙMiniFilterCallBack±íĞÅÏ¢ ²¢Ğ´Èëµ½ListControlÖĞ
+	//åŠŸèƒ½:å‘é©±åŠ¨å‘æ¶ˆæ¯ æšä¸¾MiniFilterCallBackè¡¨ä¿¡æ¯ å¹¶å†™å…¥åˆ°ListControlä¸­
 	ULONG64 _LoadDriver::UserEnumMiniFilterCallBackInfo(PVOID pDlgMiniFilterCallBackInfo);
-	//¹¦ÄÜ:ÏòÇı¶¯·¢ÏûÏ¢ Ã¶¾Ù¶ÔÏóÀàĞÍ»Øµ÷ĞÅÏ¢ ²¢Ğ´Èëµ½ListControlÖĞ
+	//åŠŸèƒ½:å‘é©±åŠ¨å‘æ¶ˆæ¯ æšä¸¾å¯¹è±¡ç±»å‹å›è°ƒä¿¡æ¯ å¹¶å†™å…¥åˆ°ListControlä¸­
 	ULONG64 _LoadDriver::UserEnumObjectCallBackInfo(PVOID pDlgObjectCallBackInfo);
-	//¹¦ÄÜ:ÏòÇı¶¯·¢ÏûÏ¢ Ã¶¾ÙÇı¶¯¶ÔÏóMajorfunctionĞÅÏ¢ ²¢Ğ´Èëµ½ListControlÖĞ
+	//åŠŸèƒ½:å‘é©±åŠ¨å‘æ¶ˆæ¯ æšä¸¾é©±åŠ¨å¯¹è±¡Majorfunctionä¿¡æ¯ å¹¶å†™å…¥åˆ°ListControlä¸­
 	ULONG64 _LoadDriver::UserEnumDriverMajorFunctionInfo(PVOID pDriverMajorFunctionInfo);
-	//¹¦ÄÜ:ÏòÇı¶¯·¢ÏûÏ¢ Ã¶¾ÙDpc»Øµ÷ĞÅÏ¢ ²¢Ğ´Èëµ½ListControlÖĞ
+	//åŠŸèƒ½:å‘é©±åŠ¨å‘æ¶ˆæ¯ æšä¸¾Dpcå›è°ƒä¿¡æ¯ å¹¶å†™å…¥åˆ°ListControlä¸­
 	ULONG64 _LoadDriver::UserEnumDpcInfo(PVOID pDlgDpc);
-	//¹¦ÄÜ:ÏòÇı¶¯·¢ËÍÏûÏ¢ ¶ÁÈ¡Ö¸¶¨ÓÃ»§µØÖ·µÄÊı¾İ,Ä¬ÈÏ0x1000´óĞ¡Ò»¸öÒ³
+	//åŠŸèƒ½:å‘é©±åŠ¨å‘é€æ¶ˆæ¯ è¯»å–æŒ‡å®šç”¨æˆ·åœ°å€çš„æ•°æ®,é»˜è®¤0x1000å¤§å°ä¸€ä¸ªé¡µ
 	ULONG64 _LoadDriver::UserRWMemOryInfo(PVOID pDlgRWMemory);
-	//¹¦ÄÜ:ÏòÇı¶¯·¢ËÍÏûÏ¢ ¶ÁÈ¡¶ÔÓ¦Hal±íµÄÊı¾İ
+	//åŠŸèƒ½:å‘é©±åŠ¨å‘é€æ¶ˆæ¯ è¯»å–å¯¹åº”Halè¡¨çš„æ•°æ®
 	ULONG64 _LoadDriver::UserEnumHalTableInfo(PVOID pDlgHalTable);
-	//¹¦ÄÜ:ÏòÇı¶¯·¢ËÍÏûÏ¢ ¶ÁÈ¡¶ÔÓ¦WDfÇı¶¯µÄÊı¾İ
+	//åŠŸèƒ½:å‘é©±åŠ¨å‘é€æ¶ˆæ¯ è¯»å–å¯¹åº”WDfé©±åŠ¨çš„æ•°æ®
 	ULONG64 _LoadDriver::UserEnumWdfInfo(PVOID pDlgWdf);
-	//¹¦ÄÜ:ÏòÇı¶¯·¢ËÍÏûÏ¢ HookSsdt±íÖĞµÄº¯Êı
+	//åŠŸèƒ½:å‘é©±åŠ¨å‘é€æ¶ˆæ¯ HookSsdtè¡¨ä¸­çš„å‡½æ•°
 	ULONG64 _LoadDriver::UserHookSsdtTable(PVOID pHookInfo);
-	//¹¦ÄÜ:Ïò´°¿Ú²åÈëÊı¾İ
+	//åŠŸèƒ½:å‘çª—å£æ’å…¥æ•°æ®
 	ULONG64 _LoadDriver::UserInsertMonitorDlg(PVOID pInfo);
-	//¹¦ÄÜ:Ã¶¾Ù¹ıÂËÇı¶¯
+	//åŠŸèƒ½:æšä¸¾è¿‡æ»¤é©±åŠ¨
 	ULONG64 _LoadDriver::UserEnumFilterDriver(PVOID pInfo);
-	//¹¦ÄÜ:µ÷ÊÔ±êÖ¾
+	//åŠŸèƒ½:è°ƒè¯•æ ‡å¿—
 	ULONG64 _LoadDriver::UserDebugFlags(PVOID pInfo);
 	ULONG64 _LoadDriver::UserDebugFlags1(PVOID pInfo);
+	//åŠŸèƒ½:å‘é©±åŠ¨å‘æ¶ˆæ¯ æšä¸¾å†…æ ¸å·¥ä½œçº¿ç¨‹é˜Ÿåˆ— å¹¶å†™å…¥åˆ°ListControlä¸­
+	ULONG64 _LoadDriver::UserEnumWorkerThreadInfo(PVOID pDlgWorkerThread);
 
 
 
-	//¹¦ÄÜ:²âÊÔ¹¦ÄÜ½á¿Ú
+	//åŠŸèƒ½:æµ‹è¯•åŠŸèƒ½ç»“å£
 	ULONG64 _LoadDriver::UserTestFun(PVOID pInfo);
 
 public:
-	HANDLE m_Port;																								//´æ´¢Í¨ĞÅµÄ¶Ë¿Ú
-	WCHAR DriverName[MAX_PATH];																					//´æ´¢Çı¶¯Ãû×Ö
-	WCHAR DriverFullNamePath[MAX_PATH];																			//´æ´¢Çı¶¯Â·¾¶
+	HANDLE m_Port;																								//å­˜å‚¨é€šä¿¡çš„ç«¯å£
+	WCHAR DriverName[MAX_PATH];																					//å­˜å‚¨é©±åŠ¨åå­—
+	WCHAR DriverFullNamePath[MAX_PATH];																			//å­˜å‚¨é©±åŠ¨è·¯å¾„
 public:
-	//¹¦ÄÜ´´½¨Ïß³Ì½ÓÊÕ
-	ULONG64	CreateGetMessageThread(ULONG64 ThreadNumbers = std::thread::hardware_concurrency()/*»ñÈ¡CPUÏß³ÌÊı*/);
-	//¸ù¾İ°üÀàĞÍÉêÇë°ü¿Õ¼ä Ê¹ÓÃÇ³¿½±´
+	//åŠŸèƒ½åˆ›å»ºçº¿ç¨‹æ¥æ”¶
+	ULONG64	CreateGetMessageThread(ULONG64 ThreadNumbers = std::thread::hardware_concurrency()/*è·å–CPUçº¿ç¨‹æ•°*/);
+	//æ ¹æ®åŒ…ç±»å‹ç”³è¯·åŒ…ç©ºé—´ ä½¿ç”¨æµ…æ‹·è´
 	PVOID64 AllocPack(PCFilterUserGetMessageHeadInfo pinfo);
-	//½ÓÊÕ0»··¢ËÍµÄÊı¾İ
-	static PVOID _LoadDriver::WorkThread(_LoadDriver* pThis, uint32_t nIndex);									//¹¤×÷Ïß³Ì
+	//æ¥æ”¶0ç¯å‘é€çš„æ•°æ®
+	static PVOID _LoadDriver::WorkThread(_LoadDriver* pThis, uint32_t nIndex);									//å·¥ä½œçº¿ç¨‹
 public:
-	ULONG64										m_ThreadsRuning;												//Ïß³ÌÔËĞĞ±êÖ¾
-	HANDLE										m_Completion;													//´æ´¢Íê³É¶Ë¿Ú
-	std::list<std::thread*>						m_Threads;														//´æ´¢Ïß³Ì
-	std::list<PCFilterGetMessageHeadInfo>		m_FilterMessageQueue;											//ÈÎÎñ¶ÓÁĞ
-	std::mutex									m_TaskLock;														//Í¬²½¶ÓÁĞ
+	ULONG64										m_ThreadsRuning;												//çº¿ç¨‹è¿è¡Œæ ‡å¿—
+	HANDLE										m_Completion;													//å­˜å‚¨å®Œæˆç«¯å£
+	std::list<std::thread*>						m_Threads;														//å­˜å‚¨çº¿ç¨‹
+	std::list<PCFilterGetMessageHeadInfo>		m_FilterMessageQueue;											//ä»»åŠ¡é˜Ÿåˆ—
+	std::mutex									m_TaskLock;														//åŒæ­¥é˜Ÿåˆ—
 };
 
 using LoadDriver = _LoadDriver;

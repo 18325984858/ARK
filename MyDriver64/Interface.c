@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include "Interface.h"
 #include "CommunCation.h"
 #include "Struct.h"
@@ -6,39 +6,45 @@
 #include "Ssdt.h"
 
 CCmd g_CmdFun[MAX_FUNCALL_INDEX] = {
-	{um_Cmd_Enum_Process_info								,EnumProcessInfo},					//»ñÈ¡½ø³ÌĞÅÏ¢
-	{um_Cmd_Enum_ProcessVad_info							,EnumProcessVadInfo},				//»ñÈ¡½ø³ÌÖĞVADÄÚ´æĞÅÏ¢
-	{um_Cmd_Enum_ProcessThread_info							,EnumProcessThreadInfo},			//»ñÈ¡½ø³ÌÖĞÏß³ÌĞÅÏ¢
-	{um_Cmd_Enum_ProcessHandle_info							,EnumProcessHandleInfo},			//»ñÈ¡½ø³ÌÖĞÏß³ÌĞÅÏ¢
-	{um_Cmd_Enum_ProcessModule_info							,EnumProcessModuleInfo},			//»ñÈ¡½ø³ÌÖĞµÄÄ£¿éĞÅÏ¢
-	{um_Cmd_Enum_Driver_info								,EnumDriverInfo},					//»ñÈ¡Çı¶¯¶ÔÏóĞÅÏ¢
-	{um_Cmd_Enum_File_info									,EnumFileInfo },					//Ã¶¾Ù´ÅÅÌÎÄ¼şĞÅÏ¢
-	{um_Cmd_Enum_Registry_info								,EnumRegistryInfo},					//Ã¶¾Ù×¢²á±íĞÅÏ¢
-	{um_Cmd_Enum_Gdt_info									,EnumGdtInfo },						//Ã¶¾ÙGDT±íĞÅÏ¢
-	{um_Cmd_Enum_Idt_info									,EnumIdtInfo},						//Ã¶¾ÙIDT±íĞÅÏ¢
-	{um_Cmd_Enum_SSDT_info									,EnumSsdtInfo},						//Ã¶¾ÙSSDT±íĞÅÏ¢
-	{um_Cmd_Enum_SSDTShadow_info							,EnumSsdtShadowInfo},				//Ã¶¾ÙSSDTShadowĞÅÏ¢
-	{um_Cmd_Enum_KernelCallBack_info						,EnumKernelCallBackInfo},			//Ã¶¾ÙÄÚºË»Øµ÷ĞÅÏ¢
-	{um_Cmd_Enum_MiniFilterCallBack_info					,EnumMiniFilterCallBackInfo},		//Ã¶¾ÙMiniFilter»Øµ÷ĞÅÏ¢
-	{um_Cmd_Enum_ObjectCallBack_info						,EnumObjectTypeCallBackInfo},		//Ã¶¾Ù¶ÔÏó»Øµ÷ĞÅÏ¢
-	{um_Cmd_Enum_ObjectCallBackEx_info						,EnumObjectTypeCallBackExInfo},		//Ã¶¾Ù¶ÔÏó»Øµ÷ĞÅÏ¢
-	{um_Cmd_Enum_ObjectMajorFunction_info					,EnumDriverMajorFunctionInfo},		//Ã¶¾ÙÇı¶¯IRP»Øµ÷ĞÅÏ¢
-	{um_Cmd_Enum_Dpc_info									,EnumDpcInfo},						//Ã¶¾ÙDPC»Øµ÷ĞÅÏ¢
-	{um_Cmd_DeleteFile_info									,MyDeleteFile},						//Ç¿ÖÆÉ¾³ıÕıÔÚÔËĞĞµÄÎÄ¼ş
-	{um_Cmd_ReturnSsdtAndSsdtShadow_info					,MyReturnSsdtAndSsdtShadow},		//»Ö¸´SSDT±íºÍSSDTShadow±í¹³×Ó
-	{um_Cmd_FileDeoccupy_info								,MyFileDeoccupy},					//½â³ıÎÄ¼şÕ¼ÓÃ
-	{um_Cmd_KillProcess_info								,MyKillProcess},					//Ç¿ÖÆ½áÊø½ø³Ì
-	{um_Cmd_RWProcessMemOry_info							,MyRWMemory},						//¶ÁÈ¡»òĞ´ÈëÄÚ´æ
-	{um_Cmd_HookSystemServiceTable_info						,HookSystemServiceTable},			//hookÏµÍ³·şÎñ±í	SSDT »òÕß SSDTShadow ±í
-	{um_Cmd_Enum_HalTable_info								,EnumHalTableInfo},					//Ã¶¾ÙHanl±í
-	{um_Cmd_Enum_SystemDevice_info							,EnumSystemDeviceInfo},				//Ã¶¾ÙFileSystemDevice±í
-	{um_Cmd_Hook_Ssdt										,HookSsdtTable},					//HookSSdt±íÖĞµÄº¯Êı
-	{um_Cmd_Init_Data										,InitData},							//³õÊ¼»¯Êı¾İ		
-	{um_Cmd_Set_ProcessPortection	                        ,SetProcessPortection },			//Çå³ı½ø³Ì±£»¤
-	{um_Cmd_Get_ProcessPortection							,GetProcessPortection},				//»ñÈ¡½ø³Ì±£»¤Öµ
-	{um_Cmd_Enum_FilterDriver_info							,EnumFilterDriverInfo},				//»ñÈ¡¹ıÂËÇı¶¯ĞÅÏ¢
-	{um_Cmd_DebugFlags_info									,DebugFlagsInfo},					//»ñÈ¡»òÉèÖÃµ÷ÊÔ±êÖ¾ĞÅÏ¢
-	{um_Cmd_Test											,MyTest},							//»ñÈ¡½ø³Ì±£»¤Öµ
+	{um_Cmd_Enum_Process_info								,EnumProcessInfo},					//è·å–è¿›ç¨‹ä¿¡æ¯
+	{um_Cmd_Enum_ProcessVad_info							,EnumProcessVadInfo},				//è·å–è¿›ç¨‹ä¸­VADå†…å­˜ä¿¡æ¯
+	{um_Cmd_Enum_ProcessThread_info							,EnumProcessThreadInfo},			//è·å–è¿›ç¨‹ä¸­çº¿ç¨‹ä¿¡æ¯
+	{um_Cmd_Enum_ProcessHandle_info							,EnumProcessHandleInfo},			//è·å–è¿›ç¨‹ä¸­çº¿ç¨‹ä¿¡æ¯
+	{um_Cmd_Enum_ProcessModule_info							,EnumProcessModuleInfo},			//è·å–è¿›ç¨‹ä¸­çš„æ¨¡å—ä¿¡æ¯
+	{um_Cmd_Enum_Driver_info								,EnumDriverInfo},					//è·å–é©±åŠ¨å¯¹è±¡ä¿¡æ¯
+	{um_Cmd_Enum_File_info									,EnumFileInfo },					//æšä¸¾ç£ç›˜æ–‡ä»¶ä¿¡æ¯
+	{um_Cmd_Enum_Registry_info								,EnumRegistryInfo},					//æšä¸¾æ³¨å†Œè¡¨ä¿¡æ¯
+	{um_Cmd_Enum_Gdt_info									,EnumGdtInfo },						//æšä¸¾GDTè¡¨ä¿¡æ¯
+	{um_Cmd_Enum_Idt_info									,EnumIdtInfo},						//æšä¸¾IDTè¡¨ä¿¡æ¯
+	{um_Cmd_Enum_SSDT_info									,EnumSsdtInfo},						//æšä¸¾SSDTè¡¨ä¿¡æ¯
+	{um_Cmd_Enum_SSDTShadow_info							,EnumSsdtShadowInfo},				//æšä¸¾SSDTShadowä¿¡æ¯
+	{um_Cmd_Enum_KernelCallBack_info						,EnumKernelCallBackInfo},			//æšä¸¾å†…æ ¸å›è°ƒä¿¡æ¯
+	{um_Cmd_Enum_MiniFilterCallBack_info					,EnumMiniFilterCallBackInfo},		//æšä¸¾MiniFilterå›è°ƒä¿¡æ¯
+	{um_Cmd_Enum_ObjectCallBack_info						,EnumObjectTypeCallBackInfo},		//æšä¸¾å¯¹è±¡å›è°ƒä¿¡æ¯
+	{um_Cmd_Enum_ObjectCallBackEx_info						,EnumObjectTypeCallBackExInfo},		//æšä¸¾å¯¹è±¡å›è°ƒä¿¡æ¯
+	{um_Cmd_Enum_ObjectMajorFunction_info					,EnumDriverMajorFunctionInfo},		//æšä¸¾é©±åŠ¨IRPå›è°ƒä¿¡æ¯
+	{um_Cmd_Enum_Dpc_info									,EnumDpcInfo},						//æšä¸¾DPCå›è°ƒä¿¡æ¯
+	{um_Cmd_DeleteFile_info									,MyDeleteFile},						//å¼ºåˆ¶åˆ é™¤æ­£åœ¨è¿è¡Œçš„æ–‡ä»¶
+	{um_Cmd_ReturnSsdtAndSsdtShadow_info					,MyReturnSsdtAndSsdtShadow},		//æ¢å¤SSDTè¡¨å’ŒSSDTShadowè¡¨é’©å­
+	{um_Cmd_FileDeoccupy_info								,MyFileDeoccupy},					//è§£é™¤æ–‡ä»¶å ç”¨
+	{um_Cmd_KillProcess_info								,MyKillProcess},					//å¼ºåˆ¶ç»“æŸè¿›ç¨‹
+	{um_Cmd_RWProcessMemOry_info							,MyRWMemory},						//è¯»å–æˆ–å†™å…¥å†…å­˜
+	{um_Cmd_HookSystemServiceTable_info						,HookSystemServiceTable},			//hookç³»ç»ŸæœåŠ¡è¡¨	SSDT æˆ–è€… SSDTShadow è¡¨
+	{um_Cmd_Enum_HalTable_info								,EnumHalTableInfo},					//æšä¸¾Hanlè¡¨
+	{um_Cmd_Enum_SystemDevice_info							,EnumSystemDeviceInfo},				//æšä¸¾FileSystemDeviceè¡¨
+	{um_Cmd_Hook_Ssdt										,HookSsdtTable},					//HookSSdtè¡¨ä¸­çš„å‡½æ•°
+	{um_Cmd_Init_Data										,InitData},							//åˆå§‹åŒ–æ•°æ®		
+	{um_Cmd_Set_ProcessPortection	                        ,SetProcessPortection },			//æ¸…é™¤è¿›ç¨‹ä¿æŠ¤
+	{um_Cmd_Get_ProcessPortection							,GetProcessPortection},				//è·å–è¿›ç¨‹ä¿æŠ¤å€¼
+	{um_Cmd_Enum_FilterDriver_info							,EnumFilterDriverInfo},				//è·å–è¿‡æ»¤é©±åŠ¨ä¿¡æ¯
+	{um_Cmd_DebugFlags_info									,DebugFlagsInfo},					//è·å–æˆ–è®¾ç½®è°ƒè¯•æ ‡å¿—ä¿¡æ¯
+	{um_Cmd_Test											,MyTest},							//è·å–è¿›ç¨‹ä¿æŠ¤å€¼
+	// å·¥ä½œçº¿ç¨‹é˜Ÿåˆ—ï¼šç”¨ designated initializer æ˜¾å¼è½åœ¨ä¸ cmd å€¼åŒ¹é…çš„æ§½ä½ï¼Œ
+	// è¿™æ · CommuniCation.c é‡Œçš„ç¡¬åŒ–æ ¡éªŒ g_CmdFun[m_Cmd].m_Cmd == m_Cmd æ‰èƒ½å‘½ä¸­ã€‚
+	[um_Cmd_Enum_WorkerThread_info]							= {um_Cmd_Enum_WorkerThread_info, EnumWorkerThreadInfo},
+	// WDF æšä¸¾åŒæ ·éœ€è¦ designated initializerï¼Œé¿å…è·³å·é€ æˆè¡¨é”™ä½ã€‚
+	[um_Cmd_Enum_Wdf01000_info]								= {um_Cmd_Enum_Wdf01000_info,     EnumWdf01000Info},
+	[um_Cmd_Enum_WdfFunction_info]							= {um_Cmd_Enum_WdfFunction_info,  EnumWdfFunctionInfo},
 };
 
 VOID MyThreadRoutine(PVOID Context)
@@ -50,37 +56,37 @@ VOID MyThreadRoutine(PVOID Context)
 	NTSTATUS status = NULL;
 	HANDLE hEvent = NULL;
 
-	// ³õÊ¼»¯ÊÂ¼şÃû³Æ£¬±ØĞë¼ÓÉÏÃüÃû¿Õ¼äÇ°×º
+	// åˆå§‹åŒ–äº‹ä»¶åç§°ï¼Œå¿…é¡»åŠ ä¸Šå‘½åç©ºé—´å‰ç¼€
 	RtlInitUnicodeString(&eventName, L"\\BaseNamedObjects\\Global\\7028001A-27A3-4C83-B359-0CFC333A50BB");
 
-	// ³õÊ¼»¯¶ÔÏóÊôĞÔ
+	// åˆå§‹åŒ–å¯¹è±¡å±æ€§
 	InitializeObjectAttributes(&objAttr,
 		&eventName,
 		OBJ_CASE_INSENSITIVE | OBJ_KERNEL_HANDLE,
 		NULL,
 		NULL);
 
-	// ´ò¿ªÊÂ¼ş¶ÔÏó
+	// æ‰“å¼€äº‹ä»¶å¯¹è±¡
 	status = ZwOpenEvent(&hEvent, EVENT_ALL_ACCESS, &objAttr);
 	if (NT_SUCCESS(status))
 	{
 
 		ULONG64 nRet = 0;
-		//»ñÈ¡Æ«ÒÆ
+		//è·å–åç§»
 		nRet = GetOffset();
 		if (!nRet)
 		{
-			MyDbgPrintfEx("%s GetOffset º¯ÊıÊ§°Ü£¡\n", __FUNCTION__);
+			MyDbgPrintfEx("%s GetOffset å‡½æ•°å¤±è´¥ï¼\n", __FUNCTION__);
 		}
 
-		ZwSetEvent(hEvent, NULL); // ÉèÖÃÊÂ¼şÎªÒÑ´¥·¢×´Ì¬
-		ZwClose(hEvent); // ¹Ø±Õ¾ä±ú
+		ZwSetEvent(hEvent, NULL); // è®¾ç½®äº‹ä»¶ä¸ºå·²è§¦å‘çŠ¶æ€
+		ZwClose(hEvent); // å…³é—­å¥æŸ„
 	}
 	else {
 		DbgPrint("Failed to open event: 0x%X\n", status);
 	}
 
-	//½áÊøÏß³Ì
+	//ç»“æŸçº¿ç¨‹
 	PsTerminateSystemThread(STATUS_SUCCESS);
 }
 
@@ -105,7 +111,7 @@ VOID __vectorcall InitData(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOut
 
 VOID __vectorcall EnumProcessInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam)
 {
-	//ÑéÖ¤²ÎÊıÊÇ·ñÓĞĞ§
+	//éªŒè¯å‚æ•°æ˜¯å¦æœ‰æ•ˆ
 	if (!MmIsAddressValid(pOutData))
 	{
 		return;
@@ -134,14 +140,14 @@ VOID __vectorcall EnumProcessInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG
 				break;
 			}
 
-			//´ÓEPROCESSÖĞ»ñÈ¡½ø³ÌĞÅÏ¢
+			//ä»EPROCESSä¸­è·å–è¿›ç¨‹ä¿¡æ¯
 			WriteBufferToProcessStructEx(pCurList, ((PCProcessInfo)pCurList)->HandleInfo.Object);
 
 			pCurList = pCurList->Blink;
 		} while (pCurList != &pProcessInfo->HandleInfo.List.List);
 
 
-		//¸³Öµ,´«¸øÈı»·
+		//èµ‹å€¼,ä¼ ç»™ä¸‰ç¯
 		*(PULONG64)pOutData = pProcessInfo;
 	} while (0);
 
@@ -171,16 +177,16 @@ VOID __vectorcall EnumProcessThreadInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT
 {
 
 	//__debugbreak();
-	//ÑéÖ¤²ÎÊı
+	//éªŒè¯å‚æ•°
 	if (!MmIsAddressValid(pIndata) || !MmIsAddressValid(pOutData))
 	{
 		return;
 	}
 
-	//Ã¶¾ÙÏß³Ì
+	//æšä¸¾çº¿ç¨‹
 	ULONG64 dqRet = EnumThread(pIndata, pOutData);
 
-	//·µ»ØÖµ
+	//è¿”å›å€¼
 	if (MmIsAddressValid(pRet))
 	{
 		*(PULONG64)pRet = dqRet;
@@ -189,17 +195,17 @@ VOID __vectorcall EnumProcessThreadInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT
 
 VOID __vectorcall EnumProcessHandleInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam)
 {
-	//ÑéÖ¤²ÎÊı
+	//éªŒè¯å‚æ•°
 	if (!MmIsAddressValid(pIndata) || !MmIsAddressValid(pOutData))
 	{
 		return;
 	}
 
 
-	//Ã¶¾ÙÏß³Ì
+	//æšä¸¾çº¿ç¨‹
 	ULONG64 dqRet = EnumProcessHandleTable(pIndata, pOutData);
 
-	//·µ»ØÖµ
+	//è¿”å›å€¼
 	if (MmIsAddressValid(pRet))
 	{
 		*(PULONG64)pRet = dqRet;
@@ -208,17 +214,17 @@ VOID __vectorcall EnumProcessHandleInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT
 
 VOID __vectorcall EnumProcessModuleInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam)
 {
-	//ÑéÖ¤²ÎÊı
+	//éªŒè¯å‚æ•°
 	if (!MmIsAddressValid(pIndata) || !MmIsAddressValid(pOutData))
 	{
 		return;
 	}
 
 
-	//Ã¶¾ÙÏß³Ì
+	//æšä¸¾çº¿ç¨‹
 	ULONG64 dqRet = EnumProcessModule(pIndata, pOutData);
 
-	//·µ»ØÖµ
+	//è¿”å›å€¼
 	if (MmIsAddressValid(pRet))
 	{
 		*(PULONG64)pRet = dqRet;
@@ -235,18 +241,18 @@ VOID __vectorcall EnumDriverInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG6
 	ULONG64 dqRet = 0;
 
 
-	ULONG64 dqCount1 = EnumSysModule(g_CurDriverObject, pOutData);	//±éÀúµ±Ç°Çı¶¯¶ÔÏóÖĞµÄÁ´±í
+	ULONG64 dqCount1 = EnumSysModule(g_CurDriverObject, pOutData);	//éå†å½“å‰é©±åŠ¨å¯¹è±¡ä¸­çš„é“¾è¡¨
 	if (dqCount1 <= 0)
 	{
-		//µ±Ç°Çı¶¯¸ã¶ÔÏóÁ´±íÖĞ²»´æÔÚÖ±½Ó·µ»Ø
+		//å½“å‰é©±åŠ¨æå¯¹è±¡é“¾è¡¨ä¸­ä¸å­˜åœ¨ç›´æ¥è¿”å›
 		return;
 	}
 
 	PCDriverInfo pDriverObjectTmp = NULL;
-	ULONG64 dqCount = EnumDriverObject(&pDriverObjectTmp);				//±éÀú¶ÔÏó¹ÜÀíÆ÷ÖĞµÄÇı¶¯¶ÔÏó»ñÈ¡¶ÔÏó
+	ULONG64 dqCount = EnumDriverObject(&pDriverObjectTmp);				//éå†å¯¹è±¡ç®¡ç†å™¨ä¸­çš„é©±åŠ¨å¯¹è±¡è·å–å¯¹è±¡
 	if (dqCount <= 0)
 	{
-		//µ±ÎªNULLÊ±Ö±½Ó×ßÈË
+		//å½“ä¸ºNULLæ—¶ç›´æ¥èµ°äºº
 		return;
 	}
 
@@ -273,7 +279,7 @@ VOID __vectorcall EnumDriverInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG6
 
 
 			PCDriverInfo pDriverObjectInfoTmp = (PCDriverInfo)pCurListTmp;
-			//±È½ÏÊÇ·ñÊÇÍ¬Ò»¸ö
+			//æ¯”è¾ƒæ˜¯å¦æ˜¯åŒä¸€ä¸ª
 			if ((pDriverObjectInfoTmp->DriverStart == pDriverObjectInfo->ImageBaseAddr) && pDriverObjectInfoTmp->DriverStart && pDriverObjectInfo->ImageBaseAddr)
 			{
 				pDriverObjectInfo->DriverObject = pDriverObjectInfoTmp->DriverObject;
@@ -281,19 +287,19 @@ VOID __vectorcall EnumDriverInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG6
 				memcpy_s(pDriverObjectInfo->DriverName, MAX_PATH, pDriverObjectInfoTmp->DriverName, MY_MAX_PATH);
 			}
 
-			//Ö¸ÏòÏÂÒ»¸ö
+			//æŒ‡å‘ä¸‹ä¸€ä¸ª
 			pCurListTmp = pCurListTmp->Blink;
 
 		} while (pCurListTmp != &pDriverObjectTmp->List.List);
 
-		//Ö¸ÏòÏÂÒ»¸ö
+		//æŒ‡å‘ä¸‹ä¸€ä¸ª
 		pCurList = pCurList->Blink;
 	} while (pCurList != &pDriverObject->List.List);
 
 
 
 	SIZE_T AllocFreeSize = 0;
-	//ÊÍ·ÅµôpDriverObjectTmp¿Õ¼ä
+	//é‡Šæ”¾æ‰pDriverObjectTmpç©ºé—´
 	PCLIST_ENTRY pCurListTmp = &pDriverObjectTmp->List.List;
 	do
 	{
@@ -302,7 +308,7 @@ VOID __vectorcall EnumDriverInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG6
 			break;
 		}
 		PCDriverInfo pDriverObjectInfoTmp = (PCDriverInfo)pCurListTmp;
-		//Ö¸ÏòÏÂÒ»¸ö
+		//æŒ‡å‘ä¸‹ä¸€ä¸ª
 		pCurListTmp = pCurListTmp->Blink;
 
 		ZwFreeVirtualMemory(NtCurrentProcess(), &pDriverObjectInfoTmp, &AllocFreeSize, MEM_RELEASE);
@@ -317,7 +323,7 @@ VOID __vectorcall EnumDriverInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG6
 
 VOID __vectorcall EnumFileInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam)
 {
-	//ÑéÖ¤²ÎÊı
+	//éªŒè¯å‚æ•°
 	if (!MmIsAddressValid(pIndata) || !MmIsAddressValid(pOutData))
 	{
 		return;
@@ -339,7 +345,7 @@ VOID __vectorcall EnumFileInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 
 
 VOID __vectorcall EnumRegistryInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam)
 {
-	//ÑéÖ¤²ÎÊı
+	//éªŒè¯å‚æ•°
 	if (!MmIsAddressValid(pIndata) || !MmIsAddressValid(pOutData))
 	{
 		return;
@@ -437,21 +443,21 @@ VOID __vectorcall EnumKernelCallBackInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OU
 	ULONG64 dqRet = 0;
 
 
-	//Ã¶¾Ù´´½¨½ø³Ì»Øµ÷
+	//æšä¸¾åˆ›å»ºè¿›ç¨‹å›è°ƒ
 	dqRet += EnumCreateProcessCallBack(pOutData);
-	//Ã¶¾Ù´´½¨Ïß³Ì»Øµ÷
+	//æšä¸¾åˆ›å»ºçº¿ç¨‹å›è°ƒ
 	dqRet += EnumCreateThreadCallBack(pOutData);
-	//Ã¶¾Ù×¢²á±í»Øµ÷
+	//æšä¸¾æ³¨å†Œè¡¨å›è°ƒ
 	dqRet += EnumRegistryCallBack(pOutData);
-	//Ã¶¾Ù¼ÓÔØÄ£¿é»Øµ÷
+	//æšä¸¾åŠ è½½æ¨¡å—å›è°ƒ
 	dqRet += EnumLoadImageCallBack(pOutData);
-	//Ã¶¾Ù¹Ø»ú»Øµ÷
+	//æšä¸¾å…³æœºå›è°ƒ
 	dqRet += EnumShutdownCallBack(pOutData);
-	//Ã¶¾Ù¼´²å¼´ÓÃ»Øµ÷
+	//æšä¸¾å³æ’å³ç”¨å›è°ƒ
 	dqRet += EnumPnpCallBack(pOutData);
-	//Ã¶¾Ù´íÎóĞÅÏ¢»Øµ÷
+	//æšä¸¾é”™è¯¯ä¿¡æ¯å›è°ƒ
 	dqRet += EnumBugCheckCallback(pOutData);
-	//Ã¶¾Ù¶¨Ê±Æ÷ĞÅÏ¢»Øµ÷
+	//æšä¸¾å®šæ—¶å™¨ä¿¡æ¯å›è°ƒ
 	dqRet += EnumIoTimer(pOutData);
 
 	if (MmIsAddressValid(pRet))
@@ -462,7 +468,7 @@ VOID __vectorcall EnumKernelCallBackInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OU
 
 VOID __vectorcall EnumMiniFilterCallBackInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam)
 {
-	//ÑéÖ¤²ÎÊı
+	//éªŒè¯å‚æ•°
 	if (!MmIsAddressValid(pOutData))
 	{
 		return;
@@ -488,7 +494,7 @@ VOID __vectorcall EnumObjectTypeCallBackInfo(IN ULONG64 nCmd, IN ULONG64 pIndata
 
 	if (MmIsAddressValid(ObTypeIndexTable))
 	{
-		ULONG64 i = 2; //´ÓµÚÈıÏî¿ªÊ¼±éÀú
+		ULONG64 i = 2; //ä»ç¬¬ä¸‰é¡¹å¼€å§‹éå†
 
 		ULONG64 Object = NULL;
 		do
@@ -519,7 +525,7 @@ VOID __vectorcall EnumObjectTypeCallBackExInfo(IN ULONG64 nCmd, IN ULONG64 pInda
 
 	if (MmIsAddressValid(ObTypeIndexTable))
 	{
-		ULONG64 i = 2; //´ÓµÚÈıÏî¿ªÊ¼±éÀú
+		ULONG64 i = 2; //ä»ç¬¬ä¸‰é¡¹å¼€å§‹éå†
 
 		ULONG64 Object = NULL;
 		do
@@ -542,19 +548,19 @@ VOID __vectorcall EnumObjectTypeCallBackExInfo(IN ULONG64 nCmd, IN ULONG64 pInda
 VOID __vectorcall EnumDriverMajorFunctionInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam)
 {
 
-	//ÑéÖ¤²ÎÊıÊÇ·ñºÏ·¨
+	//éªŒè¯å‚æ•°æ˜¯å¦åˆæ³•
 	if (!MmIsAddressValid(pIndata) || !MmIsAddressValid(pOutData))
 	{
 		return;
 	}
 
-	//¸ù¾İÃû³Æ»ñÈ¡Çı¶¯¶ÔÏóµØÖ·
+	//æ ¹æ®åç§°è·å–é©±åŠ¨å¯¹è±¡åœ°å€
 	UNICODE_STRING DriverName = { 0 };
 	RtlInitUnicodeString(&DriverName, pIndata);
 	ULONG64 dqRet = LookUpDriverObjectByName(&DriverName, NULL);
 	if (MmIsAddressValid(dqRet))
 	{
-		//»ñÈ¡Çı¶¯¶ÔÏóMajorFunctionĞÅÏ¢
+		//è·å–é©±åŠ¨å¯¹è±¡MajorFunctionä¿¡æ¯
 		dqRet = EnumSysObjectMajorFunction(dqRet, pOutData);
 	}
 
@@ -576,6 +582,59 @@ VOID __vectorcall EnumDpcInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 p
 	if (MmIsAddressValid(pRet))
 	{
 		*(PULONG64)pRet = dqRet;
+	}
+}
+
+VOID __vectorcall EnumWorkerThreadInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam)
+{
+	UNREFERENCED_PARAMETER(nCmd);
+	UNREFERENCED_PARAMETER(pIndata);
+	UNREFERENCED_PARAMETER(pParam);
+
+	if (!MmIsAddressValid(pOutData))
+	{
+		return;
+	}
+
+	ULONG64 dqRet = EnumWorkerThread(pOutData);
+
+	if (MmIsAddressValid(pRet))
+	{
+		*(PULONG64)pRet = dqRet;
+	}
+}
+
+// WdfFunctions å‡½æ•°è¡¨æšä¸¾å…¥å£
+VOID __vectorcall EnumWdfFunctionInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam)
+{
+	UNREFERENCED_PARAMETER(nCmd);
+	UNREFERENCED_PARAMETER(pIndata);
+	UNREFERENCED_PARAMETER(pParam);
+
+	if (!MmIsAddressValid(pOutData))
+	{
+		return;
+	}
+
+	ULONG64 dqRet = EnumWdfFunction(pOutData);
+
+	if (MmIsAddressValid(pRet))
+	{
+		*(PULONG64)pRet = dqRet;
+	}
+}
+
+// Wdf01000 ä¸»è¦å‡½æ•°æšä¸¾ï¼šæœ¬ç‰ˆæœ¬æœªå®ç°ï¼Œè¿”å›ç©ºåˆ—è¡¨é¿å… R3 æŠ¥ "å‘é€æ¶ˆæ¯å¤±è´¥"
+VOID __vectorcall EnumWdf01000Info(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam)
+{
+	UNREFERENCED_PARAMETER(nCmd);
+	UNREFERENCED_PARAMETER(pIndata);
+	UNREFERENCED_PARAMETER(pOutData);
+	UNREFERENCED_PARAMETER(pParam);
+
+	if (MmIsAddressValid(pRet))
+	{
+		*(PULONG64)pRet = 0;
 	}
 }
 
@@ -606,8 +665,8 @@ VOID __vectorcall MyReturnSsdtAndSsdtShadow(IN ULONG64 nCmd, IN ULONG64 pIndata,
 		return;
 	}
 
-	ULONG32 TableIndex = pIndata & 0x8000000000000000;	//ÅĞ¶ÏÊÇĞŞ¸Ä 0Îª:SSDT ±í»¹ÊÇ 1:ÎªSSDTShadow±í 
-	ULONG64 DataIndex = pIndata & 0x7FFFFFFFFFFFFFFF;	//»ñÈ¡Ë÷Òı
+	ULONG32 TableIndex = pIndata & 0x8000000000000000;	//åˆ¤æ–­æ˜¯ä¿®æ”¹ 0ä¸º:SSDT è¡¨è¿˜æ˜¯ 1:ä¸ºSSDTShadowè¡¨ 
+	ULONG64 DataIndex = pIndata & 0x7FFFFFFFFFFFFFFF;	//è·å–ç´¢å¼•
 	ULONG64 dqRet = NULL;
 
 	if (!TableIndex)
@@ -628,7 +687,7 @@ VOID __vectorcall MyReturnSsdtAndSsdtShadow(IN ULONG64 nCmd, IN ULONG64 pIndata,
 
 VOID __vectorcall MyFileDeoccupy(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam)
 {
-	//ÑéÖ¤²ÎÊı,ÎÄ¼şÂ·¾¶ÊÇ·ñÓĞĞ§
+	//éªŒè¯å‚æ•°,æ–‡ä»¶è·¯å¾„æ˜¯å¦æœ‰æ•ˆ
 	if (!MmIsAddressValid(pIndata))
 	{
 		return;
@@ -648,14 +707,14 @@ VOID __vectorcall MyFileDeoccupy(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG6
 		return;
 	}
 
-	//Ğ¡Ğ´×ª»»´óĞ´
+	//å°å†™è½¬æ¢å¤§å†™
 	NTSTATUS status = RtlUpcaseUnicodeString(&outputString, &inputString, FALSE);
 
-	//µ÷ÓÃ½â³ıÎÄ¼şÕ¼ÓÃµÄº¯Êı
+	//è°ƒç”¨è§£é™¤æ–‡ä»¶å ç”¨çš„å‡½æ•°
 	ULONG64 dqRet = UnlockFile(&outputString);
 
 
-	//ÊÍ·Å×ÊÔ´
+	//é‡Šæ”¾èµ„æº
 	if (outputString.Buffer)
 	{
 		ExFreePoolWithTag(outputString.Buffer, 'tag');
@@ -670,7 +729,7 @@ VOID __vectorcall MyFileDeoccupy(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG6
 
 VOID __vectorcall MyKillProcess(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam)
 {
-	//ÑéÖ¤²ÎÊıÊÇ·ñÕıÈ· ,Òª½áÊøµÄ½ø³ÌµÄEPROCESS
+	//éªŒè¯å‚æ•°æ˜¯å¦æ­£ç¡® ,è¦ç»“æŸçš„è¿›ç¨‹çš„EPROCESS
 	if (!MmIsAddressValid(pIndata))
 	{
 		return;
@@ -681,7 +740,7 @@ VOID __vectorcall MyKillProcess(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64
 		return;
 	}
 
-	ULONG64 dqRet = MyPspTerminateProcess(pIndata, KeGetCurrentThread(), 0, 1);		/*½áÊø½ø³Ì*/
+	ULONG64 dqRet = MyPspTerminateProcess(pIndata, KeGetCurrentThread(), 0, 1);		/*ç»“æŸè¿›ç¨‹*/
 
 	if (MmIsAddressValid(pRet))
 	{
@@ -691,7 +750,7 @@ VOID __vectorcall MyKillProcess(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64
 
 VOID __vectorcall MyRWMemory(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam)
 {
-	//ÑéÖ¤²ÎÊıÊÇ·ñÓĞĞ§,PCRWMemoryInfo½á¹¹Ìå
+	//éªŒè¯å‚æ•°æ˜¯å¦æœ‰æ•ˆ,PCRWMemoryInfoç»“æ„ä½“
 	if (!MmIsAddressValid(pIndata))
 	{
 		return;

@@ -1,4 +1,4 @@
-#include "LoadPE.h"
+ï»¿#include "LoadPE.h"
 #include "../MyDriver64/Struct.h"
 
 _LoadPEFile::_LoadPEFile()
@@ -79,13 +79,13 @@ BOOL _LoadPEFile::FreeUserDefineDll()
 
 ULONG64 _LoadPEFile::IsX64PeFile()
 {
-	if (VerifyIsPESigna() == TRUE)//ÑéÖ¤»ñÈ¡ÊÇ·ñÓĞMZÌØÕ÷
+	if (VerifyIsPESigna() == TRUE)//éªŒè¯è·å–æ˜¯å¦æœ‰MZç‰¹å¾
 	{
 		PIMAGE_NT_HEADERS pNTHeader = (PIMAGE_NT_HEADERS)Pe.NtHeader;
-		if (pNTHeader->Signature == IMAGE_NT_SIGNATURE)//ÑéÖ¤PEÌØÕ÷
+		if (pNTHeader->Signature == IMAGE_NT_SIGNATURE)//éªŒè¯PEç‰¹å¾
 		{
 			PIMAGE_OPTIONAL_HEADER pOptional = (PIMAGE_OPTIONAL_HEADER)(ULONG64)pNTHeader + sizeof(ULONG32);
-			if (pOptional->Magic != 0x8664)//ÑéÖ¤ÊÇ·ñÊÇX32³ÌĞò
+			if (pOptional->Magic != 0x8664)//éªŒè¯æ˜¯å¦æ˜¯X32ç¨‹åº
 			{
 				return FALSE;
 			}
@@ -137,9 +137,9 @@ BOOL _LoadPEFile::InitPeDataStruct()
 				Pe.PeSection = (PIMAGE_SECTION_HEADER)((ULONG64)Pe.PeOption32 + Pe.PeFile->SizeOfOptionalHeader);
 			}
 
-			Pe.PeExportDir = (PIMAGE_EXPORT_DIRECTORY)((ULONG64)Pe.PeDos + RvaToFoa(Pe.PeDataDir[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress));//»ñÈ¡µ¼³öÄ¿Â¼±í
-			Pe.PeImportDir = (PIMAGE_IMPORT_DESCRIPTOR)((ULONG64)Pe.PeDos + RvaToFoa(Pe.PeDataDir[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress));//»ñÈ¡µ¼ÈëÄ¿Â¼±í
-			Pe.PeResourceDir = (PIMAGE_RESOURCE_DIRECTORY)((ULONG64)Pe.PeDos + RvaToFoa(Pe.PeDataDir[IMAGE_DIRECTORY_ENTRY_RESOURCE].VirtualAddress));//»ñÈ¡×ÊÔ´Ä¿Â¼±í
+			Pe.PeExportDir = (PIMAGE_EXPORT_DIRECTORY)((ULONG64)Pe.PeDos + RvaToFoa(Pe.PeDataDir[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress));//è·å–å¯¼å‡ºç›®å½•è¡¨
+			Pe.PeImportDir = (PIMAGE_IMPORT_DESCRIPTOR)((ULONG64)Pe.PeDos + RvaToFoa(Pe.PeDataDir[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress));//è·å–å¯¼å…¥ç›®å½•è¡¨
+			Pe.PeResourceDir = (PIMAGE_RESOURCE_DIRECTORY)((ULONG64)Pe.PeDos + RvaToFoa(Pe.PeDataDir[IMAGE_DIRECTORY_ENTRY_RESOURCE].VirtualAddress));//è·å–èµ„æºç›®å½•è¡¨
 			return TRUE;
 		}
 	}
@@ -148,7 +148,7 @@ BOOL _LoadPEFile::InitPeDataStruct()
 
 VOID _LoadPEFile::EnumNtdllPeExportTable(PLONG64 Psssdt, ULONG64 Size)
 {
-	//»ñÈ¡µ¼³ö±íÊı¾İ
+	//è·å–å¯¼å‡ºè¡¨æ•°æ®
 #define MOV (0xb8)
 	if (Pe.PeExportDir != NULL)
 	{
@@ -160,27 +160,27 @@ VOID _LoadPEFile::EnumNtdllPeExportTable(PLONG64 Psssdt, ULONG64 Size)
 
 		if (hNtdll == NULL)
 		{
-			AfxMessageBox(TEXT("¼ÓÔØntdll.dll¶¯Ì¬¿âÊ§°Ü!"));
+			AfxMessageBox(TEXT("åŠ è½½ntdll.dllåŠ¨æ€åº“å¤±è´¥!"));
 		}
 		for (ULONG64 index = 0; index < Pe.PeExportDir->NumberOfNames; index++)
 		{
 			ULONG32 ServiceNumber = 0;
-			USHORT AddressOfNameOrdinalsfoaindex = *(PUSHORT)((ULONG64)AddressOfNameOrdinalsfoa + (index * 0x2));//»ñÈ¡º¯Êıµ¼³öĞòºÅ
-			ULONG32 IndexBaseOrdinal = TableBaseOrdinal + AddressOfNameOrdinalsfoaindex;//Ordinals ÕæÊµĞòºÅ
-			ULONG32 AddressOfFunctionsfoaindex = *(PULONG32)((ULONG64)AddressOfFunctionsfoa + (AddressOfNameOrdinalsfoaindex * 0x4)); //ÕæÊµĞòºÅº¯ÊıµØÖ·
-			PCHAR FunName = (PCHAR)((ULONG64)Pe.PeDos + RvaToFoa(*(PULONG32)((ULONG64)AddressOfNamesfoa + (index * 0x4))));//»ñÈ¡º¯Êıµ¼³öµÄÃû³Æ
+			USHORT AddressOfNameOrdinalsfoaindex = *(PUSHORT)((ULONG64)AddressOfNameOrdinalsfoa + (index * 0x2));//è·å–å‡½æ•°å¯¼å‡ºåºå·
+			ULONG32 IndexBaseOrdinal = TableBaseOrdinal + AddressOfNameOrdinalsfoaindex;//Ordinals çœŸå®åºå·
+			ULONG32 AddressOfFunctionsfoaindex = *(PULONG32)((ULONG64)AddressOfFunctionsfoa + (AddressOfNameOrdinalsfoaindex * 0x4)); //çœŸå®åºå·å‡½æ•°åœ°å€
+			PCHAR FunName = (PCHAR)((ULONG64)Pe.PeDos + RvaToFoa(*(PULONG32)((ULONG64)AddressOfNamesfoa + (index * 0x4))));//è·å–å‡½æ•°å¯¼å‡ºçš„åç§°
 
 			if (FunName[0] == 'N' && FunName[1] == 't')
 			{
-				PUCHAR NtFunBaseAddr = (PUCHAR)((ULONG64)Pe.PeDos + RvaToFoa(AddressOfFunctionsfoaindex));//Çó³öÕæÊµº¯ÊıµØÖ·
+				PUCHAR NtFunBaseAddr = (PUCHAR)((ULONG64)Pe.PeDos + RvaToFoa(AddressOfFunctionsfoaindex));//æ±‚å‡ºçœŸå®å‡½æ•°åœ°å€
 				ServiceNumber = -1;
 
-				//Ñ­»·²éÕÒ MOV RAX,·şÎñºÅ »ò MOV EAX,·şÎñºÅ
+				//å¾ªç¯æŸ¥æ‰¾ MOV RAX,æœåŠ¡å· æˆ– MOV EAX,æœåŠ¡å·
 				for (int i = 0; i < 10; i++)
 				{
 					if (*(NtFunBaseAddr + i) == MOV)
 					{
-						ServiceNumber = *(PULONG32)(NtFunBaseAddr + i + 1);//»ñÈ¡NTº¯Êı·şÎñºÅ
+						ServiceNumber = *(PULONG32)(NtFunBaseAddr + i + 1);//è·å–NTå‡½æ•°æœåŠ¡å·
 						break;
 					}
 				}
@@ -195,15 +195,15 @@ VOID _LoadPEFile::EnumNtdllPeExportTable(PLONG64 Psssdt, ULONG64 Size)
 					{
 						PCSsdtInfo pSsdtInfo = (PCSsdtInfo)pList;
 
-						//±È½ÏĞòºÅÊÇ·ñºÍSSDT±íË÷ÒıÒ»Ñù
+						//æ¯”è¾ƒåºå·æ˜¯å¦å’ŒSSDTè¡¨ç´¢å¼•ä¸€æ ·
 						if (pSsdtInfo->NumberOrder == ServiceNumber)
 						{
-							pSsdtInfo->ServiceNumber = ServiceNumber;//»ñÈ¡º¯Êı·şÎñºÅ
+							pSsdtInfo->ServiceNumber = ServiceNumber;//è·å–å‡½æ•°æœåŠ¡å·
 							pSsdtInfo->UsFunAddr = Addr;
-							AsciitoUniCodeString(FunName, pSsdtInfo->FunName);//×ª»»º¯ÊıÃûUnicode
+							AsciitoUniCodeString(FunName, pSsdtInfo->FunName);//è½¬æ¢å‡½æ•°åUnicode
 							break;
 						}
-						//ÏÂÒ»Ïî
+						//ä¸‹ä¸€é¡¹
 						pList = pList->Blink;
 					} while (pList != &((PCSsdtInfo)Psssdt)->List.List);
 				}
@@ -232,28 +232,28 @@ VOID _LoadPEFile::EnumWin32kPeExportTable(PLONG64 Psssdt, ULONG64 Size)
 
 		if (hWin32tdll == NULL)
 		{
-			AfxMessageBox(TEXT("¼ÓÔØwin32u.dll¶¯Ì¬¿âÊ§°Ü!"));
+			AfxMessageBox(TEXT("åŠ è½½win32u.dllåŠ¨æ€åº“å¤±è´¥!"));
 		}
 
 		for (ULONG64 index = 0; index < Pe.PeExportDir->NumberOfNames; index++)
 		{
 			ULONG32 ServiceNumber = 0;
-			USHORT AddressOfNameOrdinalsfoaindex = *(PUSHORT)((ULONG64)AddressOfNameOrdinalsfoa + (index * 0x2));//»ñÈ¡º¯Êıµ¼³öĞòºÅ
-			ULONG32 IndexBaseOrdinal = TableBaseOrdinal + AddressOfNameOrdinalsfoaindex;//Ordinals ÕæÊµĞòºÅ
-			ULONG32 AddressOfFunctionsfoaindex = *(PULONG32)((ULONG64)AddressOfFunctionsfoa + (AddressOfNameOrdinalsfoaindex * 0x4)); //ÕæÊµĞòºÅº¯ÊıµØÖ·
-			PCHAR SrcFunName = (PCHAR)((ULONG64)Pe.PeDos + RvaToFoa(*(PULONG32)((ULONG64)AddressOfNamesfoa + (index * 0x4))));//»ñÈ¡º¯Êıµ¼³öµÄÃû³Æ
+			USHORT AddressOfNameOrdinalsfoaindex = *(PUSHORT)((ULONG64)AddressOfNameOrdinalsfoa + (index * 0x2));//è·å–å‡½æ•°å¯¼å‡ºåºå·
+			ULONG32 IndexBaseOrdinal = TableBaseOrdinal + AddressOfNameOrdinalsfoaindex;//Ordinals çœŸå®åºå·
+			ULONG32 AddressOfFunctionsfoaindex = *(PULONG32)((ULONG64)AddressOfFunctionsfoa + (AddressOfNameOrdinalsfoaindex * 0x4)); //çœŸå®åºå·å‡½æ•°åœ°å€
+			PCHAR SrcFunName = (PCHAR)((ULONG64)Pe.PeDos + RvaToFoa(*(PULONG32)((ULONG64)AddressOfNamesfoa + (index * 0x4))));//è·å–å‡½æ•°å¯¼å‡ºçš„åç§°
 			PCHAR DstFunName = "nt";
 			if (SrcFunName[0] == 'N' && SrcFunName[1] == 't')
 			{
-				PUCHAR NtFunBaseAddr = (PUCHAR)((ULONG64)Pe.PeDos + RvaToFoa(AddressOfFunctionsfoaindex));//Çó³öÕæÊµº¯ÊıµØÖ·
+				PUCHAR NtFunBaseAddr = (PUCHAR)((ULONG64)Pe.PeDos + RvaToFoa(AddressOfFunctionsfoaindex));//æ±‚å‡ºçœŸå®å‡½æ•°åœ°å€
 				ServiceNumber = -1;
 
-				//Ñ­»·²éÕÒ MOV RAX,·şÎñºÅ »ò MOV EAX,·şÎñºÅ
+				//å¾ªç¯æŸ¥æ‰¾ MOV RAX,æœåŠ¡å· æˆ– MOV EAX,æœåŠ¡å·
 				for (int i = 0; i < 10; i++)
 				{
 					if (*(NtFunBaseAddr + i) == MOV)
 					{
-						ServiceNumber = *(PULONG32)(NtFunBaseAddr + i + 1);//»ñÈ¡NTº¯Êı·şÎñºÅ
+						ServiceNumber = *(PULONG32)(NtFunBaseAddr + i + 1);//è·å–NTå‡½æ•°æœåŠ¡å·
 						break;
 					}
 				}
@@ -268,15 +268,15 @@ VOID _LoadPEFile::EnumWin32kPeExportTable(PLONG64 Psssdt, ULONG64 Size)
 					{
 						PCSsdtInfo pSsdtInfo = (PCSsdtInfo)pList;
 
-						//±È½ÏĞòºÅÊÇ·ñºÍSSDT±íË÷ÒıÒ»Ñù
+						//æ¯”è¾ƒåºå·æ˜¯å¦å’ŒSSDTè¡¨ç´¢å¼•ä¸€æ ·
 						if (pSsdtInfo->NumberOrder == ServiceNumber)
 						{
-							pSsdtInfo->ServiceNumber = ServiceNumber;//»ñÈ¡º¯Êı·şÎñºÅ
+							pSsdtInfo->ServiceNumber = ServiceNumber;//è·å–å‡½æ•°æœåŠ¡å·
 							pSsdtInfo->UsFunAddr = Addr;
-							AsciitoUniCodeString(SrcFunName, pSsdtInfo->FunName);//×ª»»º¯ÊıÃûUnicode
+							AsciitoUniCodeString(SrcFunName, pSsdtInfo->FunName);//è½¬æ¢å‡½æ•°åUnicode
 							break;
 						}
-						//ÏÂÒ»Ïî
+						//ä¸‹ä¸€é¡¹
 						pList = pList->Blink;
 					} while (pList != &((PCSsdtInfo)Psssdt)->List.List);
 				}
@@ -293,8 +293,8 @@ VOID _LoadPEFile::EnumWin32kPeExportTable(PLONG64 Psssdt, ULONG64 Size)
 
 ULONG64 _LoadPEFile::RvaToFoa(ULONG64 Rva)
 {
-	//1.ÈçºÎÎÄ¼ş(FOA)¶ÔÆëºÍÄÚ´æ(RVA)¶ÔÆëÒ»ÑùÔò²»ĞèÒª×ª»» 
-	//2.µ±ÄÚ´æ(RVA)Æ«ÒÆ ²»ÔÚ½Ú(Section)¶ÎµÄÊ±ºò²»ĞèÒª×ª»»
+	//1.å¦‚ä½•æ–‡ä»¶(FOA)å¯¹é½å’Œå†…å­˜(RVA)å¯¹é½ä¸€æ ·åˆ™ä¸éœ€è¦è½¬æ¢ 
+	//2.å½“å†…å­˜(RVA)åç§» ä¸åœ¨èŠ‚(Section)æ®µçš„æ—¶å€™ä¸éœ€è¦è½¬æ¢
 	if (Pe.IsX64 == 1)
 	{//X64
 		if ((Pe.PeOption64->FileAlignment != Pe.PeOption64->SectionAlignment) && (Rva > Pe.PeOption64->SizeOfHeaders))
@@ -330,8 +330,8 @@ ULONG64 _LoadPEFile::RvaToFoa(ULONG64 Rva)
 
 ULONG64 _LoadPEFile::FoaToRva(ULONG64 Foa)
 {
-	//1.ÈçºÎÎÄ¼ş(FOA)¶ÔÆëºÍÄÚ´æ(RVA)¶ÔÆëÒ»ÑùÔò²»ĞèÒª×ª»» 
-	//2.µ±ÄÚ´æ(RVA)Æ«ÒÆ ²»ÔÚ½Ú(Section)¶ÎµÄÊ±ºò²»ĞèÒª×ª»»
+	//1.å¦‚ä½•æ–‡ä»¶(FOA)å¯¹é½å’Œå†…å­˜(RVA)å¯¹é½ä¸€æ ·åˆ™ä¸éœ€è¦è½¬æ¢ 
+	//2.å½“å†…å­˜(RVA)åç§» ä¸åœ¨èŠ‚(Section)æ®µçš„æ—¶å€™ä¸éœ€è¦è½¬æ¢
 	if (Pe.IsX64 == 1)
 	{//X64
 		if ((Pe.PeOption64->FileAlignment != Pe.PeOption64->SectionAlignment) && (Foa > Pe.PeOption64->SizeOfHeaders))
@@ -365,7 +365,7 @@ ULONG64 _LoadPEFile::FoaToRva(ULONG64 Foa)
 
 ULONG64 _LoadPEFile::Align(IN DWORD dwSectionAlignment, IN DWORD dwVirtualSize)
 {
-	//ÇóĞéÄâÄÚ´æ½Ú¶ÔÆëºóµÄ´óĞ¡
+	//æ±‚è™šæ‹Ÿå†…å­˜èŠ‚å¯¹é½åçš„å¤§å°
 	DWORD dwAlignmentNumber = 0;
 	if (dwSectionAlignment >= dwVirtualSize)
 	{

@@ -1,17 +1,19 @@
-#include "Define.h"
+ï»¿#include "Define.h"
 #include "Head.h"
 #include "DataStruct/CList.h"
 #include "DataStruct/CStack.h"
 #include "KernelStruct.h"
 #include "Interface.h"
+#include "Hook/hde64.h"
 #include <ntstrsafe.h>
+#include <ntimage.h>    /*PEå¤´æ–‡ä»¶ â€” ç»™ EnumWdfFunction ç”¨*/
 
 BOOLEAN ExtractDriverName(PUNICODE_STRING FullPath, PUNICODE_STRING OutputBuffer)
 {
 	USHORT i;
 	USHORT lastBackslashIndex = -1;
 
-	// ´ÓºóÏòÇ°²éÕÒ×îºóÒ»¸ö·´Ğ±¸Ü×Ö·û
+	// ä»åå‘å‰æŸ¥æ‰¾æœ€åä¸€ä¸ªåæ–œæ å­—ç¬¦
 	for (i = FullPath->Length / sizeof(WCHAR); i > 0; i--)
 	{
 		if (FullPath->Buffer[i - 1] == L'\\')
@@ -23,14 +25,14 @@ BOOLEAN ExtractDriverName(PUNICODE_STRING FullPath, PUNICODE_STRING OutputBuffer
 
 	if (lastBackslashIndex == -1 || lastBackslashIndex >= FullPath->Length / sizeof(WCHAR))
 	{
-		// Ã»ÓĞÕÒµ½·´Ğ±¸Ü»ò·´Ğ±¸ÜÔÚÄ©Î²£¬ÌáÈ¡Ê§°Ü
+		// æ²¡æœ‰æ‰¾åˆ°åæ–œæ æˆ–åæ–œæ åœ¨æœ«å°¾ï¼Œæå–å¤±è´¥
 		return FALSE;
 	}
 
-	// ¼ÆËãÊ£Óà×Ö·û´®³¤¶È
+	// è®¡ç®—å‰©ä½™å­—ç¬¦ä¸²é•¿åº¦
 	USHORT nameLength = (FullPath->Length / sizeof(WCHAR) - lastBackslashIndex) * sizeof(WCHAR);
 
-	// ³õÊ¼»¯Êä³ö×Ö·û´®
+	// åˆå§‹åŒ–è¾“å‡ºå­—ç¬¦ä¸²
 	OutputBuffer->Buffer = &FullPath->Buffer[lastBackslashIndex];
 	OutputBuffer->Length = nameLength;
 	OutputBuffer->MaximumLength = nameLength;
@@ -40,20 +42,20 @@ BOOLEAN ExtractDriverName(PUNICODE_STRING FullPath, PUNICODE_STRING OutputBuffer
 
 BOOLEAN MyQueryFileAndFileFolder(UNICODE_STRING Path, PCFileInfo* pFileInfo)
 {
-	UCHAR IsInit = MmIsAddressValid(pFileInfo) && *(PULONG64)pFileInfo;
-
+	// pFileInfo ç”±è°ƒç”¨æ–¹æä¾›ï¼Œå¿…é¡»æœ‰æ•ˆï¼›*pFileInfo æ˜¯è¾“å‡ºé“¾è¡¨å¤´ï¼Œåˆå§‹å¯ä¸º NULL
+	if (pFileInfo == NULL)
+	{
+		return FALSE;
+	}
+	UCHAR IsInit = (*pFileInfo != NULL);
 
 	HANDLE hFile = NULL;
 	OBJECT_ATTRIBUTES objectAttributes = { 0 };
 	IO_STATUS_BLOCK iosb = { 0 };
 	NTSTATUS status = STATUS_SUCCESS;
-	PFILE_BOTH_DIR_INFORMATION pBeginAddr = NULL;
 
-
-	// ³õÊ¼»¯½á¹¹
 	InitializeObjectAttributes(&objectAttributes, &Path, OBJ_CASE_INSENSITIVE | OBJ_KERNEL_HANDLE, NULL, NULL);
 
-	// ´ò¿ªÎÄ¼şµÃµ½¾ä±ú
 	status = ZwCreateFile(&hFile, FILE_LIST_DIRECTORY | SYNCHRONIZE | FILE_ANY_ACCESS,
 		&objectAttributes, &iosb, NULL, FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ | FILE_SHARE_WRITE,
 		FILE_OPEN, FILE_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_NONALERT | FILE_OPEN_FOR_BACKUP_INTENT,
@@ -63,76 +65,87 @@ BOOLEAN MyQueryFileAndFileFolder(UNICODE_STRING Path, PCFileInfo* pFileInfo)
 		return FALSE;
 	}
 
-	// Îª½Úµã·ÖÅä×ã¹»µÄ¿Õ¼ä
-	ULONG ulLength = (2 * 4096 + sizeof(FILE_BOTH_DIR_INFORMATION)) * 0x2000;
-	PFILE_BOTH_DIR_INFORMATION pDir = (PFILE_BOTH_DIR_INFORMATION)ExAllocatePool(PagedPool, ulLength);
-
-	// ±£´æpDirµÄÊ×µØÖ·
-	pBeginAddr = pDir;
-
-	// »ñÈ¡ĞÅÏ¢£¬·µ»Ø¸ø¶¨ÎÄ¼ş¾ä±úÖ¸¶¨µÄÄ¿Â¼ÖĞÎÄ¼şµÄ¸÷ÖÖĞÅÏ¢
-	status = ZwQueryDirectoryFile(hFile, NULL, NULL, NULL, &iosb, pDir, ulLength, FileBothDirectoryInformation, FALSE, NULL, FALSE);
-	if (!NT_SUCCESS(status))
+	// å•æ¬¡æŸ¥è¯¢çš„å·¥ä½œç¼“å†²åŒºï¼š64KB è¶³å¤Ÿè£…ä¸‹æ•°ç™¾ä¸ªç›®å½•é¡¹ï¼›ä¸å¤Ÿå°±å¾ªç¯å†æŸ¥
+	const ULONG ulLength = 64 * 1024;
+	PFILE_BOTH_DIR_INFORMATION pBuffer = (PFILE_BOTH_DIR_INFORMATION)
+		ExAllocatePool2(POOL_FLAG_PAGED, ulLength, 'FdrA');
+	if (pBuffer == NULL)
 	{
-		ExFreePool(pDir);
 		ZwClose(hFile);
 		return FALSE;
 	}
 
-	// ±éÀú
 	UNICODE_STRING ustrTemp;
 	UNICODE_STRING ustrOne;
 	UNICODE_STRING ustrTwo;
-
 	RtlInitUnicodeString(&ustrOne, L".");
 	RtlInitUnicodeString(&ustrTwo, L"..");
 
-	//³õÊ¼»¯
 	SIZE_T AllSize = sizeof(CFileInfo);
-	NTSTATUS nStatus = STATUS_SUCCESS;
+	WCHAR wcFileName[MY_MAX_PATH] = { 0 };
+	const USHORT cbFileNameMax = (USHORT)(sizeof(wcFileName) - sizeof(WCHAR)); // ä¿ç•™ NUL
 
-	WCHAR wcFileName[1024] = { 0 };
+	// å¤–å±‚ï¼šå¾ªç¯åˆ° STATUS_NO_MORE_FILESï¼Œé¿å…ç›®å½•é¡¹è¿‡å¤šæ—¶ä¸¢å¤±
+	BOOLEAN bRestart = TRUE;
 	while (TRUE)
 	{
-		// ÅĞ¶ÏÊÇ·ñÊÇ..ÉÏ¼¶Ä¿Â¼»òÊÇ.±¾Ä¿Â¼
-		RtlZeroMemory(wcFileName, 1024);
-		RtlCopyMemory(wcFileName, pDir->FileName, pDir->FileNameLength);
+		status = ZwQueryDirectoryFile(hFile, NULL, NULL, NULL, &iosb,
+			pBuffer, ulLength, FileBothDirectoryInformation,
+			FALSE, NULL, bRestart);
+		bRestart = FALSE;
 
-		RtlInitUnicodeString(&ustrTemp, wcFileName);
-
-
-		// ÊÇ·ñÊÇ.»òÕßÊÇ..Ä¿Â¼
-		if ((0 != RtlCompareUnicodeString(&ustrTemp, &ustrOne, TRUE)) && (0 != RtlCompareUnicodeString(&ustrTemp, &ustrTwo, TRUE)))
+		if (status == STATUS_NO_MORE_FILES || !NT_SUCCESS(status))
 		{
-			PCFileInfo pNewInfo = NULL;
-			nStatus = ZwAllocateVirtualMemory(NtCurrentProcess(), &pNewInfo, 0, &AllSize, MEM_COMMIT, PAGE_READWRITE);
-			if (!NT_SUCCESS(nStatus))
+			break;
+		}
+
+		// å†…å±‚ï¼šéå†å½“å‰ç¼“å†²åŒºé‡Œçš„æ‰€æœ‰ç›®å½•é¡¹
+		PFILE_BOTH_DIR_INFORMATION pDir = pBuffer;
+		while (TRUE)
+		{
+			// æ–‡ä»¶åé•¿åº¦æ ¡éªŒï¼šè¶…å‡ºæœ¬åœ°ç¼“å†²å°±è·³è¿‡è¯¥é¡¹ï¼Œé¿å…æ ˆæº¢å‡º
+			if (pDir->FileNameLength == 0 || pDir->FileNameLength > cbFileNameMax)
 			{
-				MyDbgPrintfEx("[%s] ÉêÇë¿Õ¼äÊ§°Ü!\n", __FUNCTION__);
-				goto TABLE_RET;
+				goto NEXT_ENTRY;
 			}
 
-			//³õÊ¼»¯
-			RtlZeroMemory(pNewInfo, AllSize);
-			if (IsInit && ((PCFileInfo) * (pFileInfo))->IsInitialize)
+			RtlZeroMemory(wcFileName, sizeof(wcFileName));
+			RtlCopyMemory(wcFileName, pDir->FileName, pDir->FileNameLength);
+
+			ustrTemp.Buffer = wcFileName;
+			ustrTemp.Length = (USHORT)pDir->FileNameLength;
+			ustrTemp.MaximumLength = cbFileNameMax;
+
+			// è·³è¿‡ "." å’Œ ".."
+			if (RtlCompareUnicodeString(&ustrTemp, &ustrOne, TRUE) == 0 ||
+				RtlCompareUnicodeString(&ustrTemp, &ustrTwo, TRUE) == 0)
 			{
-				//²åÈëµ½Á´±íÖĞ
-				InsertHeadList(&((PCFileInfo)(*pFileInfo))->List, &pNewInfo->List);
+				goto NEXT_ENTRY;
+			}
+
+			PCFileInfo pNewInfo = NULL;
+			NTSTATUS nStatus = ZwAllocateVirtualMemory(NtCurrentProcess(), &pNewInfo, 0,
+				&AllSize, MEM_COMMIT, PAGE_READWRITE);
+			if (!NT_SUCCESS(nStatus))
+			{
+				MyDbgPrintfEx("[%s] ç”³è¯·ç©ºé—´å¤±è´¥!\n", __FUNCTION__);
+				goto DONE;
+			}
+
+			RtlZeroMemory(pNewInfo, AllSize);
+			if (IsInit && (*pFileInfo)->IsInitialize)
+			{
+				InsertHeadList(&(*pFileInfo)->List, &pNewInfo->List);
 			}
 			else
 			{
 				IsInit = TRUE;
 				pNewInfo->IsInitialize = TRUE;
-				//¸³Öµ
 				*pFileInfo = pNewInfo;
-				//³õÊ¼»¯Á´±í
 				InitializeListHead(&pNewInfo->List);
 			}
 
-
-			//¸³ÖµÊı¾İ
 			pNewInfo->AllocationSize = pDir->AllocationSize.QuadPart;
-
 
 			CTIME_FIELDS TimeFields = { 0 };
 			RtlTimeToTimeFields(&pDir->CreationTime, &TimeFields);
@@ -142,36 +155,33 @@ BOOLEAN MyQueryFileAndFileFolder(UNICODE_STRING Path, PCFileInfo* pFileInfo)
 			pNewInfo->ChangeTime = TimeFields;
 
 			pNewInfo->FileAttributes = pDir->FileAttributes;
-			RtlCopyMemory(pNewInfo->FileFullName, ustrTemp.Buffer, ustrTemp.MaximumLength);
+
+			// é˜²è¶Šç•Œï¼šFileFullName æ˜¯ WCHAR[MY_MAX_PATH]
+			ULONG copyBytes = pDir->FileNameLength;
+			if (copyBytes > sizeof(pNewInfo->FileFullName) - sizeof(WCHAR))
+			{
+				copyBytes = sizeof(pNewInfo->FileFullName) - sizeof(WCHAR);
+			}
+			RtlCopyMemory(pNewInfo->FileFullName, pDir->FileName, copyBytes);
+
+		NEXT_ENTRY:
+			if (pDir->NextEntryOffset == 0)
+			{
+				break;
+			}
+			pDir = (PFILE_BOTH_DIR_INFORMATION)((PUCHAR)pDir + pDir->NextEntryOffset);
 		}
-
-		// ±éÀúÍê±ÏÖ±½ÓÌø³öÑ­»·
-		if (0 == pDir->NextEntryOffset)
-		{
-			break;
-		}
-
-		// Ã¿´Î¶¼Òª½«pDirÖ¸ÏòĞÂµÄµØÖ·
-		pDir = (PFILE_BOTH_DIR_INFORMATION)((PUCHAR)pDir + pDir->NextEntryOffset);
-	}
-TABLE_RET:
-
-	// ÊÍ·ÅÄÚ´æ²¢¹Ø±Õ¾ä±ú
-	if (pBeginAddr != NULL)
-	{
-		ExFreePool(pBeginAddr);
-	}
-	if (hFile != NULL)
-	{
-		ZwClose(hFile);
 	}
 
+DONE:
+	ExFreePoolWithTag(pBuffer, 'FdrA');
+	ZwClose(hFile);
 	return TRUE;
 }
 
 ULONG64 MyExAllocMemOry(SIZE_T Size, ULONG64 PageAttribut, MODE nMode)
 {
-	//ÑéÖ¤²ÎÊı 
+	//éªŒè¯å‚æ•° 
 	if (Size == 0)
 	{
 		return NULL;
@@ -179,17 +189,18 @@ ULONG64 MyExAllocMemOry(SIZE_T Size, ULONG64 PageAttribut, MODE nMode)
 
 	PVOID64 pNewAddr = NULL;
 	SIZE_T TypeSize = Size;
-	//ÄÚºËÄ£Ê½ÓÃ ExAllocatePool2 ÉêÇë¿Õ¼ä
+	//å†…æ ¸æ¨¡å¼ç”¨ ExAllocatePool2 ç”³è¯·ç©ºé—´
 	if (nMode == KernelMode)
 	{
+		// ExAllocatePool2 å¤±è´¥è¿”å› NULLï¼›ä¸è¦ç”¨ MmIsAddressValid åˆ¤æ–­åˆ†é…ç»“æœï¼Œ
+		// paged pool æ­¤åˆ»å¯èƒ½è¢«æ¢å‡ºï¼Œä¼šè¯¯åˆ¤å¤±è´¥
 		pNewAddr = ExAllocatePool2(PageAttribut, Size, 'Tag');
-		if (!MmIsAddressValid(pNewAddr))
+		if (pNewAddr == NULL)
 		{
 			return NULL;
 		}
-
 	}
-	//ÓÃ»§Ä£Ê½ ZwAllocateVirtualMemory ÉêÇë¿Õ¼ä
+	//ç”¨æˆ·æ¨¡å¼ ZwAllocateVirtualMemory ç”³è¯·ç©ºé—´
 	else if (nMode == UserMode)
 	{
 		NTSTATUS nStatus = ZwAllocateVirtualMemory(NtCurrentProcess(), &pNewAddr, 0, &TypeSize, MEM_COMMIT, PageAttribut);
@@ -203,23 +214,23 @@ ULONG64 MyExAllocMemOry(SIZE_T Size, ULONG64 PageAttribut, MODE nMode)
 		return NULL;
 	}
 
-	//³õÊ¼»¯
+	//åˆå§‹åŒ–
 	RtlZeroMemory(pNewAddr, Size);
 	return pNewAddr;
 }
 
 VOID EnumRegistryKey(UNICODE_STRING RegUnicodeString, PCRegistryInfo* pRegistryInfo)
 {
-	//ÊÇ·ñÊÇ¿ÕÖµ
+	//æ˜¯å¦æ˜¯ç©ºå€¼
 	UCHAR IsInit = MmIsAddressValid(pRegistryInfo) && *(PULONG64)pRegistryInfo;
 
 	HANDLE hRegister;
 
 	OBJECT_ATTRIBUTES objectAttributes;
-	//³õÊ¼»¯objectAttributes
-	InitializeObjectAttributes(&objectAttributes, &RegUnicodeString, OBJ_CASE_INSENSITIVE /*¶Ô´óĞ¡Ğ´Ãô¸Ğ*/, NULL, NULL);
+	//åˆå§‹åŒ–objectAttributes
+	InitializeObjectAttributes(&objectAttributes, &RegUnicodeString, OBJ_CASE_INSENSITIVE /*å¯¹å¤§å°å†™æ•æ„Ÿ*/, NULL, NULL);
 
-	//´ò¿ª×¢²á±í
+	//æ‰“å¼€æ³¨å†Œè¡¨
 	NTSTATUS ntStatus = ZwOpenKey(&hRegister, KEY_ALL_ACCESS, &objectAttributes);
 
 	if (NT_SUCCESS(ntStatus))
@@ -228,12 +239,12 @@ VOID EnumRegistryKey(UNICODE_STRING RegUnicodeString, PCRegistryInfo* pRegistryI
 	}
 
 	ULONG ulSize;
-	//µÚÒ»´Îµ÷ÓÃZwQueryKey,ÎªÁË»ñÈ¡KEY_FULL_INFORMATIONÊı¾İµÄ³¤¶È
+	//ç¬¬ä¸€æ¬¡è°ƒç”¨ZwQueryKey,ä¸ºäº†è·å–KEY_FULL_INFORMATIONæ•°æ®çš„é•¿åº¦
 	ZwQueryKey(hRegister, KeyFullInformation, NULL, 0, &ulSize);
 
 	PKEY_FULL_INFORMATION pfi = (PKEY_FULL_INFORMATION)ExAllocatePool(PagedPool, ulSize);
 
-	//µÚ¶ş´Îµ÷ÓÃZwQueryKey,ÎªÁË»ñÈ¡KEY_FULL_INFORMATIONÊı¾İ
+	//ç¬¬äºŒæ¬¡è°ƒç”¨ZwQueryKey,ä¸ºäº†è·å–KEY_FULL_INFORMATIONæ•°æ®
 	ZwQueryKey(hRegister, KeyFullInformation, pfi, ulSize, &ulSize);
 
 	NTSTATUS nStatus = STATUS_SUCCESS;
@@ -241,64 +252,64 @@ VOID EnumRegistryKey(UNICODE_STRING RegUnicodeString, PCRegistryInfo* pRegistryI
 	SIZE_T AllSize = sizeof(CRegistryInfo);
 	for (ULONG i = 0; i < pfi->SubKeys; i++)
 	{
-		//µÚÒ»´Îµ÷ÓÃZwEnumerateKey£¬ÎªÁË»ñÈ¡KEY_BASIC_INFORMATIONÊı¾İµÄ³¤¶È
+		//ç¬¬ä¸€æ¬¡è°ƒç”¨ZwEnumerateKeyï¼Œä¸ºäº†è·å–KEY_BASIC_INFORMATIONæ•°æ®çš„é•¿åº¦
 		ZwEnumerateKey(hRegister, i, KeyBasicInformation, NULL, 0, &ulSize);
 
 		PKEY_BASIC_INFORMATION pbi = (PKEY_BASIC_INFORMATION)ExAllocatePool(PagedPool, ulSize);
 
-		//µÚ¶ş´Îµ÷ÓÃZwEnumerateKey£¬ÎªÁË»ñÈ¡KEY_BASIC_INFORMATIONÊı¾İ
+		//ç¬¬äºŒæ¬¡è°ƒç”¨ZwEnumerateKeyï¼Œä¸ºäº†è·å–KEY_BASIC_INFORMATIONæ•°æ®
 		ZwEnumerateKey(hRegister, i, KeyBasicInformation, pbi, ulSize, &ulSize);
 
 		UNICODE_STRING uniKeyName;
 		uniKeyName.Length = uniKeyName.MaximumLength = (USHORT)pbi->NameLength;
 		uniKeyName.Buffer = pbi->Name;
 
-		//ÉêÇë¿Õ¼ä·µ»ØÊı¾İ
+		//ç”³è¯·ç©ºé—´è¿”å›æ•°æ®
 
 		PCRegistryInfo pNewInfo = NULL;
 		nStatus = ZwAllocateVirtualMemory(NtCurrentProcess(), &pNewInfo, 0, &AllSize, MEM_COMMIT, PAGE_READWRITE);
 		if (!NT_SUCCESS(nStatus))
 		{
-			MyDbgPrintfEx("[%s] ÉêÇë¿Õ¼äÊ§°Ü!\n", __FUNCTION__);
+			MyDbgPrintfEx("[%s] ç”³è¯·ç©ºé—´å¤±è´¥!\n", __FUNCTION__);
 			goto TABLE_RET;
 		}
 
 		RtlZeroMemory(pNewInfo, AllSize);
 
-		//¸ü¸ÄÀàĞÍ
+		//æ›´æ”¹ç±»å‹
 		pNewInfo->nType = 0;
 
-		//¿½±´Êı¾İ
+		//æ‹·è´æ•°æ®
 		RtlCopyMemory(pNewInfo->KeyName, uniKeyName.Buffer, uniKeyName.Length);
 
 		if (IsInit == 0)
 		{
-			pNewInfo->IsInitialize = TRUE;					//ÒÑ³õÊ¼»¯
-			InitializeListHead(&pNewInfo->List);			//³õÊ¼»¯Á´±íÍ·
-			*pRegistryInfo = pNewInfo;						//¸³Öµ
+			pNewInfo->IsInitialize = TRUE;					//å·²åˆå§‹åŒ–
+			InitializeListHead(&pNewInfo->List);			//åˆå§‹åŒ–é“¾è¡¨å¤´
+			*pRegistryInfo = pNewInfo;						//èµ‹å€¼
 			IsInit = TRUE;
 		}
 		else
 		{
-			//²åÈëÁ´±íÀïÃæ
+			//æ’å…¥é“¾è¡¨é‡Œé¢
 			InsertHeadList(&((PCRegistryInfo) * ((PULONG64)pRegistryInfo))->List, &pNewInfo->List);
 		}
 
-		//ÉêÇë¿Õ¼äÊ§°ÜÖ±½Ó·µ»Ø
+		//ç”³è¯·ç©ºé—´å¤±è´¥ç›´æ¥è¿”å›
 	TABLE_RET:
-		//»ØÊÕÄÚ´æ
+		//å›æ”¶å†…å­˜
 		if (pbi != NULL)
 		{
 			ExFreePool(pbi);
 		}
 	}
 
-	//»ØÊÕÄÚ´æ
+	//å›æ”¶å†…å­˜
 	if (pfi != NULL)
 	{
 		ExFreePool(pfi);
 	}
-	//¹Ø±Õ¾ä±ú
+	//å…³é—­å¥æŸ„
 	if (hRegister != NULL)
 	{
 		ZwClose(hRegister);
@@ -317,13 +328,13 @@ VOID EnumRegistryValue(UNICODE_STRING RegUnicodeString, PCRegistryInfo* pRegistr
 	PKEY_FULL_INFORMATION pfi;
 	ULONG i;
 	OBJECT_ATTRIBUTES objectAttributes;
-	//³õÊ¼»¯UNICODE_STRING×Ö·û´®
+	//åˆå§‹åŒ–UNICODE_STRINGå­—ç¬¦ä¸²
 
 
-	//³õÊ¼»¯objectAttributes
-	InitializeObjectAttributes(&objectAttributes, &RegUnicodeString, OBJ_CASE_INSENSITIVE,/*¶Ô´óĞ¡Ğ´Ãô¸Ğ*/	NULL, NULL);
+	//åˆå§‹åŒ–objectAttributes
+	InitializeObjectAttributes(&objectAttributes, &RegUnicodeString, OBJ_CASE_INSENSITIVE,/*å¯¹å¤§å°å†™æ•æ„Ÿ*/	NULL, NULL);
 
-	//´ò¿ª×¢²á±í
+	//æ‰“å¼€æ³¨å†Œè¡¨
 	ntStatus = ZwOpenKey(&hRegister, KEY_ALL_ACCESS, &objectAttributes);
 
 	if (NT_SUCCESS(ntStatus))
@@ -335,13 +346,13 @@ VOID EnumRegistryValue(UNICODE_STRING RegUnicodeString, PCRegistryInfo* pRegistr
 
 	pfi = (PKEY_FULL_INFORMATION)ExAllocatePool(PagedPool, ulSize);
 
-	//²éÑ¯×¢²á±í
+	//æŸ¥è¯¢æ³¨å†Œè¡¨
 	ZwQueryKey(hRegister, KeyFullInformation, pfi, ulSize, &ulSize);
 
 	SIZE_T AllSize = sizeof(CRegistryInfo);
 
 	NTSTATUS nStatus = STATUS_SUCCESS;
-	//¿ªÊ¼Ñ­»·Ã¶¾Ù×¢²á±í
+	//å¼€å§‹å¾ªç¯æšä¸¾æ³¨å†Œè¡¨
 	for (i = 0; i < pfi->Values; i++)
 	{
 		ZwEnumerateValueKey(hRegister, i, KeyValueFullInformation, NULL, 0, &ulSize);
@@ -352,47 +363,47 @@ VOID EnumRegistryValue(UNICODE_STRING RegUnicodeString, PCRegistryInfo* pRegistr
 
 		uniKeyName.Length = uniKeyName.MaximumLength = (USHORT)pvbi->NameLength;
 
-		//Ãû³Æ
+		//åç§°
 		uniKeyName.Buffer = pvbi->Name;
 
-		//Êı¾İ
+		//æ•°æ®
 		WCHAR szBuf[255] = { 0 };
 		PWCHAR Data = (ULONG64)pvbi + pvbi->DataOffset;
 
-		//ÉêÇë¿Õ¼ä
+		//ç”³è¯·ç©ºé—´
 		PCRegistryInfo pNewInfo = NULL;
 		nStatus = ZwAllocateVirtualMemory(NtCurrentProcess(), &pNewInfo, 0, &AllSize, MEM_COMMIT, PAGE_READWRITE);
 		if (!NT_SUCCESS(nStatus))
 		{
-			//MyDbgPrintfEx("[%s] ÉêÇë¿Õ¼äÊ§°Ü!\n", __FUNCTION__);
+			//MyDbgPrintfEx("[%s] ç”³è¯·ç©ºé—´å¤±è´¥!\n", __FUNCTION__);
 			goto TABLE_RET;
 		}
 
 		RtlZeroMemory(pNewInfo, AllSize);
 
-		//¸ü¸ÄÀàĞÍ
+		//æ›´æ”¹ç±»å‹
 		pNewInfo->nType = 1;
 
-		//¿½±´Êı¾İ
+		//æ‹·è´æ•°æ®
 		RtlCopyMemory(pNewInfo->ValueName, uniKeyName.Buffer, uniKeyName.Length);
 
-		//¿½±´Êı¾İ
+		//æ‹·è´æ•°æ®
 		RtlCopyMemory(pNewInfo->ValueData, Data, pvbi->DataLength);
 
 
-		//ÀàĞÍ
+		//ç±»å‹
 		pNewInfo->ValueType = pvbi->Type;
 
 		if (IsInit != 0 && (*pRegistryInfo)->IsInitialize)
 		{
-			//²åÈëÁ´±íÀïÃæ
+			//æ’å…¥é“¾è¡¨é‡Œé¢
 			InsertHeadList(&(*(pRegistryInfo))->List, &pNewInfo->List);
 		}
 		else
 		{
-			pNewInfo->IsInitialize = TRUE;					//ÒÑ³õÊ¼»¯
-			InitializeListHead(&pNewInfo->List);			//³õÊ¼»¯Á´±íÍ·
-			*(PULONG64)pRegistryInfo = pNewInfo;			//¸³Öµ
+			pNewInfo->IsInitialize = TRUE;					//å·²åˆå§‹åŒ–
+			InitializeListHead(&pNewInfo->List);			//åˆå§‹åŒ–é“¾è¡¨å¤´
+			*(PULONG64)pRegistryInfo = pNewInfo;			//èµ‹å€¼
 			IsInit = TRUE;
 		}
 
@@ -427,13 +438,13 @@ VOID EnumGdtTable(PCGdtInfo* pGdtInfo)
 		return;
 	}
 
-	//Ñ­»·±éÀúµ±Ç°CPU½á¹¹Ìå
+	//å¾ªç¯éå†å½“å‰CPUç»“æ„ä½“
 	for (int i = 0; i < KeNumberProcessors; i++)
 	{
-		//»ñÈ¡
+		//è·å–
 		PCGdt pGdtBase = *(PULONG64)(KiProcessorBlock[i] - 0x180 /**/ + _KPCR_GdtBase);
 
-		//ÎŞĞ§µØÖ··µ»Ø
+		//æ— æ•ˆåœ°å€è¿”å›
 		if (!MmIsAddressValid(pGdtBase))
 		{
 			break;
@@ -441,22 +452,22 @@ VOID EnumGdtTable(PCGdtInfo* pGdtInfo)
 		//RtlWalkFrameChain
 		CGdt ZeroGdt[4] = { 0 };
 		NTSTATUS nStatus = STATUS_SUCCESS;
-		ULONG32 dwCurGdtIndex = 2; //Ö¸Ïòµ±Ç°GDT±íµÄË÷Òı Ç°Á½Ïî»ù±¾Îª0¿ÉÒÔÖ±½Ó´ÓµÚ3Ïî¿ªÊ¼
-		//±éÀúGDT Óöµ½ËÄ¸öÎª0µÄµØ·½ËµÃ÷½áÊøÁË
+		ULONG32 dwCurGdtIndex = 2; //æŒ‡å‘å½“å‰GDTè¡¨çš„ç´¢å¼• å‰ä¸¤é¡¹åŸºæœ¬ä¸º0å¯ä»¥ç›´æ¥ä»ç¬¬3é¡¹å¼€å§‹
+		//éå†GDT é‡åˆ°å››ä¸ªä¸º0çš„åœ°æ–¹è¯´æ˜ç»“æŸäº†
 		while (RtlCompareMemory(&pGdtBase[dwCurGdtIndex], ZeroGdt, sizeof(ZeroGdt)) != sizeof(ZeroGdt))
 		{
-			//ÉêÇë¿Õ¼ä
+			//ç”³è¯·ç©ºé—´
 			PCGdtInfo pNewInfo = NULL;
 			nStatus = ZwAllocateVirtualMemory(NtCurrentProcess(), &pNewInfo, 0, &AllSize, MEM_COMMIT, PAGE_READWRITE);
 			if (!NT_SUCCESS(nStatus))
 			{
-				MyDbgPrintfEx("[%s] ÉêÇë¿Õ¼äÊ§°Ü!\n", __FUNCTION__);
+				MyDbgPrintfEx("[%s] ç”³è¯·ç©ºé—´å¤±è´¥!\n", __FUNCTION__);
 				break;
 			}
-			//³õÊ¼»¯
+			//åˆå§‹åŒ–
 			RtlZeroMemory(pNewInfo, AllSize);
 
-			//¸³Öµ
+			//èµ‹å€¼
 			pNewInfo->GdtBase = &pGdtBase[dwCurGdtIndex];
 
 			RtlCopyMemory(&pNewInfo->GdtData, &pGdtBase[dwCurGdtIndex], sizeof(CGdt));
@@ -465,31 +476,31 @@ VOID EnumGdtTable(PCGdtInfo* pGdtInfo)
 
 			pNewInfo->nIndex = dwCurGdtIndex;
 
-			//Ö¸ÏòÏÂÒ»¸ö
+			//æŒ‡å‘ä¸‹ä¸€ä¸ª
 			dwCurGdtIndex++;
 
-			//ÅĞ¶ÏÊÇ·ñÊÇ64Î»¶Î //
+			//åˆ¤æ–­æ˜¯å¦æ˜¯64ä½æ®µ //
 			if (pNewInfo->GdtData.S == 0 && RtlCompareMemory(&pNewInfo->GdtData, ZeroGdt, sizeof(CGdt)) != sizeof(CGdt))
 			{
 				RtlCopyMemory(&pNewInfo->GdtData1, &pGdtBase[dwCurGdtIndex], sizeof(CGdt));
 
 				pNewInfo->Is64Segment = TRUE;
-				//Ö¸ÏòÏÂÒ»¸ö
+				//æŒ‡å‘ä¸‹ä¸€ä¸ª
 				dwCurGdtIndex++;
 			}
 
 
-			//ÅĞ¶Ï´«½øÀ´µÄÊı¾İÊÇ·ñ³õÊ¼»¯¹ı
+			//åˆ¤æ–­ä¼ è¿›æ¥çš„æ•°æ®æ˜¯å¦åˆå§‹åŒ–è¿‡
 			if (IsInit != 0 && (*pGdtInfo)->IsInitialize)
 			{
-				//²åÈëÁ´±íÀïÃæ
+				//æ’å…¥é“¾è¡¨é‡Œé¢
 				InsertHeadList(&((PCGdtInfo) * ((PULONG64)pGdtInfo))->List, &pNewInfo->List);
 			}
 			else
 			{
-				pNewInfo->IsInitialize = TRUE;					//ÒÑ³õÊ¼»¯
-				InitializeListHead(&pNewInfo->List);				//³õÊ¼»¯Á´±íÍ·
-				*pGdtInfo = pNewInfo;							//¸³Öµ
+				pNewInfo->IsInitialize = TRUE;					//å·²åˆå§‹åŒ–
+				InitializeListHead(&pNewInfo->List);				//åˆå§‹åŒ–é“¾è¡¨å¤´
+				*pGdtInfo = pNewInfo;							//èµ‹å€¼
 				IsInit = TRUE;
 			}
 		}
@@ -504,22 +515,22 @@ VOID EnumIdtTable(PCIdtInfo* pIdtInfo)
 	//RtlGetVersion(&version);
 
 
-	//°æ±¾Win10 19045 °æ±¾
+	//ç‰ˆæœ¬Win10 19045 ç‰ˆæœ¬
 	//if (version.dwMajorVersion == 10 && version.dwBuildNumber == 19045)
 	{
-		PULONG64 KiProcessorBlock = GetKiProcessorBlock(); //»ñÈ¡´æ´¢CPU»·¾³¿ìµÄÊı×é
+		PULONG64 KiProcessorBlock = GetKiProcessorBlock(); //è·å–å­˜å‚¨CPUç¯å¢ƒå¿«çš„æ•°ç»„
 		if (!MmIsAddressValid(KiProcessorBlock))
 		{
 			return;
 		}
 
-		//Ñ­»·±éÀúµ±Ç°CPU½á¹¹Ìå
+		//å¾ªç¯éå†å½“å‰CPUç»“æ„ä½“
 		for (int i = 0; i < KeNumberProcessors; i++)
 		{
-			//»ñÈ¡
+			//è·å–
 			PCIdt pIdtBase = *(PULONG64)(KiProcessorBlock[i] - 0x180 /**/ + _KPCR_IdtBase);
 
-			//ÎŞĞ§µØÖ··µ»Ø
+			//æ— æ•ˆåœ°å€è¿”å›
 			if (!MmIsAddressValid(pIdtBase))
 			{
 				break;
@@ -529,7 +540,7 @@ VOID EnumIdtTable(PCIdtInfo* pIdtInfo)
 
 			CIdt ZeroIdt = { 0 };
 
-			//±éÀúIDT±í
+			//éå†IDTè¡¨
 			for (int CurIdtIndex = 0; CurIdtIndex < 0xFF; CurIdtIndex++)
 			{
 				if (!MmIsAddressValid(&pIdtBase[CurIdtIndex]))
@@ -537,48 +548,48 @@ VOID EnumIdtTable(PCIdtInfo* pIdtInfo)
 					break;
 				}
 
-				//±È½Ïµ±Ç°µÄidtÊÇ·ñÎª¿Õ
+				//æ¯”è¾ƒå½“å‰çš„idtæ˜¯å¦ä¸ºç©º
 				if (RtlCompareMemory(&pIdtBase[CurIdtIndex], &ZeroIdt, sizeof(CIdt)) == sizeof(CIdt))
 				{
 					continue;
 				}
 
-				//ÉêÇë¿Õ¼ä
+				//ç”³è¯·ç©ºé—´
 				PCIdtInfo pNewInfo = MyExAllocMemOry(sizeof(CIdtInfo), PAGE_READWRITE, UserMode);
 				if (pNewInfo == NULL)
 				{
 					break;
 				}
 
-				//¿½±´16×Ö½ÚÊı¾İ
+				//æ‹·è´16å­—èŠ‚æ•°æ®
 				RtlCopyMemory(&pNewInfo->IdtData, &pIdtBase[CurIdtIndex], sizeof(CIdt));
 
 				pNewInfo->nIndex = CurIdtIndex;
 				pNewInfo->IdtBase = &pIdtBase[CurIdtIndex];
 				pNewInfo->nCpuId = i;
 
-				//»ñÈ¡º¯ÊıµØÖ·
+				//è·å–å‡½æ•°åœ°å€
 				ULONG64 FunAddr = pNewInfo->IdtData.Offset2;
 				FunAddr = (((FunAddr << 16) | pNewInfo->IdtData.Offset1) << 16) | pNewInfo->IdtData.Offset0;
 
 				CDriverInfo DriverInfo = { 0 };
 				if (IsSysModuleEx(FunAddr, &DriverInfo))
 				{
-					//¿½±´Â·¾¶
+					//æ‹·è´è·¯å¾„
 					memcpy_s(pNewInfo->szPath, MY_MAX_PATH, DriverInfo.ImageFullBaseName, MY_MAX_PATH);
 				}
 
-				//ÅĞ¶Ï´«½øÀ´µÄÊı¾İÊÇ·ñ³õÊ¼»¯¹ı
+				//åˆ¤æ–­ä¼ è¿›æ¥çš„æ•°æ®æ˜¯å¦åˆå§‹åŒ–è¿‡
 				if (IsInit != 0 && (*pIdtInfo)->List.IsInitialize)
 				{
-					//²åÈëÁ´±íÀïÃæ
+					//æ’å…¥é“¾è¡¨é‡Œé¢
 					InsertHeadList(&((PCIdtInfo) * ((PULONG64)pIdtInfo))->List, &pNewInfo->List);
 				}
 				else
 				{
-					pNewInfo->List.IsInitialize = TRUE;					//ÒÑ³õÊ¼»¯
-					InitializeListHead(&pNewInfo->List.List);			//³õÊ¼»¯Á´±íÍ·
-					*pIdtInfo = pNewInfo;								//¸³Öµ
+					pNewInfo->List.IsInitialize = TRUE;					//å·²åˆå§‹åŒ–
+					InitializeListHead(&pNewInfo->List.List);			//åˆå§‹åŒ–é“¾è¡¨å¤´
+					*pIdtInfo = pNewInfo;								//èµ‹å€¼
 					IsInit = TRUE;
 				}
 			}
@@ -589,7 +600,7 @@ VOID EnumIdtTable(PCIdtInfo* pIdtInfo)
 ULONG64 EnumGlobalHandleTable(UNICODE_STRING HandleType, PCHandleInfo* OutList, SIZE_T TypeSize)
 {
 	////////////////////////////////////////////////////////////////////////
-	//±äÁ¿ÉùÃ÷ÇøÓò
+	//å˜é‡å£°æ˜åŒºåŸŸ
 	UCHAR TypeIndex = 0, TableIndex = 0;
 	ULONG64 TableCode = 0, TableData = 0;
 	ULONG64 Index = 0, Index1 = 0, Level1 = 0, Index2 = 0, Level2 = 0;
@@ -601,25 +612,25 @@ ULONG64 EnumGlobalHandleTable(UNICODE_STRING HandleType, PCHandleInfo* OutList, 
 	////////////////////////////////////////////////////////////////////////
 
 	////////////////////////////////////////////////////////////////////////
-	//±äÁ¿³õÊ¼»¯ÇøÓò 
+	//å˜é‡åˆå§‹åŒ–åŒºåŸŸ 
 	TableCode = *(PULONG64)((*(PULONG64)PspCidTable) + _HANDLE_TABLE_TableCode);
 	IsInit = MmIsAddressValid(OutList) && MmIsAddressValid(*OutList) && ((PCHandleInfo)(*OutList))->List.IsInitialize;
 	////////////////////////////////////////////////////////////////////////
 
 	////////////////////////////////////////////////////////////////////////
-	//ÏîÄ¿ĞèÇóÇøÓò
+	//é¡¹ç›®éœ€æ±‚åŒºåŸŸ
 	if (MmIsAddressValid(TableCode))
 	{
 		switch (TableCode & 3)
 		{
-		case 0://Ò»¼¶¾ä±ú±í
+		case 0://ä¸€çº§å¥æŸ„è¡¨
 			TableCode &= 0xFFFFFFFFFFFFFFFC;
 			for (Index = 0; Index < 256; Index++)
 			{
 				TableData = *(PULONG64)((ULONG64)TableCode + (Index * 0x10));
 				if (MmIsAddressValid(TableData))
 				{
-					TableData = ((ULONG64)TableData >> 0x10) | 0xFFFF000000000000/*²¹Æë·ûºÅÎ»*/;
+					TableData = ((ULONG64)TableData >> 0x10) | 0xFFFF000000000000/*è¡¥é½ç¬¦å·ä½*/;
 					if (MmIsAddressValid(TableData))
 					{
 						TypeIndex = *(PUCHAR)((ULONG64)TableData - _OBJECT_HEADER_TypeIndex);
@@ -631,28 +642,28 @@ ULONG64 EnumGlobalHandleTable(UNICODE_STRING HandleType, PCHandleInfo* OutList, 
 							TypeTempName = (ULONG64)(*(PULONG64)((ObTypeIndexTable)[TypeIndex])) + 0x10;
 							if (RtlCompareUnicodeString(&HandleType, TypeTempName, TRUE) == 0)
 							{
-								//ÉêÇëÄÚ´å
+								//ç”³è¯·å†…æ‘
 								PCHandleInfo pNewInfo = NULL;
 								nStatus = ZwAllocateVirtualMemory(NtCurrentProcess(), &pNewInfo, 0, &TypeSize, MEM_COMMIT, PAGE_READWRITE);
 								if (!NT_SUCCESS(nStatus))
 								{
-									MyDbgPrintfEx("[%s] ÉêÇë¿Õ¼äÊ§°Ü!\n", __FUNCTION__);
+									MyDbgPrintfEx("[%s] ç”³è¯·ç©ºé—´å¤±è´¥!\n", __FUNCTION__);
 									break;
 								}
 
 								pNewInfo->Object = TableData;
 
-								//ÅĞ¶Ï´«½øÀ´µÄÊı¾İÊÇ·ñ³õÊ¼»¯¹ı
+								//åˆ¤æ–­ä¼ è¿›æ¥çš„æ•°æ®æ˜¯å¦åˆå§‹åŒ–è¿‡
 								if (IsInit != 0 && ((PCHandleInfo)(*OutList)->List.IsInitialize))
 								{
-									//²åÈëÁ´±íÀïÃæ
+									//æ’å…¥é“¾è¡¨é‡Œé¢
 									InsertHeadList(&((PCHandleInfo) * ((PULONG64)OutList))->List.List, &pNewInfo->List.List);
 								}
 								else
 								{
-									pNewInfo->List.IsInitialize = TRUE;							//ÒÑ³õÊ¼»¯
-									InitializeListHead(&pNewInfo->List.List);					//³õÊ¼»¯Á´±íÍ·
-									*OutList = pNewInfo;										//¸³Öµ
+									pNewInfo->List.IsInitialize = TRUE;							//å·²åˆå§‹åŒ–
+									InitializeListHead(&pNewInfo->List.List);					//åˆå§‹åŒ–é“¾è¡¨å¤´
+									*OutList = pNewInfo;										//èµ‹å€¼
 									IsInit = TRUE;
 								}
 								Count++;
@@ -662,7 +673,7 @@ ULONG64 EnumGlobalHandleTable(UNICODE_STRING HandleType, PCHandleInfo* OutList, 
 				}
 			}
 			break;
-		case 1://¶ş¼¶¾ä±ú±í
+		case 1://äºŒçº§å¥æŸ„è¡¨
 			TableCode &= 0xFFFFFFFFFFFFFFFC;
 			for (Index1 = 0; Index1 < 512; Index1++)
 			{
@@ -677,7 +688,7 @@ ULONG64 EnumGlobalHandleTable(UNICODE_STRING HandleType, PCHandleInfo* OutList, 
 						{
 							//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 							//ObGetObjectType
-							//»ñÈ¡¾ä±úÀàĞÍ
+							//è·å–å¥æŸ„ç±»å‹
 							TypeIndex = *(PUCHAR)((ULONG64)TableData - _OBJECT_HEADER_TypeIndex);
 							TableIndex = (unsigned __int8)((unsigned __int16)(TableData - _OBJECT_HEADER_PointerCount) >> 8);
 							TypeIndex = TypeIndex ^ TableIndex;
@@ -686,32 +697,32 @@ ULONG64 EnumGlobalHandleTable(UNICODE_STRING HandleType, PCHandleInfo* OutList, 
 
 							if (TypeIndex != 0)
 							{
-								//ÅĞ¶ÏÊÇ·ñÊÇ½ø³Ì¾ä±ú
+								//åˆ¤æ–­æ˜¯å¦æ˜¯è¿›ç¨‹å¥æŸ„
 								TypeTempName = (ULONG64)(*(PULONG64)(ObTypeIndexTable)[TypeIndex]) + 0x10;
 								if (RtlCompareUnicodeString(&HandleType, TypeTempName, TRUE) == 0)
 								{
-									//ÉêÇëÄÚ´å
+									//ç”³è¯·å†…æ‘
 									PCHandleInfo pNewInfo = NULL;
 									nStatus = ZwAllocateVirtualMemory(NtCurrentProcess(), &pNewInfo, 0, &TypeSize, MEM_COMMIT, PAGE_READWRITE);
 									if (!NT_SUCCESS(nStatus))
 									{
-										MyDbgPrintfEx("[%s] ÉêÇë¿Õ¼äÊ§°Ü!\n", __FUNCTION__);
+										MyDbgPrintfEx("[%s] ç”³è¯·ç©ºé—´å¤±è´¥!\n", __FUNCTION__);
 										break;
 									}
 
 									pNewInfo->Object = TableData;
 
-									//ÅĞ¶Ï´«½øÀ´µÄÊı¾İÊÇ·ñ³õÊ¼»¯¹ı
+									//åˆ¤æ–­ä¼ è¿›æ¥çš„æ•°æ®æ˜¯å¦åˆå§‹åŒ–è¿‡
 									if (IsInit != 0 && ((PCHandleInfo)(*OutList)->List.IsInitialize))
 									{
-										//²åÈëÁ´±íÀïÃæ
+										//æ’å…¥é“¾è¡¨é‡Œé¢
 										InsertHeadList(&((PCHandleInfo) * ((PULONG64)OutList))->List.List, &pNewInfo->List.List);
 									}
 									else
 									{
-										pNewInfo->List.IsInitialize = TRUE;						//ÒÑ³õÊ¼»¯
-										InitializeListHead(&pNewInfo->List.List);				//³õÊ¼»¯Á´±íÍ·
-										*OutList = pNewInfo;									//¸³Öµ
+										pNewInfo->List.IsInitialize = TRUE;						//å·²åˆå§‹åŒ–
+										InitializeListHead(&pNewInfo->List.List);				//åˆå§‹åŒ–é“¾è¡¨å¤´
+										*OutList = pNewInfo;									//èµ‹å€¼
 										IsInit = TRUE;
 									}
 									Count++;
@@ -722,7 +733,7 @@ ULONG64 EnumGlobalHandleTable(UNICODE_STRING HandleType, PCHandleInfo* OutList, 
 				}
 			}
 			break;
-		case 2://Èı¼¶¾ä±ú±í
+		case 2://ä¸‰çº§å¥æŸ„è¡¨
 			TableCode &= 0xFFFFFFFFFFFFFFFC;
 			for (Index = 0; Index < 512; Index++)
 			{
@@ -749,28 +760,28 @@ ULONG64 EnumGlobalHandleTable(UNICODE_STRING HandleType, PCHandleInfo* OutList, 
 										TypeTempName = (ULONG64)(*(PULONG64)((ObTypeIndexTable)[TypeIndex])) + 0x10;
 										if (RtlCompareUnicodeString(&HandleType, TypeTempName, TRUE) == 0)
 										{
-											//ÉêÇëÄÚ´å
+											//ç”³è¯·å†…æ‘
 											PCHandleInfo pNewInfo = NULL;
 											nStatus = ZwAllocateVirtualMemory(NtCurrentProcess(), &pNewInfo, 0, &TypeSize, MEM_COMMIT, PAGE_READWRITE);
 											if (!NT_SUCCESS(nStatus))
 											{
-												MyDbgPrintfEx("[%s] ÉêÇë¿Õ¼äÊ§°Ü!\n", __FUNCTION__);
+												MyDbgPrintfEx("[%s] ç”³è¯·ç©ºé—´å¤±è´¥!\n", __FUNCTION__);
 												break;
 											}
 
 											pNewInfo->Object = TableData;
 
-											//ÅĞ¶Ï´«½øÀ´µÄÊı¾İÊÇ·ñ³õÊ¼»¯¹ı
+											//åˆ¤æ–­ä¼ è¿›æ¥çš„æ•°æ®æ˜¯å¦åˆå§‹åŒ–è¿‡
 											if (IsInit != 0 && ((PCHandleInfo)(*OutList)->List.IsInitialize))
 											{
-												//²åÈëÁ´±íÀïÃæ
+												//æ’å…¥é“¾è¡¨é‡Œé¢
 												InsertHeadList(&((PCHandleInfo) * ((PULONG64)OutList))->List.List, &pNewInfo->List.List);
 											}
 											else
 											{
-												pNewInfo->List.IsInitialize = TRUE;						//ÒÑ³õÊ¼»¯
-												InitializeListHead(&pNewInfo->List.List);				//³õÊ¼»¯Á´±íÍ·
-												*OutList = pNewInfo;									//¸³Öµ
+												pNewInfo->List.IsInitialize = TRUE;						//å·²åˆå§‹åŒ–
+												InitializeListHead(&pNewInfo->List.List);				//åˆå§‹åŒ–é“¾è¡¨å¤´
+												*OutList = pNewInfo;									//èµ‹å€¼
 												IsInit = TRUE;
 											}
 											Count++;
@@ -791,16 +802,16 @@ ULONG64 EnumGlobalHandleTable(UNICODE_STRING HandleType, PCHandleInfo* OutList, 
 
 ULONG64 PsLookUpProcessByProcessId(HANDLE Pid)
 {
-	//ÑéÖ¤È«¾Ö¾ä±ú±íÊÇ·ñÕıÈ·
+	//éªŒè¯å…¨å±€å¥æŸ„è¡¨æ˜¯å¦æ­£ç¡®
 	if (!MmIsAddressValid(PspCidTable)) //_HANDLE_TABLE
 	{
 		return NULL;
 	}
 
-	//´¦Àí¾ä±ú
+	//å¤„ç†å¥æŸ„
 	ULONG64 Index = (ULONG64)Pid & ~0x3;
 
-	//ÅĞ¶ÏÊÇ·ñ³¬¹ıÁËµ±Ç°Ò³´óĞ¡
+	//åˆ¤æ–­æ˜¯å¦è¶…è¿‡äº†å½“å‰é¡µå¤§å°
 	if (Index >= (*PspCidTable + _HANDLE_TABLE_NextHandleNeedingPool))
 	{
 		return NULL;
@@ -808,20 +819,20 @@ ULONG64 PsLookUpProcessByProcessId(HANDLE Pid)
 
 
 	ULONG64 ProcessObject = NULL;
-	//»ñÈ¡±íµØÖ·
+	//è·å–è¡¨åœ°å€
 	PULONG64 TableCode = *(PULONG64)(*PspCidTable + _HANDLE_TABLE_TableCode) & ~0x3;
-	//»ñÈ¡¼¸¼¶±í
+	//è·å–å‡ çº§è¡¨
 	ULONG64 nFlags = *(PULONG64)(*PspCidTable + _HANDLE_TABLE_TableCode) & 0x3;
 
-	if (nFlags == 1)//¶ş¼¶±í
+	if (nFlags == 1)//äºŒçº§è¡¨
 	{
 		ProcessObject = (*(PULONG64) & (((PULONG32)(TableCode[Index >> 10]))[(Index & 0x3FF)]) >> 16) | 0xFFFF000000000000;
 	}
-	else if (nFlags == 3)//Èı¼¶±í
+	else if (nFlags == 3)//ä¸‰çº§è¡¨
 	{
 		ProcessObject = (*(PULONG64) & (((PULONG32)((PULONG64)(TableCode[Index >> 19]))[(Index >> 10) & 0x1FF])[Index & 0x3FF]) >> 16) | 0xFFFF000000000000;
 	}
-	else //Ò»¼¶±í
+	else //ä¸€çº§è¡¨
 	{
 		ProcessObject = (*(PULONG64) & ((PULONG32)TableCode)[Index] >> 16) | 0xFFFF000000000000;
 	}
@@ -833,7 +844,7 @@ ULONG64 PsLookUpProcessByProcessId(HANDLE Pid)
 VOID WriteBufferToProcessStructEx(PCProcessInfo OutProcess, ULONG64 pEprocess)
 {
 	////////////////////////////////////////////////////////////////////////
-	//±äÁ¿ÉùÃ÷ÇøÓò
+	//å˜é‡å£°æ˜åŒºåŸŸ
 	ULONG64 ImageBaseName = 0;
 	ULONG64 ImageFilePointer = 0;
 	PUNICODE_STRING64 FileName = 0;
@@ -854,36 +865,36 @@ VOID WriteBufferToProcessStructEx(PCProcessInfo OutProcess, ULONG64 pEprocess)
 	if (MmIsAddressValid(OutProcess) && MmIsAddressValid(pEprocess))
 	{
 		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		OutProcess->ProcessId = *(PLONG64)((ULONG64)pEprocess + _EPROCESS_UniqueProcessId);//»ñÈ¡×Ô½ø³ÌID
-		OutProcess->ParentPId = *(PLONG64)((ULONG64)pEprocess + _EPROCESS_InheritedFromUniqueProcessId);//»ñÈ¡¸¸½ø³ÌID
-		OutProcess->DebugPort = PsGetProcessInDebugPort(pEprocess);//»ñÈ¡µ÷ÊÔ¶ÔÏó
-		OutProcess->Eprocess = (ULONG64)pEprocess;//»ñÈ¡EPROCESS
-		OutProcess->Peb = *(PULONG64)((ULONG64)pEprocess + _EPROCESS_Peb);//»ñÈ¡PEB
-		OutProcess->Is64Process = *(PULONG64)((ULONG64)pEprocess + _EPROCESS_WoW64Process) == NULL ? TRUE : FALSE;//ÅĞ¶ÁÊÇ·ñÊÇx64Î»½ø³Ì
+		OutProcess->ProcessId = *(PLONG64)((ULONG64)pEprocess + _EPROCESS_UniqueProcessId);//è·å–è‡ªè¿›ç¨‹ID
+		OutProcess->ParentPId = *(PLONG64)((ULONG64)pEprocess + _EPROCESS_InheritedFromUniqueProcessId);//è·å–çˆ¶è¿›ç¨‹ID
+		OutProcess->DebugPort = PsGetProcessInDebugPort(pEprocess);//è·å–è°ƒè¯•å¯¹è±¡
+		OutProcess->Eprocess = (ULONG64)pEprocess;//è·å–EPROCESS
+		OutProcess->Peb = *(PULONG64)((ULONG64)pEprocess + _EPROCESS_Peb);//è·å–PEB
+		OutProcess->Is64Process = *(PULONG64)((ULONG64)pEprocess + _EPROCESS_WoW64Process) == NULL ? TRUE : FALSE;//åˆ¤è¯»æ˜¯å¦æ˜¯x64ä½è¿›ç¨‹
 
 		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		//»ñÈ¡ÊÇ·ñÊÇÊÜ±£»¤µÄ½ø³Ì
+		//è·å–æ˜¯å¦æ˜¯å—ä¿æŠ¤çš„è¿›ç¨‹
 		UCHAR ucIsUserVisit = PsGetProcessProtection(pEprocess);
-		OutProcess->IsUserVisit = ucIsUserVisit & 7 ? TRUE : FALSE;		//ÅĞ¶ÁÊÇ·ñÊÇÏµÍ³½ø³Ì PPL PP
+		OutProcess->IsUserVisit = ucIsUserVisit & 7 ? TRUE : FALSE;		//åˆ¤è¯»æ˜¯å¦æ˜¯ç³»ç»Ÿè¿›ç¨‹ PPL PP
 		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		//»ñÈ¡ÎÄ¼şÃû
-		ImageBaseName = ((ULONG64)pEprocess + _EPROCESS_ImageFileName); //»ñÈ¡½ø³ÌÃû
+		//è·å–æ–‡ä»¶å
+		ImageBaseName = ((ULONG64)pEprocess + _EPROCESS_ImageFileName); //è·å–è¿›ç¨‹å
 		memset(OutProcess->ImageBaseName, 0, MAX_BASE_FILE_NAME);
 		memcpy_s(OutProcess->ImageBaseName, MAX_BASE_FILE_NAME, ImageBaseName, 15);
 		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		//»ñÈ¡½ø³Ì»á»°ID
+		//è·å–è¿›ç¨‹ä¼šè¯ID
 		Session = PsGetSessionIdEx(pEprocess);
 		if (Session != (ULONG64)0xFFFFFFFF)
 		{
-			OutProcess->Session = Session;//»ñÈ¡½ø³Ì»á»°ID
+			OutProcess->Session = Session;//è·å–è¿›ç¨‹ä¼šè¯ID
 		}
 		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		//»ñÈ¡½ø³ÌÓÃ»§Ãû
-		Token = *(PULONG64)((ULONG64)pEprocess + _EPROCESS_Token) & ~0xF; //½«_EPROCESS_Token.Object & ~0xF Çå¿Õ×îºóÒ»Î»
+		//è·å–è¿›ç¨‹ç”¨æˆ·å
+		Token = *(PULONG64)((ULONG64)pEprocess + _EPROCESS_Token) & ~0xF; //å°†_EPROCESS_Token.Object & ~0xF æ¸…ç©ºæœ€åä¸€ä½
 		if (MmIsAddressValid(Token))
 		{
 			LogonSession = *(PULONG64)((ULONG64)Token + _TOKEN_LogonSession);//
@@ -893,24 +904,24 @@ VOID WriteBufferToProcessStructEx(PCProcessInfo OutProcess, ULONG64 pEprocess)
 		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		//»ñÈ¡½ø³ÌÃüÁîĞĞ²ÎÊı
+		//è·å–è¿›ç¨‹å‘½ä»¤è¡Œå‚æ•°
 		GetProcessPebMsgEx(pEprocess, OutProcess);
 		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		//½ø³Ì»ñÈ¡Â·¾¶
+		//è¿›ç¨‹è·å–è·¯å¾„
 		ImageFilePointer = *(PULONG64)((ULONG64)pEprocess + _EPROCESS_ImageFilePointer);
 		SeAuditProcessCreationInfo = *(PULONG64)((ULONG64)pEprocess + _EPROCESS_SeAuditProcessCreationInfo);
 		memset(OutProcess->FullFileName, 0, MY_MAX_PATH);
 		if (MmIsAddressValid(ImageFilePointer))
 		{
 			DeviceObject = *(PULONG64)((ULONG64)ImageFilePointer + _FILE_OBJECT_DeviceObject);
-			IoVolumeDeviceToDosName(DeviceObject, &DeviceObjectName);//»ñÈ¡ÎÄ¼şÅÌ·û
+			IoVolumeDeviceToDosName(DeviceObject, &DeviceObjectName);//è·å–æ–‡ä»¶ç›˜ç¬¦
 			FileName = (PUNICODE_STRING64)((ULONG64)ImageFilePointer + _FILE_OBJECT_FileName);
 			OutProcess->FullFileNameLength = FileName->Length;
 			memcpy_s(OutProcess->FullFileName, MY_MAX_PATH, DeviceObjectName.Buffer, DeviceObjectName.Length);
 			wcscat_s(OutProcess->FullFileName, MY_MAX_PATH, FileName->Buffer);
-			ExFreePool(DeviceObjectName.Buffer);/*ÊÍ·ÅIoVolumeDeviceToDosName·ÖÅäµÄÄÚ´æ*/
+			ExFreePool(DeviceObjectName.Buffer);/*é‡Šæ”¾IoVolumeDeviceToDosNameåˆ†é…çš„å†…å­˜*/
 		}
 		else if (MmIsAddressValid(SeAuditProcessCreationInfo))
 		{
@@ -921,22 +932,15 @@ VOID WriteBufferToProcessStructEx(PCProcessInfo OutProcess, ULONG64 pEprocess)
 		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		//»ñÈ¡´´½¨Ê±¼ä
+		//è·å–åˆ›å»ºæ—¶é—´
 		CreateTime = (PLARGE_INTEGER)((ULONG64)pEprocess + _EPROCESS_CreateTime);//CreateTime = PsGetProcessCreateTimeQuadPart((PEPROCESS)TableData);
 		if (MmIsAddressValid(CreateTime))
 		{
-			RtlTimeToTimeFields(CreateTime, &TimeFields);
-			/*
-			Hour = TimeFields.Hour + 8;
-			if (Hour >= 24)
-			{
-				TimeFields.Hour = TimeFields.Hour - 24;
-			}
-			else
-			{
-				TimeFields.Hour = Hour;
-			}
-			*/
+			// EPROCESS.CreateTime æ˜¯ UTCã€‚ç”¨ ExSystemTimeToLocalTime æŒ‰ç³»ç»Ÿæ—¶åŒº+DST è½¬æˆæœ¬åœ°æ—¶é—´ï¼Œ
+			// ä»£æ›¿åŸæ¥ç¡¬ç¼–ç çš„ +8ã€‚
+			LARGE_INTEGER LocalTime = { 0 };
+			ExSystemTimeToLocalTime(CreateTime, &LocalTime);
+			RtlTimeToTimeFields(&LocalTime, &TimeFields);
 			OutProcess->CreateTime = TimeFields;
 		}
 		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -978,7 +982,7 @@ ULONG64 PsGetSessionIdEx(ULONG64 pEprocess)
 VOID GetProcessPebMsgEx(ULONG64 pEprocess, PCProcessInfo OutProcess)
 {
 	////////////////////////////////////////////////////////////////////////
-	//±äÁ¿ÉùÃ÷ÇøÓò
+	//å˜é‡å£°æ˜åŒºåŸŸ
 	ULONG64 Peb = 0;
 	KAPC_STATE ApcState = { 0 };
 	ULONG64 ProcessParameters = 0, ImageBase = 0;
@@ -987,36 +991,47 @@ VOID GetProcessPebMsgEx(ULONG64 pEprocess, PCProcessInfo OutProcess)
 	UCHAR BeingDebugged = 0;
 	////////////////////////////////////////////////////////////////////////
 
+	// PEB / RTL_USER_PROCESS_PARAMETERS æ˜¯ ntdll çš„ç»“æ„ï¼Œntoskrnl.exe çš„ PDB
+	// ä¸ä¸€å®šåŒ…å«å®ƒä»¬ â€”â€” æ­¤æ—¶ R3 ç«¯ ToUserSendGetStructInfoMessgae è¿”å› -1ï¼Œ
+	// åç§»å°±åºŸäº†ã€‚è¿™é‡Œç”¨ Win10/11 x64 çš„å›ºå®šå€¼å…œåº•ï¼Œä¿è¯"å‚æ•°"åˆ—åœ¨æ–° VM
+	// ä¸Šä¹Ÿèƒ½å¡«å‡ºæ¥ã€‚
+	ULONG OffPebBeingDebugged = (g_Offset_PEB_BeingDebugged > 0) ? g_Offset_PEB_BeingDebugged : 0x02;
+	ULONG OffPebProcessParameters = (g_Offset_PEB_ProcessParameters > 0) ? g_Offset_PEB_ProcessParameters : 0x20;
+	ULONG OffPebImageBaseAddress = (g_Offset_PEB_ImageBaseAddress > 0) ? g_Offset_PEB_ImageBaseAddress : 0x10;
+	ULONG OffParamsCommandLine = (g_Offset_RTL_USER_PROCESS_PARAMETERS_CommandLine > 0)
+		? g_Offset_RTL_USER_PROCESS_PARAMETERS_CommandLine : 0x70;
+	ULONG SizeOfPeb = (g_Size_PEB > 0) ? g_Size_PEB : 0x800;
+
 	////////////////////////////////////////////////////////////////////////
-	//ÏîÄ¿ĞèÇóÇøÓò
+	//é¡¹ç›®éœ€æ±‚åŒºåŸŸ
 	if (MmIsAddressValid(pEprocess) && MmIsAddressValid(OutProcess))
 	{
-		Peb = *(PULONG64)((ULONG64)pEprocess + _EPROCESS_Peb);//»ñÈ¡PEB
+		Peb = *(PULONG64)((ULONG64)pEprocess + _EPROCESS_Peb);//è·å–PEB
 		if (Peb != NULL)
 		{
 			KeStackAttachProcess(pEprocess, &ApcState);
 			try
 			{
-				ProbeForRead(Peb, _SIZE_PEB, 8);//²âÊÔÓÃ»§²ãÊı¾İÊÇ·ñ¿É¶Á
-				RtlCopyMemory(&BeingDebugged, Peb + _PEB_BeingDebugged, 1);
-				RtlCopyMemory(&ProcessParameters, Peb + _PEB_ProcessParameters, 8);
-				RtlCopyMemory(&ImageBase, Peb + _PEB_ImageBaseAddress, 8);
-				RtlCopyMemory(&CommandLineBuffer, ProcessParameters + _RTL_USER_PROCESS_PARAMETERS_CommandLine, sizeof(UNICODE_STRING));
+				ProbeForRead(Peb, SizeOfPeb, 8);//æµ‹è¯•ç”¨æˆ·å±‚æ•°æ®æ˜¯å¦å¯è¯»
+				RtlCopyMemory(&BeingDebugged, Peb + OffPebBeingDebugged, 1);
+				RtlCopyMemory(&ProcessParameters, Peb + OffPebProcessParameters, 8);
+				RtlCopyMemory(&ImageBase, Peb + OffPebImageBaseAddress, 8);
+				RtlCopyMemory(&CommandLineBuffer, ProcessParameters + OffParamsCommandLine, sizeof(UNICODE_STRING));
 
-				CommandOutBuffer = ExAllocatePool2(POOL_FLAG_NON_PAGED, CommandLineBuffer.MaximumLength, L"PCommandLine");//ÉêÇë·Ç·ÖÒ³ÄÚ´æ
+				CommandOutBuffer = ExAllocatePool2(POOL_FLAG_NON_PAGED, CommandLineBuffer.MaximumLength, L"PCommandLine");//ç”³è¯·éåˆ†é¡µå†…å­˜
 				if (MmIsAddressValid(CommandOutBuffer))
 				{
 					RtlCopyMemory(CommandOutBuffer, CommandLineBuffer.Buffer, CommandLineBuffer.Length);
 
 					KeUnstackDetachProcess(&ApcState);
-					memcpy_s(OutProcess->CommandLine, 0x500, CommandOutBuffer, CommandLineBuffer.Length < 0x500 ? CommandLineBuffer.Length : 0x500);//¿½±´Êı¾İ
-					ExFreePool(CommandOutBuffer);//ÊÍ·ÅÄÚ´æ
+					memcpy_s(OutProcess->CommandLine, 0x500, CommandOutBuffer, CommandLineBuffer.Length < 0x500 ? CommandLineBuffer.Length : 0x500);//æ‹·è´æ•°æ®
+					ExFreePool(CommandOutBuffer);//é‡Šæ”¾å†…å­˜
 				}
-				OutProcess->DebugPort |= BeingDebugged;//ÅĞ¶ÏÊÇ·ñµ÷ÊÔ×´Ì¬
+				OutProcess->DebugPort |= BeingDebugged;//åˆ¤æ–­æ˜¯å¦è°ƒè¯•çŠ¶æ€
 			}
 			__except (EXCEPTION_EXECUTE_HANDLER)
 			{
-				KeUnstackDetachProcess(&ApcState);//Ğ¶ÔØ
+				KeUnstackDetachProcess(&ApcState);//å¸è½½
 				return;
 			}
 		}
@@ -1040,7 +1055,7 @@ VOID FsVolumeDeviceToDosNameEx(ULONG64 FileObject, PWCHAR DstFilePath)
 			if (MmIsAddressValid(DstFilePath) && DeviceObjectName.Length >= 0)
 			{
 				memcpy_s(DstFilePath, MAX_PATH, DeviceObjectName.Buffer, DeviceObjectName.Length);
-				ExFreePool(DeviceObjectName.Buffer);/*ÊÍ·ÅIoVolumeDeviceToDosName·ÖÅäµÄÄÚ´æ*/
+				ExFreePool(DeviceObjectName.Buffer);/*é‡Šæ”¾IoVolumeDeviceToDosNameåˆ†é…çš„å†…å­˜*/
 			}
 
 			FileName = (PUNICODE_STRING)((ULONG64)FileObject + _FILE_OBJECT_FileName);
@@ -1059,11 +1074,11 @@ ULONG64 EnumProcessVad(ULONG64 pEprocess, PCProcessVadInfo* OutData)
 	ULONG64 VadCount = 0;
 	if (MmIsAddressValid(pEprocess))
 	{
-		RootVad = *(PULONG64)(pEprocess + _EPROCESS_VadRoot);				/*»ñÈ¡Vad¸ù½Úµã*/
-		VadCount = *(PULONG64)(pEprocess + _EPROCESS_VadCount);			/*»ñÈ¡Vad½ÚµãÊıÁ¿*/
+		RootVad = *(PULONG64)(pEprocess + _EPROCESS_VadRoot);				/*è·å–Vadæ ¹èŠ‚ç‚¹*/
+		VadCount = *(PULONG64)(pEprocess + _EPROCESS_VadCount);			/*è·å–VadèŠ‚ç‚¹æ•°é‡*/
 		if (MmIsAddressValid(RootVad) && MmIsAddressValid(OutData))
 		{
-			return EnumVad(RootVad, OutData);								/*Ç°Ğò±éÀúÊ÷*/
+			return EnumVad(RootVad, OutData);								/*å‰åºéå†æ ‘*/
 		}
 	}
 	return VadCount;
@@ -1106,18 +1121,18 @@ ULONG64 EnumVad(ULONG64 VadNode, PCProcessVadInfo* OutData)
 			PopStack(&stack);
 			if (MmIsAddressValid(Data))
 			{
-				//ÉêÇë¿Õ¼ä
+				//ç”³è¯·ç©ºé—´
 				PCProcessVadInfo pNewInfo = NULL;
 				nStatus = ZwAllocateVirtualMemory(NtCurrentProcess(), &pNewInfo, 0, &TypeSize, MEM_COMMIT, PAGE_READWRITE);
 				if (!NT_SUCCESS(nStatus))
 				{
-					MyDbgPrintfEx("[%s] ÉêÇë¿Õ¼äÊ§°Ü!\n", __FUNCTION__);
+					MyDbgPrintfEx("[%s] ç”³è¯·ç©ºé—´å¤±è´¥!\n", __FUNCTION__);
 					break;
 				}
 
 				RtlZeroMemory(pNewInfo, TypeSize);
 
-				/*---------------------------Êı¾İ»ñÈ¡ÇøÓò-----------------------------------*/
+				/*---------------------------æ•°æ®è·å–åŒºåŸŸ-----------------------------------*/
 
 				PrivateMemory = ((PMMVAD_SHORT)(Data + _MMVAD_SHORT_u))->PrivateMemory;
 				Protection = ((PMMVAD_SHORT)(Data + _MMVAD_SHORT_u))->Protection;
@@ -1142,7 +1157,7 @@ ULONG64 EnumVad(ULONG64 VadNode, PCProcessVadInfo* OutData)
 						FilePointer = (PEX_FAST_REF)(ControlArea + _CONTROL_AREA_FilePointer);
 						if (MmIsAddressValid(FilePointer))
 						{
-							FileObject = (FilePointer->Value & (~0xF));			/*Çå³şºóËÄÎ»*/
+							FileObject = (FilePointer->Value & (~0xF));			/*æ¸…æ¥šåå››ä½*/
 							if (MmIsAddressValid(FileObject))
 							{
 								if (MmIsAddressValid(&OutData[nIndex]))
@@ -1153,7 +1168,7 @@ ULONG64 EnumVad(ULONG64 VadNode, PCProcessVadInfo* OutData)
 						}
 					}
 				}
-				/*---------------------------Êı¾İĞ´ÈëÇøÓò-----------------------------------*/
+				/*---------------------------æ•°æ®å†™å…¥åŒºåŸŸ-----------------------------------*/
 				pNewInfo->VadNode = Data;
 				pNewInfo->Protection = Protection;
 				pNewInfo->PrivateMemory = PrivateMemory;
@@ -1163,14 +1178,14 @@ ULONG64 EnumVad(ULONG64 VadNode, PCProcessVadInfo* OutData)
 
 				if (IsInit != 0 && ((PCProcessVadInfo)(*OutData))->List.IsInitialize)
 				{
-					//²åÈëÁ´±íÀïÃæ
+					//æ’å…¥é“¾è¡¨é‡Œé¢
 					InsertHeadList(&((PCProcessVadInfo)(*OutData))->List.List, &pNewInfo->List.List);
 				}
 				else
 				{
-					pNewInfo->List.IsInitialize = TRUE;						//ÒÑ³õÊ¼»¯
-					InitializeListHead(&pNewInfo->List.List);				//³õÊ¼»¯Á´±íÍ·
-					*OutData = pNewInfo;									//¸³Öµ
+					pNewInfo->List.IsInitialize = TRUE;						//å·²åˆå§‹åŒ–
+					InitializeListHead(&pNewInfo->List.List);				//åˆå§‹åŒ–é“¾è¡¨å¤´
+					*OutData = pNewInfo;									//èµ‹å€¼
 					IsInit = TRUE;
 				}
 
@@ -1209,14 +1224,14 @@ ULONG64 MiReadVirtualMemory(ULONG64 pEprocess, ULONG64 pDstAddr, ULONG64 dqSize,
 	RtlZeroMemory(pSrcMem, dqSize);
 
 	KAPC_STATE ApcState = { 0 };
-	//¹Ò¿¿µ½Ö¸¶¨½ø³Ì
-	KeStackAttachProcess(pEprocess, &ApcState);								//ÇĞ»»Ä¿±êCR3
+	//æŒ‚é åˆ°æŒ‡å®šè¿›ç¨‹
+	KeStackAttachProcess(pEprocess, &ApcState);								//åˆ‡æ¢ç›®æ ‡CR3
 
 
-	//ÓÃ»§µØÖ·²ÅÄÜ¶Á,½ûÖ¹¶ÁÄÚºËÄÚ´æ,ÅĞ¶ÏµØÖ·ÊÇ·ñÓĞĞ§,
+	//ç”¨æˆ·åœ°å€æ‰èƒ½è¯»,ç¦æ­¢è¯»å†…æ ¸å†…å­˜,åˆ¤æ–­åœ°å€æ˜¯å¦æœ‰æ•ˆ,
 	if (pDstAddr + dqSize > 0x7FFFFFFF0000i64)//|| //!MmIsAddressValidEx(pDstAddr, dqSize))
 	{
-		KeUnstackDetachProcess(&ApcState);//Ğ¶ÔØ
+		KeUnstackDetachProcess(&ApcState);//å¸è½½
 		ExFreePool(pSrcMem);
 		return FALSE;
 	}
@@ -1225,7 +1240,7 @@ ULONG64 MiReadVirtualMemory(ULONG64 pEprocess, ULONG64 pDstAddr, ULONG64 dqSize,
 	int i = 0;
 	try
 	{
-		//Ó³ÉäÄÚ´æ
+		//æ˜ å°„å†…å­˜
 		PHYSICAL_ADDRESS pHysicalAddr = MmGetPhysicalAddress(pDstAddr);
 		PUCHAR pMapAddr = (PUCHAR)MmMapIoSpace(pHysicalAddr, dqSize, MmNonCached);
 		if (pMapAddr != NULL)
@@ -1233,8 +1248,8 @@ ULONG64 MiReadVirtualMemory(ULONG64 pEprocess, ULONG64 pDstAddr, ULONG64 dqSize,
 			//RtlCopyMemory(pSrcMem, pMapAddr, dqSize);
 
 			//
-			//ËÄ¸ö×Ö½ÚËÄ¸ö×Ö½Ú¿½±´
-			//µ±³öÏÖ¿½±´µ½ÎŞĞ§µØÖ·Ê±,¶ªÊ§ºóÃæÊı¾İ,·µ»Ø¿½±´µ½µÄ´óĞ¡
+			//å››ä¸ªå­—èŠ‚å››ä¸ªå­—èŠ‚æ‹·è´
+			//å½“å‡ºç°æ‹·è´åˆ°æ— æ•ˆåœ°å€æ—¶,ä¸¢å¤±åé¢æ•°æ®,è¿”å›æ‹·è´åˆ°çš„å¤§å°
 			// 
 			for (i = 0; i < dqSize; i++)
 			{
@@ -1247,7 +1262,7 @@ ULONG64 MiReadVirtualMemory(ULONG64 pEprocess, ULONG64 pDstAddr, ULONG64 dqSize,
 	}
 	__except (EXCEPTION_EXECUTE_HANDLER)
 	{
-		KeUnstackDetachProcess(&ApcState);//Ğ¶ÔØ
+		KeUnstackDetachProcess(&ApcState);//å¸è½½
 		//ExFreePool(pSrcMem);
 
 		if (!MmIsAddressValid(pOutBuf) || !nReadFlags)
@@ -1260,7 +1275,7 @@ ULONG64 MiReadVirtualMemory(ULONG64 pEprocess, ULONG64 pDstAddr, ULONG64 dqSize,
 		return i;
 	}
 
-	KeUnstackDetachProcess(&ApcState);//Ğ¶ÔØ
+	KeUnstackDetachProcess(&ApcState);//å¸è½½
 
 	if (!MmIsAddressValid(pOutBuf) || !nReadFlags)
 	{
@@ -1276,13 +1291,13 @@ ULONG64 MiWriteVirtualMemory(ULONG64 pEprocess, ULONG64 pDstAddr, ULONG64 dqSize
 {
 	//__debugbreak();
 
-	//ÑéÖ¤²ÎÊı´óĞ¡,»º³åÇøÊÇ·ñÕıÈ·
+	//éªŒè¯å‚æ•°å¤§å°,ç¼“å†²åŒºæ˜¯å¦æ­£ç¡®
 	if (!MmIsAddressValid(pInBuf) || dqSize == 0)
 	{
 		return FALSE;
 	}
 
-	//ÑéÖ¤ÒªĞ´ÈëµÄµØÖ·ÊÇ·ñÊÇÄÚºË,ÊÇÄÚºËµØÖ··µ»Ø
+	//éªŒè¯è¦å†™å…¥çš„åœ°å€æ˜¯å¦æ˜¯å†…æ ¸,æ˜¯å†…æ ¸åœ°å€è¿”å›
 	if (pDstAddr + dqSize > 0x7FFFFFFF0000i64)
 	{
 		return FALSE;
@@ -1290,7 +1305,7 @@ ULONG64 MiWriteVirtualMemory(ULONG64 pEprocess, ULONG64 pDstAddr, ULONG64 dqSize
 
 
 	PUCHAR pBuf = pInBuf;
-	//ÑéÖ¤»º³åÇøµØÖ·ÊÇ·ñÊÇÓÃ»§²ãµÄ,Èç¹ûÊÇÉêÇë¿Õ¼ä´æ´¢
+	//éªŒè¯ç¼“å†²åŒºåœ°å€æ˜¯å¦æ˜¯ç”¨æˆ·å±‚çš„,å¦‚æœæ˜¯ç”³è¯·ç©ºé—´å­˜å‚¨
 	if ((ULONG64)pInBuf < (ULONG64)0x7FFFFFFF0000i64)
 	{
 		pBuf = (PUCHAR)ExAllocatePool2(POOL_FLAG_NON_PAGED, dqSize, 'Tag');
@@ -1302,15 +1317,15 @@ ULONG64 MiWriteVirtualMemory(ULONG64 pEprocess, ULONG64 pDstAddr, ULONG64 dqSize
 		RtlCopyMemory(pBuf, pInBuf, dqSize);
 	}
 
-	//¹Ò¿¿µ½Ä¿±ê½ø³Ì
+	//æŒ‚é åˆ°ç›®æ ‡è¿›ç¨‹
 	KAPC_STATE ApcState = { 0 };
 	KeStackAttachProcess(pEprocess, &ApcState);
 
 	try
 	{
-		//»ñÈ¡ĞéÄâµØÖ·ÎïÀíµØÖ·
+		//è·å–è™šæ‹Ÿåœ°å€ç‰©ç†åœ°å€
 		PHYSICAL_ADDRESS pHysicalAddr = MmGetPhysicalAddress(pDstAddr);
-		//Ó³ÉäÎïÀíµØÖ·
+		//æ˜ å°„ç‰©ç†åœ°å€
 		PVOID pMapAddr = MmMapIoSpace(pHysicalAddr, dqSize, MmNonCached);
 		if (pMapAddr != NULL)
 		{
@@ -1322,7 +1337,7 @@ ULONG64 MiWriteVirtualMemory(ULONG64 pEprocess, ULONG64 pDstAddr, ULONG64 dqSize
 	{
 
 		KeUnstackDetachProcess(&ApcState);
-		//ÊÍ·ÅÄÚ´æ
+		//é‡Šæ”¾å†…å­˜
 		ExFreePoolWithTag(pBuf, 'Tag');
 		return FALSE;
 	}
@@ -1330,7 +1345,7 @@ ULONG64 MiWriteVirtualMemory(ULONG64 pEprocess, ULONG64 pDstAddr, ULONG64 dqSize
 
 	KeUnstackDetachProcess(&ApcState);
 
-	//ÊÍ·ÅÄÚ´æ
+	//é‡Šæ”¾å†…å­˜
 	ExFreePoolWithTag(pBuf, 'Tag');
 
 	return TRUE;
@@ -1338,7 +1353,7 @@ ULONG64 MiWriteVirtualMemory(ULONG64 pEprocess, ULONG64 pDstAddr, ULONG64 dqSize
 
 ULONG64 IsProcessInModule(ULONG64 pEprocess, ULONG64 dqDstAddr, PCProcessModuleInfo outData)
 {
-	//ÑéÖ¤²ÎÊıÊÇ´óÓÚÓÃ»§µØÖ·
+	//éªŒè¯å‚æ•°æ˜¯å¤§äºç”¨æˆ·åœ°å€
 	if (dqDstAddr >= 0xFFFFF80000000000i64)
 	{
 		return NULL;
@@ -1347,56 +1362,56 @@ ULONG64 IsProcessInModule(ULONG64 pEprocess, ULONG64 dqDstAddr, PCProcessModuleI
 	KAPC_STATE ApcState = { 0 };
 	ULONG64 nRet = 0;
 
-	//³õÊ¼»¯Á´±í
+	//åˆå§‹åŒ–é“¾è¡¨
 	CList list;
-	InitDoubleLoopList(&list);															//³õÊ¼»¯Á´±í
+	InitDoubleLoopList(&list);															//åˆå§‹åŒ–é“¾è¡¨
 	ULONG64 nFlags = MmIsAddressValid(outData);
 
 	if (MmIsAddressValid(pEprocess))
 	{
-		ULONG64 Peb = *(PULONG64)((ULONG64)pEprocess + _EPROCESS_Peb);					//»ñÈ¡PEB
+		ULONG64 Peb = *(PULONG64)((ULONG64)pEprocess + _EPROCESS_Peb);					//è·å–PEB
 		if (Peb != NULL)
 		{
 			try
 			{
 				PCProcessModuleInfo tmpData = NULL;
-				KeStackAttachProcess(pEprocess, &ApcState);								//ÇĞ»»Ä¿±êCR3
-				ProbeForRead(Peb, _SIZE_PEB, 1);										//²âÊÔÓÃ»§²ãÊı¾İÊÇ·ñ¿É¶Á
-				ULONG64 ldr = *(PULONG64)(Peb + _PEB_Ldr);								//»ñÈ¡ldR
-				PLIST_ENTRY64 pModuleList = ldr + _PEB_LDR_DATA_InLoadOrderModuleList;	//»ñÈ¡Ä£¿éÁ´±í
+				KeStackAttachProcess(pEprocess, &ApcState);								//åˆ‡æ¢ç›®æ ‡CR3
+				ProbeForRead(Peb, _SIZE_PEB, 1);										//æµ‹è¯•ç”¨æˆ·å±‚æ•°æ®æ˜¯å¦å¯è¯»
+				ULONG64 ldr = *(PULONG64)(Peb + _PEB_Ldr);								//è·å–ldR
+				PLIST_ENTRY64 pModuleList = ldr + _PEB_LDR_DATA_InLoadOrderModuleList;	//è·å–æ¨¡å—é“¾è¡¨
 
-				PLIST_ENTRY64 StartAddr = pModuleList->Flink; //Ö¸ÏòÍ·²¿
+				PLIST_ENTRY64 StartAddr = pModuleList->Flink; //æŒ‡å‘å¤´éƒ¨
 				do
 				{
 					PUNICODE_STRING pFullDllName = ((PUNICODE_STRING)((ULONG64)StartAddr + _LDR_DATA_TABLE_ENTRY_FullDllName));
 					PUNICODE_STRING pModuleName = ((PUNICODE_STRING)((ULONG64)StartAddr + _LDR_DATA_TABLE_ENTRY_BaseDllName));
 
-					tmpData = (PCProcessModuleInfo)ExAllocatePool2(POOL_FLAG_NON_PAGED, sizeof(CProcessModuleInfo), 'Tag');//ÉêÇë·Ç·ÖÒ³ÄÚ´æ;
+					tmpData = (PCProcessModuleInfo)ExAllocatePool2(POOL_FLAG_NON_PAGED, sizeof(CProcessModuleInfo), 'Tag');//ç”³è¯·éåˆ†é¡µå†…å­˜;
 
 					if (MmIsAddressValid(tmpData))
 					{
 						memset(tmpData, 0, sizeof(CProcessModuleInfo));
 
-						//»ñÈ¡ÏëÒªµÄÊı¾İ
+						//è·å–æƒ³è¦çš„æ•°æ®
 						RtlCopyMemory(tmpData->ModuleFullPath, pFullDllName->Buffer, pFullDllName->MaximumLength);
 						RtlCopyMemory(tmpData->ModuleName, pModuleName->Buffer, pModuleName->MaximumLength);
 						tmpData->ModuleBaseAddr = *(PULONG64)((ULONG64)StartAddr + _LDR_DATA_TABLE_ENTRY_DllBase);
 						tmpData->ModuleSize = *(PULONG64)((ULONG64)StartAddr + _LDR_DATA_TABLE_ENTRY_SizeOfImage);
 
-						//²åÈëÁ´±í
+						//æ’å…¥é“¾è¡¨
 						InsertTrailDoubleLoopList(&list, tmpData);
 					}
 
-					StartAddr = StartAddr->Flink; //Ö¸ÏòÏÂÒ»¸ö
+					StartAddr = StartAddr->Flink; //æŒ‡å‘ä¸‹ä¸€ä¸ª
 				} while (StartAddr != pModuleList);
-				KeUnstackDetachProcess(&ApcState);//Ğ¶ÔØ
+				KeUnstackDetachProcess(&ApcState);//å¸è½½
 
 
 				int index = 0;
 				PCProcessModuleInfo tmp = PopHeadDoubleLoopList(&list);
 				while (tmp != NULL)
 				{
-					//ÅĞ¶ÏÊÇ·ñÊÇÒª»ñÈ¡µÄÄ£¿éµØÖ·
+					//åˆ¤æ–­æ˜¯å¦æ˜¯è¦è·å–çš„æ¨¡å—åœ°å€
 					if (tmp->ModuleBaseAddr <= dqDstAddr && dqDstAddr < tmp->ModuleBaseAddr + tmp->ModuleSize)
 					{
 						if (nFlags)
@@ -1406,22 +1421,22 @@ ULONG64 IsProcessInModule(ULONG64 pEprocess, ULONG64 dqDstAddr, PCProcessModuleI
 						}
 					}
 
-					ExFreePool(tmp);//ÊÍ·ÅÄÚ´æ
+					ExFreePool(tmp);//é‡Šæ”¾å†…å­˜
 					tmp = PopHeadDoubleLoopList(&list);
 				}
 
 			}
 			__except (EXCEPTION_EXECUTE_HANDLER)
 			{
-				MyDbgPrintfEx("[%ws] ´¥·¢ÁËÒì³£\n", __FUNCDNAME__);
-				KeUnstackDetachProcess(&ApcState);//Ğ¶ÔØ
+				MyDbgPrintfEx("[%ws] è§¦å‘äº†å¼‚å¸¸\n", __FUNCDNAME__);
+				KeUnstackDetachProcess(&ApcState);//å¸è½½
 
-				//³öÏÖÒì³£¼ì²âÁ´±íÊÇ·ñÓĞÊı¾İ //ÊÍ·Å×ÊÔ´
+				//å‡ºç°å¼‚å¸¸æ£€æµ‹é“¾è¡¨æ˜¯å¦æœ‰æ•°æ® //é‡Šæ”¾èµ„æº
 				int index = 0;
 				PCProcessModuleInfo tmp = PopHeadDoubleLoopList(&list);
 				while (tmp != NULL)
 				{
-					//ÅĞ¶ÏÊÇ·ñÊÇÒª»ñÈ¡µÄÄ£¿éµØÖ·
+					//åˆ¤æ–­æ˜¯å¦æ˜¯è¦è·å–çš„æ¨¡å—åœ°å€
 					if (tmp->ModuleBaseAddr <= dqDstAddr && dqDstAddr < tmp->ModuleBaseAddr + tmp->ModuleSize)
 					{
 						if (nFlags)
@@ -1430,7 +1445,7 @@ ULONG64 IsProcessInModule(ULONG64 pEprocess, ULONG64 dqDstAddr, PCProcessModuleI
 						}
 					}
 
-					ExFreePool(tmp);//ÊÍ·ÅÄÚ´æ
+					ExFreePool(tmp);//é‡Šæ”¾å†…å­˜
 					tmp = PopHeadDoubleLoopList(&list);
 				}
 				return 0;
@@ -1448,123 +1463,123 @@ ULONG64 EnumProcessModule(ULONG64 pEprocess, PCProcessModuleInfo* outData)
 	KAPC_STATE ApcState = { 0 };
 	ULONG64 nRet = 0;
 
-	//³õÊ¼»¯Á´±í
+	//åˆå§‹åŒ–é“¾è¡¨
 	CList list;
-	InitDoubleLoopList(&list);															//³õÊ¼»¯Á´±í
+	InitDoubleLoopList(&list);															//åˆå§‹åŒ–é“¾è¡¨
 	ULONG64 nFlags = MmIsAddressValid(outData);
 
 	if (MmIsAddressValid(pEprocess))
 	{
-		ULONG64 Peb = *(PULONG64)((ULONG64)pEprocess + _EPROCESS_Peb);					//»ñÈ¡PEB
+		ULONG64 Peb = *(PULONG64)((ULONG64)pEprocess + _EPROCESS_Peb);					//è·å–PEB
 		if (Peb != NULL)
 		{
 			try
 			{
 				PCProcessModuleInfo tmpData = NULL;
-				KeStackAttachProcess(pEprocess, &ApcState);								//ÇĞ»»Ä¿±êCR3
-				ProbeForRead(Peb, _SIZE_PEB, 1);										//²âÊÔÓÃ»§²ãÊı¾İÊÇ·ñ¿É¶Á
-				ULONG64 ldr = *(PULONG64)(Peb + _PEB_Ldr);								//»ñÈ¡ldR
-				PLIST_ENTRY64 pModuleList = ldr + _PEB_LDR_DATA_InLoadOrderModuleList;	//»ñÈ¡Ä£¿éÁ´±í
+				KeStackAttachProcess(pEprocess, &ApcState);								//åˆ‡æ¢ç›®æ ‡CR3
+				ProbeForRead(Peb, _SIZE_PEB, 1);										//æµ‹è¯•ç”¨æˆ·å±‚æ•°æ®æ˜¯å¦å¯è¯»
+				ULONG64 ldr = *(PULONG64)(Peb + _PEB_Ldr);								//è·å–ldR
+				PLIST_ENTRY64 pModuleList = ldr + _PEB_LDR_DATA_InLoadOrderModuleList;	//è·å–æ¨¡å—é“¾è¡¨
 
-				PLIST_ENTRY64 StartAddr = pModuleList->Flink; //Ö¸ÏòÍ·²¿
+				PLIST_ENTRY64 StartAddr = pModuleList->Flink; //æŒ‡å‘å¤´éƒ¨
 				do
 				{
 					PUNICODE_STRING pFullDllName = ((PUNICODE_STRING)((ULONG64)StartAddr + _LDR_DATA_TABLE_ENTRY_FullDllName));
 					PUNICODE_STRING pModuleName = ((PUNICODE_STRING)((ULONG64)StartAddr + _LDR_DATA_TABLE_ENTRY_BaseDllName));
 
-					tmpData = (PCProcessModuleInfo)ExAllocatePool2(POOL_FLAG_NON_PAGED, sizeof(CProcessModuleInfo), 'Tag');//ÉêÇë·Ç·ÖÒ³ÄÚ´æ;
+					tmpData = (PCProcessModuleInfo)ExAllocatePool2(POOL_FLAG_NON_PAGED, sizeof(CProcessModuleInfo), 'Tag');//ç”³è¯·éåˆ†é¡µå†…å­˜;
 
 					if (MmIsAddressValid(tmpData))
 					{
 						memset(tmpData, 0, sizeof(CProcessModuleInfo));
 
-						//»ñÈ¡ÏëÒªµÄÊı¾İ
+						//è·å–æƒ³è¦çš„æ•°æ®
 						RtlCopyMemory(tmpData->ModuleFullPath, pFullDllName->Buffer, pFullDllName->MaximumLength);
 						RtlCopyMemory(tmpData->ModuleName, pModuleName->Buffer, pModuleName->MaximumLength);
 						tmpData->ModuleBaseAddr = *(PULONG64)((ULONG64)StartAddr + _LDR_DATA_TABLE_ENTRY_DllBase);
 						tmpData->ModuleSize = *(PULONG64)((ULONG64)StartAddr + _LDR_DATA_TABLE_ENTRY_SizeOfImage);
 
-						//²åÈëÁ´±í
+						//æ’å…¥é“¾è¡¨
 						InsertTrailDoubleLoopList(&list, tmpData);
 					}
 
-					StartAddr = StartAddr->Flink; //Ö¸ÏòÏÂÒ»¸ö
+					StartAddr = StartAddr->Flink; //æŒ‡å‘ä¸‹ä¸€ä¸ª
 				} while (StartAddr != pModuleList);
-				KeUnstackDetachProcess(&ApcState);//Ğ¶ÔØ
+				KeUnstackDetachProcess(&ApcState);//å¸è½½
 
 
 				int index = 0;
 				PCProcessModuleInfo tmp = PopHeadDoubleLoopList(&list);
 				while (tmp != NULL)
 				{
-					//ÉêÇëÄÚ´æ
+					//ç”³è¯·å†…å­˜
 					PCProcessModuleInfo pNewInfo = MyExAllocMemOry(sizeof(CProcessModuleInfo), PAGE_READWRITE, UserMode);
 					if (!MmIsAddressValid(pNewInfo))
 					{
 						break;
 					}
 
-					//¿½±´Êı¾İ
+					//æ‹·è´æ•°æ®
 					RtlMoveMemory(pNewInfo, tmp, sizeof(CProcessModuleInfo));
 
 
 					if (IsInit != 0 && ((PCProcessModuleInfo)(*outData))->List.IsInitialize)
 					{
-						//²åÈëÁ´±íÀïÃæ
+						//æ’å…¥é“¾è¡¨é‡Œé¢
 						InsertHeadList(&((PCProcessModuleInfo)(*outData))->List.List, &pNewInfo->List.List);
 					}
 					else
 					{
-						pNewInfo->List.IsInitialize = TRUE;						//ÒÑ³õÊ¼»¯
-						InitializeListHead(&pNewInfo->List.List);				//³õÊ¼»¯Á´±íÍ·
-						*outData = pNewInfo;									//¸³Öµ
+						pNewInfo->List.IsInitialize = TRUE;						//å·²åˆå§‹åŒ–
+						InitializeListHead(&pNewInfo->List.List);				//åˆå§‹åŒ–é“¾è¡¨å¤´
+						*outData = pNewInfo;									//èµ‹å€¼
 						IsInit = TRUE;
 					}
 
 					nRet++;
 
-					ExFreePool(tmp);//ÊÍ·ÅÄÚ´æ
+					ExFreePool(tmp);//é‡Šæ”¾å†…å­˜
 					tmp = PopHeadDoubleLoopList(&list);
 				}
 
 			}
 			__except (EXCEPTION_EXECUTE_HANDLER)
 			{
-				MyDbgPrintfEx("[%ws] ´¥·¢ÁËÒì³£\n", __FUNCDNAME__);
-				KeUnstackDetachProcess(&ApcState);//Ğ¶ÔØ
+				MyDbgPrintfEx("[%ws] è§¦å‘äº†å¼‚å¸¸\n", __FUNCDNAME__);
+				KeUnstackDetachProcess(&ApcState);//å¸è½½
 
-				//³öÏÖÒì³£¼ì²âÁ´±íÊÇ·ñÓĞÊı¾İ //ÊÍ·Å×ÊÔ´
+				//å‡ºç°å¼‚å¸¸æ£€æµ‹é“¾è¡¨æ˜¯å¦æœ‰æ•°æ® //é‡Šæ”¾èµ„æº
 				int index = 0;
 				PCProcessModuleInfo tmp = PopHeadDoubleLoopList(&list);
 				while (tmp != NULL)
 				{
-					//ÉêÇëÄÚ´æ
+					//ç”³è¯·å†…å­˜
 					PCProcessModuleInfo pNewInfo = MyExAllocMemOry(sizeof(CProcessModuleInfo), PAGE_READWRITE, UserMode);
 					if (!MmIsAddressValid(pNewInfo))
 					{
 						break;
 					}
 
-					//¿½±´Êı¾İ
+					//æ‹·è´æ•°æ®
 					RtlMoveMemory(pNewInfo, tmp, sizeof(CProcessModuleInfo));
 
 
 					if (IsInit != 0 && ((PCProcessModuleInfo)(*outData))->List.IsInitialize)
 					{
-						//²åÈëÁ´±íÀïÃæ
+						//æ’å…¥é“¾è¡¨é‡Œé¢
 						InsertHeadList(&((PCProcessModuleInfo)(*outData))->List.List, &pNewInfo->List.List);
 					}
 					else
 					{
-						pNewInfo->List.IsInitialize = TRUE;						//ÒÑ³õÊ¼»¯
-						InitializeListHead(&pNewInfo->List.List);				//³õÊ¼»¯Á´±íÍ·
-						*outData = pNewInfo;									//¸³Öµ
+						pNewInfo->List.IsInitialize = TRUE;						//å·²åˆå§‹åŒ–
+						InitializeListHead(&pNewInfo->List.List);				//åˆå§‹åŒ–é“¾è¡¨å¤´
+						*outData = pNewInfo;									//èµ‹å€¼
 						IsInit = TRUE;
 					}
 
 					nRet++;
 
-					ExFreePool(tmp);//ÊÍ·ÅÄÚ´æ
+					ExFreePool(tmp);//é‡Šæ”¾å†…å­˜
 					tmp = PopHeadDoubleLoopList(&list);
 				}
 				return 0;
@@ -1580,7 +1595,7 @@ ULONG64 EnumThread(ULONG64 pEprocess, PCProcessThreadInfo* OutData)
 	PLIST_ENTRY CurrentList = 0, NextList = 0;
 	ULONG64 ThreadObject = 0;
 	ULONG64 Pid = 0, TPid = 0, Tid = 0;
-	ULONG64 CountThread = 0;//´æ´¢Ïß³ÌÊıÁ¿
+	ULONG64 CountThread = 0;//å­˜å‚¨çº¿ç¨‹æ•°é‡
 	PLARGE_INTEGER CreateTime = 0;
 	CTIME_FIELDS TimeFields = { 0 };
 	CSHORT Hour = 0;
@@ -1605,7 +1620,7 @@ ULONG64 EnumThread(ULONG64 pEprocess, PCProcessThreadInfo* OutData)
 				break;
 			}
 
-			//ÉêÇëĞÂµÄÄÚ´æ
+			//ç”³è¯·æ–°çš„å†…å­˜
 			PCProcessThreadInfo pNewInfo = MyExAllocMemOry(sizeof(CProcessThreadInfo), PAGE_READWRITE, UserMode);
 			if (pNewInfo == NULL)
 			{
@@ -1616,7 +1631,7 @@ ULONG64 EnumThread(ULONG64 pEprocess, PCProcessThreadInfo* OutData)
 			TPid = *(PULONG64)(ThreadObject + _KTHREAD_UniqueProcess);
 			Tid = *(PULONG64)(ThreadObject + _KTHREAD_UniqueThread);
 
-			//ÅĞ¶ÏÏß³ÌËùÊôPID ÊÇ·ñÊÇµ±Ç°½ø³ÌµÄPID
+			//åˆ¤æ–­çº¿ç¨‹æ‰€å±PID æ˜¯å¦æ˜¯å½“å‰è¿›ç¨‹çš„PID
 			if (TPid == Pid)
 			{
 				if (MmIsAddressValid(OutData))
@@ -1642,42 +1657,35 @@ ULONG64 EnumThread(ULONG64 pEprocess, PCProcessThreadInfo* OutData)
 					{
 						ThreaFlags |= 0x2;
 					}
-					pNewInfo->ThreadTypeFlag = ThreaFlags; /*»ñÈ¡ÊÇ·ñÊÇGUIÏß³Ì»¹ÊÇÊÜÏŞÏß³Ì»òÆÕÍ¨Ïß³Ì*/
+					pNewInfo->ThreadTypeFlag = ThreaFlags; /*è·å–æ˜¯å¦æ˜¯GUIçº¿ç¨‹è¿˜æ˜¯å—é™çº¿ç¨‹æˆ–æ™®é€šçº¿ç¨‹*/
 
 					CreateTime = (PLARGE_INTEGER)(ThreadObject + _ETHREAD_CreateTime);
 					if (MmIsAddressValid(CreateTime))
 					{
-						RtlTimeToTimeFields(CreateTime, &TimeFields);
-						Hour = TimeFields.Hour + 8;
-						if (Hour >= 24)
-						{
-							TimeFields.Hour = TimeFields.Hour - 24;
-						}
-						else
-						{
-							TimeFields.Hour = Hour;
-						}
+						LARGE_INTEGER LocalTime = { 0 };
+						ExSystemTimeToLocalTime(CreateTime, &LocalTime);
+						RtlTimeToTimeFields(&LocalTime, &TimeFields);
 						pNewInfo->CreateTime = TimeFields;
 					}
 
 					CProcessModuleInfo pModuleInfo = { 0 };
-					//»ñÈ¡ËùÊôµ±Ç°½ø³ÌÄ£¿é
+					//è·å–æ‰€å±å½“å‰è¿›ç¨‹æ¨¡å—
 					if (IsProcessInModule(pEprocess, pNewInfo->StartAddress, &pModuleInfo))
 					{
 						RtlMoveMemory(pNewInfo->MoudleName, pModuleInfo.ModuleName, MY_MAX_PATH);
 					}
 
-					//²åÈëÁ´±í
+					//æ’å…¥é“¾è¡¨
 					if (IsInit != 0 && ((PCProcessThreadInfo)(*OutData))->List.IsInitialize)
 					{
-						//²åÈëÁ´±íÀïÃæ
+						//æ’å…¥é“¾è¡¨é‡Œé¢
 						InsertHeadList(&((PCProcessThreadInfo)(*OutData))->List.List, &pNewInfo->List.List);
 					}
 					else
 					{
-						pNewInfo->List.IsInitialize = TRUE;						//ÒÑ³õÊ¼»¯
-						InitializeListHead(&pNewInfo->List.List);				//³õÊ¼»¯Á´±íÍ·
-						*OutData = pNewInfo;									//¸³Öµ
+						pNewInfo->List.IsInitialize = TRUE;						//å·²åˆå§‹åŒ–
+						InitializeListHead(&pNewInfo->List.List);				//åˆå§‹åŒ–é“¾è¡¨å¤´
+						*OutData = pNewInfo;									//èµ‹å€¼
 						IsInit = TRUE;
 					}
 				}
@@ -1686,7 +1694,7 @@ ULONG64 EnumThread(ULONG64 pEprocess, PCProcessThreadInfo* OutData)
 			NextList = NextList->Flink;
 		} while (CurrentList != NextList);
 
-		return CountThread;//½ø³Ì»ñÈ¡ÕıÔÚÔËĞĞµÄÏß³ÌÊıÁ¿
+		return CountThread;//è¿›ç¨‹è·å–æ­£åœ¨è¿è¡Œçš„çº¿ç¨‹æ•°é‡
 	}
 	return 0;
 }
@@ -1701,7 +1709,7 @@ ULONG64 IsGuiThread(ULONG64 pEthread)
 
 	cGuiThreadFlag = pEthread + _KTHREAD_ThreadFlagsSpare_ThreadFlags;
 
-	if ((*cGuiThreadFlag) & _ThreadFlagsSpare_GuiThread) /*ÅĞ¶ÏÊÇ·ñÊÇGUIÏß³Ì*/
+	if ((*cGuiThreadFlag) & _ThreadFlagsSpare_GuiThread) /*åˆ¤æ–­æ˜¯å¦æ˜¯GUIçº¿ç¨‹*/
 	{
 		return TRUE;
 	}
@@ -1719,7 +1727,7 @@ ULONG64 IsRestrictedGuiThread(ULONG64 pEthread)
 
 	cGuiThreadFlag = pEthread + _KTHREAD_ThreadFlagsSpare_ThreadFlags;
 
-	if ((*cGuiThreadFlag) & _ThreadFlagsSpare_RestrictedGuiThread) /*ÅĞ¶ÏÊÇ·ñÊÇÊÜÏŞGUIÏß³Ì*/
+	if ((*cGuiThreadFlag) & _ThreadFlagsSpare_RestrictedGuiThread) /*åˆ¤æ–­æ˜¯å¦æ˜¯å—é™GUIçº¿ç¨‹*/
 	{
 		return TRUE;
 	}
@@ -1731,15 +1739,15 @@ ULONG64 ObGetObjectType(ULONG64 Object)
 {
 	if (!MmIsAddressValid(Object))
 	{
-		MyDbgPrintfEx(" OBJECT:[%I64X] ÎŞĞ§¶ÔÏóµØÖ·!.....\n", Object);
+		MyDbgPrintfEx(" OBJECT:[%I64X] æ— æ•ˆå¯¹è±¡åœ°å€!.....\n", Object);
 		return NULL;
 	}
 	return (ULONG64)((PULONG64)ObTypeIndexTable)[*ObHeaderCookie ^ *(PUCHAR)(Object - _OBJECT_HEADER_TypeIndex) ^ (ULONG64)(UCHAR)((USHORT)(Object - _OBJECT_HEADER_PointerCount) >> 8)];
 }
 
-PWCHAR obGetObjectName(ULONG64 Object, PUNICODE_STRING TypeName)/*¸ù¾İ¶ÔÏó»ñÈ¡¶ÔÏóÃû*/
+PWCHAR obGetObjectName(ULONG64 Object, PUNICODE_STRING TypeName)/*æ ¹æ®å¯¹è±¡è·å–å¯¹è±¡å*/
 {
-	/*¹¦ÄÜÊµÏÖÓĞÎÊÌâ.............................................*/
+	/*åŠŸèƒ½å®ç°æœ‰é—®é¢˜.............................................*/
 	PWCHAR HandleName = NULL;
 	PUNICODE_STRING LinkTarget = NULL;
 	PUNICODE_STRING FileName = NULL;
@@ -1790,7 +1798,7 @@ PWCHAR obGetObjectName(ULONG64 Object, PUNICODE_STRING TypeName)/*¸ù¾İ¶ÔÏó»ñÈ¡¶Ô
 	return HandleName;
 }
 
-ULONG64 EnumProcessHandleTable(ULONG64 eProcess, PCProcessHandleInfo* OutData)//±éÀú½ø³ÌÀïµÄ¾ä±ú±í
+ULONG64 EnumProcessHandleTable(ULONG64 eProcess, PCProcessHandleInfo* OutData)//éå†è¿›ç¨‹é‡Œçš„å¥æŸ„è¡¨
 {
 	ULONG64 TableCode = 0;
 	ULONG64 ObjectAddr = 0;
@@ -1824,7 +1832,7 @@ ULONG64 EnumProcessHandleTable(ULONG64 eProcess, PCProcessHandleInfo* OutData)//
 							ObjectAddr = ((Base[i].TableAddr >> 0x10) | 0xFFFF000000000000) & 0xFFFFFFFFFFFFFFF0;
 							if (MmIsAddressValid(ObjectAddr))
 							{
-								//ÉêÇë¿Õ¼ä
+								//ç”³è¯·ç©ºé—´
 								PCProcessHandleInfo pNewInfo = MyExAllocMemOry(sizeof(CProcessHandleInfo), PAGE_READWRITE, UserMode);
 								if (pNewInfo == NULL)
 								{
@@ -1837,17 +1845,17 @@ ULONG64 EnumProcessHandleTable(ULONG64 eProcess, PCProcessHandleInfo* OutData)//
 								pNewInfo->Handle = nIndex * 4;
 								WriteBufferToProcessHandleStruct(pNewInfo, ObjectAddr);
 
-								//²åÈëÁ´±í
+								//æ’å…¥é“¾è¡¨
 								if (IsInit != 0 && ((PCProcessVadInfo)(*OutData))->List.IsInitialize)
 								{
-									//²åÈëÁ´±íÀïÃæ
+									//æ’å…¥é“¾è¡¨é‡Œé¢
 									InsertHeadList(&((PCProcessVadInfo)(*OutData))->List.List, &pNewInfo->List.List);
 								}
 								else
 								{
-									pNewInfo->List.IsInitialize = TRUE;						//ÒÑ³õÊ¼»¯
-									InitializeListHead(&pNewInfo->List.List);				//³õÊ¼»¯Á´±íÍ·
-									*OutData = pNewInfo;									//¸³Öµ
+									pNewInfo->List.IsInitialize = TRUE;						//å·²åˆå§‹åŒ–
+									InitializeListHead(&pNewInfo->List.List);				//åˆå§‹åŒ–é“¾è¡¨å¤´
+									*OutData = pNewInfo;									//èµ‹å€¼
 									IsInit = TRUE;
 								}
 
@@ -1870,7 +1878,7 @@ ULONG64 EnumProcessHandleTable(ULONG64 eProcess, PCProcessHandleInfo* OutData)//
 									if (MmIsAddressValid(ObjectAddr))
 									{
 
-										//ÉêÇë¿Õ¼ä
+										//ç”³è¯·ç©ºé—´
 										PCProcessHandleInfo pNewInfo = MyExAllocMemOry(sizeof(CProcessHandleInfo), PAGE_READWRITE, UserMode);
 										if (pNewInfo == NULL)
 										{
@@ -1882,17 +1890,17 @@ ULONG64 EnumProcessHandleTable(ULONG64 eProcess, PCProcessHandleInfo* OutData)//
 										pNewInfo->Handle = nIndex * 4;
 										WriteBufferToProcessHandleStruct(pNewInfo, ObjectAddr);
 
-										//²åÈëÁ´±í
+										//æ’å…¥é“¾è¡¨
 										if (IsInit != 0 && ((PCProcessVadInfo)(*OutData))->List.IsInitialize)
 										{
-											//²åÈëÁ´±íÀïÃæ
+											//æ’å…¥é“¾è¡¨é‡Œé¢
 											InsertHeadList(&((PCProcessVadInfo)(*OutData))->List.List, &pNewInfo->List.List);
 										}
 										else
 										{
-											pNewInfo->List.IsInitialize = TRUE;						//ÒÑ³õÊ¼»¯
-											InitializeListHead(&pNewInfo->List.List);				//³õÊ¼»¯Á´±íÍ·
-											*OutData = pNewInfo;									//¸³Öµ
+											pNewInfo->List.IsInitialize = TRUE;						//å·²åˆå§‹åŒ–
+											InitializeListHead(&pNewInfo->List.List);				//åˆå§‹åŒ–é“¾è¡¨å¤´
+											*OutData = pNewInfo;									//èµ‹å€¼
 											IsInit = TRUE;
 										}
 
@@ -1922,7 +1930,7 @@ ULONG64 EnumProcessHandleTable(ULONG64 eProcess, PCProcessHandleInfo* OutData)//
 											if (MmIsAddressValid(ObjectAddr))
 											{
 
-												//ÉêÇë¿Õ¼ä
+												//ç”³è¯·ç©ºé—´
 												PCProcessHandleInfo pNewInfo = MyExAllocMemOry(sizeof(CProcessHandleInfo), PAGE_READWRITE, UserMode);
 												if (pNewInfo == NULL)
 												{
@@ -1934,17 +1942,17 @@ ULONG64 EnumProcessHandleTable(ULONG64 eProcess, PCProcessHandleInfo* OutData)//
 												pNewInfo->Handle = nIndex * 4;
 												WriteBufferToProcessHandleStruct(pNewInfo, ObjectAddr);
 
-												//²åÈëÁ´±í
+												//æ’å…¥é“¾è¡¨
 												if (IsInit != 0 && ((PCProcessVadInfo)(*OutData))->List.IsInitialize)
 												{
-													//²åÈëÁ´±íÀïÃæ
+													//æ’å…¥é“¾è¡¨é‡Œé¢
 													InsertHeadList(&((PCProcessVadInfo)(*OutData))->List.List, &pNewInfo->List.List);
 												}
 												else
 												{
-													pNewInfo->List.IsInitialize = TRUE;						//ÒÑ³õÊ¼»¯
-													InitializeListHead(&pNewInfo->List.List);				//³õÊ¼»¯Á´±íÍ·
-													*OutData = pNewInfo;									//¸³Öµ
+													pNewInfo->List.IsInitialize = TRUE;						//å·²åˆå§‹åŒ–
+													InitializeListHead(&pNewInfo->List.List);				//åˆå§‹åŒ–é“¾è¡¨å¤´
+													*OutData = pNewInfo;									//èµ‹å€¼
 													IsInit = TRUE;
 												}
 
@@ -1962,14 +1970,14 @@ ULONG64 EnumProcessHandleTable(ULONG64 eProcess, PCProcessHandleInfo* OutData)//
 			}
 		}
 	}
-	return Count;//·µ»Ø¾ä±úµÄÊıÁ¿
+	return Count;//è¿”å›å¥æŸ„çš„æ•°é‡
 }
 
-VOID WriteBufferToProcessHandleStruct(PCProcessHandleInfo OutProcessTable, ULONG64 ObjectAddr)							//»ñÈ¡¾ä±úµÄĞÅÏ¢Ğ´Èë½á¹¹Ìå
+VOID WriteBufferToProcessHandleStruct(PCProcessHandleInfo OutProcessTable, ULONG64 ObjectAddr)							//è·å–å¥æŸ„çš„ä¿¡æ¯å†™å…¥ç»“æ„ä½“
 {
 	POBJECT_TYPE ObjectType = 0;
 	PWCHAR ObjectName = NULL;
-	ObjectType = ObGetObjectType(ObjectAddr + _OBJECT_HEADER_SIZE);	//»ñÈ¡¶ÔÏóµÄÀàĞÍ
+	ObjectType = ObGetObjectType(ObjectAddr + _OBJECT_HEADER_SIZE);	//è·å–å¯¹è±¡çš„ç±»å‹
 
 
 	if (MmIsAddressValid(OutProcessTable))
@@ -1988,7 +1996,7 @@ VOID WriteBufferToProcessHandleStruct(PCProcessHandleInfo OutProcessTable, ULONG
 			ULONG size = 0;
 			POBJECT_NAME_INFORMATION nameInfo = NULL;
 
-			// ÏÈµ÷ÓÃÒ»´Î»ñÈ¡ËùĞè»º³åÇø´óĞ¡
+			// å…ˆè°ƒç”¨ä¸€æ¬¡è·å–æ‰€éœ€ç¼“å†²åŒºå¤§å°
 			status = ObQueryNameString(OutProcessTable->HandleObject, NULL, 0, &size);
 			if (status != STATUS_INFO_LENGTH_MISMATCH) {
 				return status;
@@ -2024,7 +2032,7 @@ ULONG64 ObQueryNameInfo(ULONG64 Object)
 
 	if ((InfoMask & 2) != 0)
 	{
-		//×Ö·û´®µØÖ·
+		//å­—ç¬¦ä¸²åœ°å€
 		PULONG64 StrAddr = (ULONG64)(HeaderAddr)-(UCHAR)((PUCHAR)ObpInfoMaskToOffset)[InfoMask & 3];
 		if (StrAddr == HeaderAddr)
 		{
@@ -2035,10 +2043,10 @@ ULONG64 ObQueryNameInfo(ULONG64 Object)
 	return NULL;
 }
 
-ULONG64 obQueryRootDirectoryTable(PUNICODE_STRING RootName)//¸ù¾İÃû×Ö»ñÈ¡¶ÔÏóÄ¿Â¼±í
+ULONG64 obQueryRootDirectoryTable(PUNICODE_STRING RootName)//æ ¹æ®åå­—è·å–å¯¹è±¡ç›®å½•è¡¨
 {
 	////////////////////////////////////////////////////////////////////////
-	//±äÁ¿ÉùÃ÷ÇøÓò
+	//å˜é‡å£°æ˜åŒºåŸŸ
 	ULONG Index = 0;
 	POBJECT_DIRECTORY RootDirectory = 0;
 	POBJECT_DIRECTORY_ENTRY CurrectRootDirectoryEntry = 0, NextRootDirectoryEntry = 0;
@@ -2046,11 +2054,11 @@ ULONG64 obQueryRootDirectoryTable(PUNICODE_STRING RootName)//¸ù¾İÃû×Ö»ñÈ¡¶ÔÏóÄ¿Â
 	////////////////////////////////////////////////////////////////////////
 
 	////////////////////////////////////////////////////////////////////////
-	//ÏîÄ¿ĞèÇóÇøÓò
-	RootDirectory = *(PULONG64)ObpRootDirectoryObject;//»ñÈ¡È«¾Ö±äÁ¿ObpRootDirectoryObject´æ´¢µÄÖµ _OBJECT_DIRECTORY_ENTRY
+	//é¡¹ç›®éœ€æ±‚åŒºåŸŸ
+	RootDirectory = *(PULONG64)ObpRootDirectoryObject;//è·å–å…¨å±€å˜é‡ObpRootDirectoryObjectå­˜å‚¨çš„å€¼ _OBJECT_DIRECTORY_ENTRY
 	if (!MmIsAddressValid(RootDirectory))
 	{
-		//MyDbgPrintfEx("ÎŞĞ§µÄÖµ[ObpRootDirectoryObject : %I64X]\n", RootDirectory);
+		//MyDbgPrintfEx("æ— æ•ˆçš„å€¼[ObpRootDirectoryObject : %I64X]\n", RootDirectory);
 		return NULL;
 	}
 
@@ -2066,7 +2074,7 @@ ULONG64 obQueryRootDirectoryTable(PUNICODE_STRING RootName)//¸ù¾İÃû×Ö»ñÈ¡¶ÔÏóÄ¿Â
 				{
 					if (RtlCompareUnicodeString(RootName, &ObjectNameInfo->Name, TRUE) == 0)
 					{
-						return CurrectRootDirectoryEntry->Object; //·µ»ØObjectµØÖ·
+						return CurrectRootDirectoryEntry->Object; //è¿”å›Objectåœ°å€
 					}
 				}
 				CurrectRootDirectoryEntry = CurrectRootDirectoryEntry->ChainLink; //
@@ -2082,7 +2090,7 @@ POBJECT_NAME_INFORMATION obGetObjectNameEx(PVOID pObject)
 	if (MmIsAddressValid(pObject))
 	{
 		ULONG64 size = 0;
-		// ÏÈµ÷ÓÃÒ»´Î»ñÈ¡ËùĞè»º³åÇø´óĞ¡
+		// å…ˆè°ƒç”¨ä¸€æ¬¡è·å–æ‰€éœ€ç¼“å†²åŒºå¤§å°
 		NTSTATUS status = ObQueryNameString(pObject, NULL, 0, &size);
 		if (status != STATUS_INFO_LENGTH_MISMATCH)
 		{
@@ -2115,7 +2123,7 @@ ULONG64 obQueryDirectoryTable(POBJECT_DIRECTORY pDirectroy, PUNICODE_STRING Root
 
 		//POBJECT_HEADER_NAME_INFO pDir = (POBJECT_HEADER_NAME_INFO)ObQueryNameInfo(pDirectroy);
 
-		//ÅĞ¶ÏÊÇ·ñÊÇÄ¿Â¼¶ÔÏó
+		//åˆ¤æ–­æ˜¯å¦æ˜¯ç›®å½•å¯¹è±¡
 		//if (RtlCompareUnicodeString(&g_RootDirectoryName, &pDir->Name, TRUE) == 0)
 		{
 
@@ -2147,7 +2155,7 @@ ULONG64 obQueryDirectoryTable(POBJECT_DIRECTORY pDirectroy, PUNICODE_STRING Root
 						{
 							ExFreePoolWithTag(pObjectName, 'namT');
 
-							return CurrectRootDirectoryEntry->Object; //·µ»ØObjectµØÖ·
+							return CurrectRootDirectoryEntry->Object; //è¿”å›Objectåœ°å€
 						}
 
 						CurrectRootDirectoryEntry = CurrectRootDirectoryEntry->ChainLink; //
@@ -2159,10 +2167,10 @@ ULONG64 obQueryDirectoryTable(POBJECT_DIRECTORY pDirectroy, PUNICODE_STRING Root
 	return NULL;
 }
 
-ULONG64 EnumDriverObject(PCDriverInfo* OutData)//±éÀú¸ùÄ¿Â¼¶ÔÏó
+ULONG64 EnumDriverObject(PCDriverInfo* OutData)//éå†æ ¹ç›®å½•å¯¹è±¡
 {
 	////////////////////////////////////////////////////////////////////////
-	//±äÁ¿ÉùÃ÷ÇøÓò
+	//å˜é‡å£°æ˜åŒºåŸŸ
 	POBJECT_DIRECTORY RootDriverObject = 0;
 	POBJECT_DIRECTORY RootFileSystemObject = 0;
 	POBJECT_DIRECTORY_ENTRY CurrentDriverObjectEntry = 0;
@@ -2175,9 +2183,9 @@ ULONG64 EnumDriverObject(PCDriverInfo* OutData)//±éÀú¸ùÄ¿Â¼¶ÔÏó
 	////////////////////////////////////////////////////////////////////////
 
 	////////////////////////////////////////////////////////////////////////
-	//±äÁ¿³õÊ¼»¯ÇøÓò
-	RootDriverObject = (POBJECT_DIRECTORY)obQueryRootDirectoryTable(&g_RootDriverName);//»ñÈ¡DriverÄ¿Â¼¶ÔÏó
-	RootFileSystemObject = (POBJECT_DIRECTORY)obQueryRootDirectoryTable(&g_RootFileSystemName);//»ñÈ¡FileSystemÄ¿Â¼¶ÔÏó
+	//å˜é‡åˆå§‹åŒ–åŒºåŸŸ
+	RootDriverObject = (POBJECT_DIRECTORY)obQueryRootDirectoryTable(&g_RootDriverName);//è·å–Driverç›®å½•å¯¹è±¡
+	RootFileSystemObject = (POBJECT_DIRECTORY)obQueryRootDirectoryTable(&g_RootFileSystemName);//è·å–FileSystemç›®å½•å¯¹è±¡
 
 	//MyDbgPrintfEx("RootDriverObject : %I64X RootFileSystemObject : %I64X\n", RootDriverObject, RootFileSystemObject);
 
@@ -2186,7 +2194,7 @@ ULONG64 EnumDriverObject(PCDriverInfo* OutData)//±éÀú¸ùÄ¿Â¼¶ÔÏó
 	ULONG64 IsInit = MmIsAddressValid(OutData) && MmIsAddressValid(*OutData) && ((PCDriverInfo)(*OutData))->List.IsInitialize;
 
 	////////////////////////////////////////////////////////////////////////
-	//ÏîÄ¿ĞèÇóÇøÓò
+	//é¡¹ç›®éœ€æ±‚åŒºåŸŸ
 	if (RootDriverObject != NULL || RootFileSystemObject != NULL)
 	{
 		for (index = 0; index < NUMBER_HASH_BUCKETS; index++)
@@ -2207,7 +2215,7 @@ ULONG64 EnumDriverObject(PCDriverInfo* OutData)//±éÀú¸ùÄ¿Â¼¶ÔÏó
 
 			if (MmIsAddressValid(CurrentDriverObjectEntry))
 			{
-				//±éÀúDriver±í
+				//éå†Driverè¡¨
 				do
 				{
 					if (MmIsAddressValid(CurrentDriverObjectEntry->Object))
@@ -2216,14 +2224,14 @@ ULONG64 EnumDriverObject(PCDriverInfo* OutData)//±éÀú¸ùÄ¿Â¼¶ÔÏó
 						CurrentDriverExtension = CurrectDriverObject->DriverExtension;
 						if (MmIsAddressValid(CurrectDriverObject))
 						{
-							//ÉêÇë¿Õ¼ä
+							//ç”³è¯·ç©ºé—´
 							PCDriverInfo pNewInfo = MyExAllocMemOry(sizeof(CDriverInfo), PAGE_READWRITE, UserMode);
 							if (pNewInfo == NULL)
 							{
 								break;
 							}
 
-							//¿½±´Êı¾İ
+							//æ‹·è´æ•°æ®
 							pNewInfo->DriverObject = CurrectDriverObject;
 							pNewInfo->DriverStart = CurrectDriverObject->DriverStart;
 							memcpy_s(pNewInfo->ServerName, MY_MAX_PATH, CurrectDriverObject->DriverName.Buffer, CurrectDriverObject->DriverName.Length);
@@ -2240,17 +2248,17 @@ ULONG64 EnumDriverObject(PCDriverInfo* OutData)//±éÀú¸ùÄ¿Â¼¶ÔÏó
 								}
 							}
 
-							//²åÈëÁ´±í
+							//æ’å…¥é“¾è¡¨
 							if (IsInit != 0 && ((PCDriverInfo)(*OutData))->List.IsInitialize)
 							{
-								//²åÈëÁ´±íÀïÃæ
+								//æ’å…¥é“¾è¡¨é‡Œé¢
 								InsertHeadList(&((PCDriverInfo)(*OutData))->List.List, &pNewInfo->List.List);
 							}
 							else
 							{
-								pNewInfo->List.IsInitialize = TRUE;						//ÒÑ³õÊ¼»¯
-								InitializeListHead(&pNewInfo->List.List);				//³õÊ¼»¯Á´±íÍ·
-								*OutData = pNewInfo;									//¸³Öµ
+								pNewInfo->List.IsInitialize = TRUE;						//å·²åˆå§‹åŒ–
+								InitializeListHead(&pNewInfo->List.List);				//åˆå§‹åŒ–é“¾è¡¨å¤´
+								*OutData = pNewInfo;									//èµ‹å€¼
 								IsInit = TRUE;
 							}
 
@@ -2273,14 +2281,14 @@ ULONG64 EnumDriverObject(PCDriverInfo* OutData)//±éÀú¸ùÄ¿Â¼¶ÔÏó
 						CurrentDriverExtension = CurrectDriverObject->DriverExtension;
 						if (CurrectDriverObject != NULL)
 						{
-							//ÉêÇë¿Õ¼ä
+							//ç”³è¯·ç©ºé—´
 							PCDriverInfo pNewInfo = MyExAllocMemOry(sizeof(CDriverInfo), PAGE_READWRITE, UserMode);
 							if (pNewInfo == NULL)
 							{
 								break;
 							}
 
-							//¿½±´Êı¾İ
+							//æ‹·è´æ•°æ®
 							pNewInfo->DriverObject = CurrectDriverObject;
 							pNewInfo->DriverStart = CurrectDriverObject->DriverStart;
 
@@ -2290,17 +2298,17 @@ ULONG64 EnumDriverObject(PCDriverInfo* OutData)//±éÀú¸ùÄ¿Â¼¶ÔÏó
 								memcpy_s(pNewInfo->DriverName, MY_MAX_PATH, CurrentDriverExtension->ServiceKeyName.Buffer, CurrentDriverExtension->ServiceKeyName.Length);
 							}
 
-							//²åÈëÁ´±í
+							//æ’å…¥é“¾è¡¨
 							if (IsInit != 0 && ((PCDriverInfo)(*OutData))->List.IsInitialize)
 							{
-								//²åÈëÁ´±íÀïÃæ
+								//æ’å…¥é“¾è¡¨é‡Œé¢
 								InsertHeadList(&((PCDriverInfo)(*OutData))->List.List, &pNewInfo->List.List);
 							}
 							else
 							{
-								pNewInfo->List.IsInitialize = TRUE;						//ÒÑ³õÊ¼»¯
-								InitializeListHead(&pNewInfo->List.List);				//³õÊ¼»¯Á´±íÍ·
-								*OutData = pNewInfo;									//¸³Öµ
+								pNewInfo->List.IsInitialize = TRUE;						//å·²åˆå§‹åŒ–
+								InitializeListHead(&pNewInfo->List.List);				//åˆå§‹åŒ–é“¾è¡¨å¤´
+								*OutData = pNewInfo;									//èµ‹å€¼
 								IsInit = TRUE;
 							}
 
@@ -2316,10 +2324,10 @@ ULONG64 EnumDriverObject(PCDriverInfo* OutData)//±éÀú¸ùÄ¿Â¼¶ÔÏó
 	return SysIndex;
 }
 
-ULONG64 EnumSysModule(PDRIVER_OBJECT pDriver, PCDriverInfo* OutData)//±éÀú.Sys¶ÔÏó
+ULONG64 EnumSysModule(PDRIVER_OBJECT pDriver, PCDriverInfo* OutData)//éå†.Syså¯¹è±¡
 {
 	////////////////////////////////////////////////////////////////////////
-	//±äÁ¿ÉùÃ÷ÇøÓò
+	//å˜é‡å£°æ˜åŒºåŸŸ
 	PLDR_DATA_TABLE_ENTRY pLdr = 0;
 	PLIST_ENTRY CurrentListEntry = 0;
 	PLIST_ENTRY NextListEntry = 0;
@@ -2328,11 +2336,11 @@ ULONG64 EnumSysModule(PDRIVER_OBJECT pDriver, PCDriverInfo* OutData)//±éÀú.Sys¶Ô
 
 	if (!MmIsAddressValid(PsLoadedModuleList))
 	{
-		return 0; //Èç¹ûPsLoadedModuleListÎŞĞ§Ôò·µ»Ø0
+		return 0; //å¦‚æœPsLoadedModuleListæ— æ•ˆåˆ™è¿”å›0
 	}
 
 	////////////////////////////////////////////////////////////////////////
-	//±äÁ¿³õÊ¼»¯ÇøÓò
+	//å˜é‡åˆå§‹åŒ–åŒºåŸŸ
 	//pLdr = (PLDR_DATA_TABLE_ENTRY)pDriver->DriverSection;
 	CurrentListEntry = PsLoadedModuleList->Flink;//(PLIST_ENTRY)pLdr->InLoadOrderLinks.Flink;
 	NextListEntry = CurrentListEntry;
@@ -2342,39 +2350,39 @@ ULONG64 EnumSysModule(PDRIVER_OBJECT pDriver, PCDriverInfo* OutData)//±éÀú.Sys¶Ô
 	ULONG64 IsInit = MmIsAddressValid(OutData) && MmIsAddressValid(*OutData) && ((PCDriverInfo)(*OutData))->List.IsInitialize;
 
 	////////////////////////////////////////////////////////////////////////
-	//ÏîÄ¿ĞèÇóÇøÓò
+	//é¡¹ç›®éœ€æ±‚åŒºåŸŸ
 	do
 	{
 		pLdr = CONTAINING_RECORD(NextListEntry, LDR_DATA_TABLE_ENTRY, InLoadOrderLinks);
 		if (pLdr->DllBase != 0 && MmIsAddressValid(pLdr) == TRUE)
 		{
-			//ÉêÇë¿Õ¼ä
+			//ç”³è¯·ç©ºé—´
 			PCDriverInfo pNewInfo = MyExAllocMemOry(sizeof(CDriverInfo), PAGE_READWRITE, UserMode);
 			if (pNewInfo == NULL)
 			{
 				break;
 			}
 
-			//¿½±´Êı¾İ
+			//æ‹·è´æ•°æ®
 			memcpy_s(pNewInfo->ImageBaseName, MAX_BASE_FILE_NAME, pLdr->BaseDllName.Buffer, pLdr->BaseDllName.Length);
 			memcpy_s(pNewInfo->ImageFullBaseName, MY_MAX_PATH, pLdr->FullDllName.Buffer, pLdr->FullDllName.Length);
 			pNewInfo->ImageFullBaseNameLength = pLdr->FullDllName.Length;
 			pNewInfo->ImageBaseAddr = pLdr->DllBase;
 			pNewInfo->Size = pLdr->SizeOfImage;
-			//»ñÈ¡Çı¶¯¼ÓÔØË³Ğò
+			//è·å–é©±åŠ¨åŠ è½½é¡ºåº
 			pNewInfo->LoadOrder = RetIndex;
 
-			//²åÈëÁ´±í
+			//æ’å…¥é“¾è¡¨
 			if (IsInit != 0 && ((PCDriverInfo)(*OutData))->List.IsInitialize)
 			{
-				//²åÈëÁ´±íÀïÃæ
+				//æ’å…¥é“¾è¡¨é‡Œé¢
 				InsertHeadList(&((PCDriverInfo)(*OutData))->List.List, &pNewInfo->List.List);
 			}
 			else
 			{
-				pNewInfo->List.IsInitialize = TRUE;						//ÒÑ³õÊ¼»¯
-				InitializeListHead(&pNewInfo->List.List);		//³õÊ¼»¯Á´±íÍ·
-				*OutData = pNewInfo;									//¸³Öµ
+				pNewInfo->List.IsInitialize = TRUE;						//å·²åˆå§‹åŒ–
+				InitializeListHead(&pNewInfo->List.List);		//åˆå§‹åŒ–é“¾è¡¨å¤´
+				*OutData = pNewInfo;									//èµ‹å€¼
 				IsInit = TRUE;
 			}
 
@@ -2393,7 +2401,7 @@ ULONG64 KeGroundIndexGetSsdtTableFunAddr(IN ULONG64 KiServiceTableBaseAddr, IN U
 
 	if (MmIsAddressValid(KiServiceTableBaseAddr))
 	{
-		dwOffset = ((PULONG32)(KiServiceTableBaseAddr))[dwIndex];						//½«Ë÷ÒıÒÔ´Î³ËÒÔ4
+		dwOffset = ((PULONG32)(KiServiceTableBaseAddr))[dwIndex];						//å°†ç´¢å¼•ä»¥æ¬¡ä¹˜ä»¥4
 		FunBaseAddr = ((ULONG64)KiServiceTableBaseAddr + (dwOffset >> 0x4));
 		return FunBaseAddr;
 	}
@@ -2410,26 +2418,26 @@ ULONG64 EnumSsdtTable(PCSsdtInfo* OutData)
 
 	if (MmIsAddressValid(KeServiceDescriptorTable))
 	{
-		dqCount = ((PKSYSTEM_SERVICE_TABLE)KeServiceDescriptorTable)->NumberOfService;			//»ñÈ¡SSDT±íÊıÁ¿
-		TableBaseAddr = ((PKSYSTEM_SERVICE_TABLE)KeServiceDescriptorTable)->ServiceTableBase;	//»ñÈ¡SSDTº¯Êı»ùµØÖ·
+		dqCount = ((PKSYSTEM_SERVICE_TABLE)KeServiceDescriptorTable)->NumberOfService;			//è·å–SSDTè¡¨æ•°é‡
+		TableBaseAddr = ((PKSYSTEM_SERVICE_TABLE)KeServiceDescriptorTable)->ServiceTableBase;	//è·å–SSDTå‡½æ•°åŸºåœ°å€
 
 		for (dqIndex = 0; dqIndex < dqCount; dqIndex++)
 		{
-			FunAddr = KeGroundIndexGetSsdtTableFunAddr(TableBaseAddr, dqIndex);				//¼ÆËã³öÕæÕıµÄº¯ÊıµØÖ·
+			FunAddr = KeGroundIndexGetSsdtTableFunAddr(TableBaseAddr, dqIndex);				//è®¡ç®—å‡ºçœŸæ­£çš„å‡½æ•°åœ°å€
 
-			//ÉêÇë¿Õ¼ä
+			//ç”³è¯·ç©ºé—´
 			PCSsdtInfo pNewInfo = MyExAllocMemOry(sizeof(CSsdtInfo), PAGE_READWRITE, UserMode);
 			if (pNewInfo == NULL)
 			{
 				break;
 			}
 
-			pNewInfo->NtFunAddr = FunAddr;																//º¯ÊıµØÖ·
-			pNewInfo->NumberOrder = dqIndex;															//º¯ÊıµØÖ·ËùÔÚ±íµÄÎ»ÖÃ
+			pNewInfo->NtFunAddr = FunAddr;																//å‡½æ•°åœ°å€
+			pNewInfo->NumberOrder = dqIndex;															//å‡½æ•°åœ°å€æ‰€åœ¨è¡¨çš„ä½ç½®
 			pNewInfo->SrcNtFunAddr = TableBaseAddr + g_NewKiServiceTable[dqIndex];
 
 
-			//»ñÈ¡º¯ÊıµØÖ·ËùÔÚÄ£¿é
+			//è·å–å‡½æ•°åœ°å€æ‰€åœ¨æ¨¡å—
 			CDriverInfo DriverInfo = { 0 };
 			if (IsSysModuleEx(FunAddr, &DriverInfo))
 			{
@@ -2438,14 +2446,14 @@ ULONG64 EnumSsdtTable(PCSsdtInfo* OutData)
 
 			if (IsInit != 0 && ((PCSsdtInfo)(*OutData))->List.IsInitialize)
 			{
-				//²åÈëÁ´±íÀïÃæ
+				//æ’å…¥é“¾è¡¨é‡Œé¢
 				InsertHeadList(&((PCSsdtInfo)(*OutData))->List.List, &pNewInfo->List.List);
 			}
 			else
 			{
-				pNewInfo->List.IsInitialize = TRUE;						//ÒÑ³õÊ¼»¯
-				InitializeListHead(&pNewInfo->List.List);				//³õÊ¼»¯Á´±íÍ·
-				*OutData = pNewInfo;									//¸³Öµ
+				pNewInfo->List.IsInitialize = TRUE;						//å·²åˆå§‹åŒ–
+				InitializeListHead(&pNewInfo->List.List);				//åˆå§‹åŒ–é“¾è¡¨å¤´
+				*OutData = pNewInfo;									//èµ‹å€¼
 				IsInit = TRUE;
 			}
 		}
@@ -2470,24 +2478,24 @@ ULONG64 EnumSsdtShadowTable(PCSsdtInfo* OutData)
 	ULONG64 IsInit = MmIsAddressValid(OutData) && MmIsAddressValid(*OutData) && ((PCProcessVadInfo)(*OutData))->List.IsInitialize;
 
 
-	//³õÊ¼»¯Á´±í
+	//åˆå§‹åŒ–é“¾è¡¨
 	CList list;
-	InitDoubleLoopList(&list);								//³õÊ¼»¯Á´±í
+	InitDoubleLoopList(&list);								//åˆå§‹åŒ–é“¾è¡¨
 
-	//¸½¼Óµ½winlogon.exe½ø³Ì
+	//é™„åŠ åˆ°winlogon.exeè¿›ç¨‹
 	KAPC_STATE apcState;
 	KeStackAttachProcess(WinLogeProcess, &apcState);
 	ULONG64 nServiceTableShadow = (ULONG64)KeServiceDescriptorTableShadow + sizeof(KSYSTEM_SERVICE_TABLE);
 	if (MmIsAddressValid(nServiceTableShadow))
 	{
-		dqCount = ((PKSYSTEM_SERVICE_TABLE)nServiceTableShadow)->NumberOfService;							//»ñÈ¡SSDT±íÊıÁ¿
-		TableBaseAddr = ((PKSYSTEM_SERVICE_TABLE)nServiceTableShadow)->ServiceTableBase;					//»ñÈ¡SSDTº¯Êı»ùµØÖ·
+		dqCount = ((PKSYSTEM_SERVICE_TABLE)nServiceTableShadow)->NumberOfService;							//è·å–SSDTè¡¨æ•°é‡
+		TableBaseAddr = ((PKSYSTEM_SERVICE_TABLE)nServiceTableShadow)->ServiceTableBase;					//è·å–SSDTå‡½æ•°åŸºåœ°å€
 
 
 		for (dqIndex = 0; dqIndex < dqCount; dqIndex++)
 		{
-			FunAddr = KeGroundIndexGetSsdtTableFunAddr(TableBaseAddr, dqIndex);								//¼ÆËã³öÕæÕıµÄº¯ÊıµØÖ·
-			tmpData = (PCSsdtInfo)ExAllocatePool2(POOL_FLAG_NON_PAGED, sizeof(CSsdtInfo), L"tmpData");		//ÉêÇë·Ç·ÖÒ³ÄÚ´æ;
+			FunAddr = KeGroundIndexGetSsdtTableFunAddr(TableBaseAddr, dqIndex);								//è®¡ç®—å‡ºçœŸæ­£çš„å‡½æ•°åœ°å€
+			tmpData = (PCSsdtInfo)ExAllocatePool2(POOL_FLAG_NON_PAGED, sizeof(CSsdtInfo), L"tmpData");		//ç”³è¯·éåˆ†é¡µå†…å­˜;
 			if (!MmIsAddressValid(tmpData))
 			{
 				continue;
@@ -2497,10 +2505,10 @@ ULONG64 EnumSsdtShadowTable(PCSsdtInfo* OutData)
 
 			tmpData->NtFunAddr = FunAddr;
 			tmpData->NumberOrder = dqIndex;
-			//tmpData->SrcNtFunAddr = KeGroundIndexGetSsdtTableFunAddr(g_NewW32pServiceTable, dqIndex);	//»ñÈ¡Ô­º¯ÊıµØÖ·
+			//tmpData->SrcNtFunAddr = KeGroundIndexGetSsdtTableFunAddr(g_NewW32pServiceTable, dqIndex);	//è·å–åŸå‡½æ•°åœ°å€
 			tmpData->SrcNtFunAddr = TableBaseAddr + ((LONG32)g_NewW32pServiceTable[dqIndex] >> 4);
 
-			//»ñÈ¡º¯ÊıËùÔÚÄ£¿éÂ·¾¶
+			//è·å–å‡½æ•°æ‰€åœ¨æ¨¡å—è·¯å¾„
 			CDriverInfo DriverInfo = { 0 };
 			if (IsSysModuleEx(FunAddr, &DriverInfo))
 			{
@@ -2508,7 +2516,7 @@ ULONG64 EnumSsdtShadowTable(PCSsdtInfo* OutData)
 			}
 
 
-			//²åÈëÁ´±í
+			//æ’å…¥é“¾è¡¨
 			InsertTrailDoubleLoopList(&list, tmpData);
 		}
 
@@ -2519,14 +2527,14 @@ ULONG64 EnumSsdtShadowTable(PCSsdtInfo* OutData)
 	PCSsdtInfo tmp = PopHeadDoubleLoopList(&list);
 	while (tmp != NULL)
 	{
-		//ÉêÇë¿Õ¼ä
+		//ç”³è¯·ç©ºé—´
 		PCSsdtInfo pNewInfo = MyExAllocMemOry(sizeof(CSsdtInfo), PAGE_READWRITE, UserMode);
 		if (pNewInfo == NULL)
 		{
 			break;
 		}
 
-		//¿½±´Êı¾İ
+		//æ‹·è´æ•°æ®
 		pNewInfo->NtFunAddr = tmp->NtFunAddr;
 		pNewInfo->NumberOrder = tmp->NumberOrder;
 		pNewInfo->SrcNtFunAddr = tmp->SrcNtFunAddr;
@@ -2536,18 +2544,18 @@ ULONG64 EnumSsdtShadowTable(PCSsdtInfo* OutData)
 
 		if (IsInit != 0 && ((PCSsdtInfo)(*OutData))->List.IsInitialize)
 		{
-			//²åÈëÁ´±íÀïÃæ
+			//æ’å…¥é“¾è¡¨é‡Œé¢
 			InsertHeadList(&((PCSsdtInfo)(*OutData))->List.List, &pNewInfo->List.List);
 		}
 		else
 		{
-			pNewInfo->List.IsInitialize = TRUE;						//ÒÑ³õÊ¼»¯
-			InitializeListHead(&pNewInfo->List.List);				//³õÊ¼»¯Á´±íÍ·
-			*OutData = pNewInfo;									//¸³Öµ
+			pNewInfo->List.IsInitialize = TRUE;						//å·²åˆå§‹åŒ–
+			InitializeListHead(&pNewInfo->List.List);				//åˆå§‹åŒ–é“¾è¡¨å¤´
+			*OutData = pNewInfo;									//èµ‹å€¼
 			IsInit = TRUE;
 		}
 
-		ExFreePool(tmp);//ÊÍ·ÅÄÚ´æ
+		ExFreePool(tmp);//é‡Šæ”¾å†…å­˜
 		tmp = PopHeadDoubleLoopList(&list);
 	}
 
@@ -2560,10 +2568,10 @@ ULONG64 ByNameGetProcessObject(PWCHAR ProcessName)
 	{
 		return NULL;
 	}
-	//±éÀúÈ«¾Ö¾ä±ú±í
+	//éå†å…¨å±€å¥æŸ„è¡¨
 
 	////////////////////////////////////////////////////////////////////////
-	//±äÁ¿ÉùÃ÷ÇøÓò
+	//å˜é‡å£°æ˜åŒºåŸŸ
 	UCHAR TypeIndex = 0, TableIndex = 0;
 	ULONG64 TableCode = 0, TableData = 0;
 	ULONG64 Index = 0, Index1 = 0, Level1 = 0, Index2 = 0, Level2 = 0;
@@ -2573,17 +2581,17 @@ ULONG64 ByNameGetProcessObject(PWCHAR ProcessName)
 	////////////////////////////////////////////////////////////////////////
 
 	////////////////////////////////////////////////////////////////////////
-	//±äÁ¿³õÊ¼»¯ÇøÓò 
+	//å˜é‡åˆå§‹åŒ–åŒºåŸŸ 
 	TableCode = *(PULONG64)((*(PULONG64)PspCidTable) + _HANDLE_TABLE_TableCode);
 	////////////////////////////////////////////////////////////////////////
 
 	////////////////////////////////////////////////////////////////////////
-	//ÏîÄ¿ĞèÇóÇøÓò
+	//é¡¹ç›®éœ€æ±‚åŒºåŸŸ
 	if (MmIsAddressValid(TableCode))
 	{
 		switch (TableCode & 3)
 		{
-		case 0://Ò»¼¶¾ä±ú±í
+		case 0://ä¸€çº§å¥æŸ„è¡¨
 			TableCode &= 0xFFFFFFFFFFFFFFFC;
 			for (Index = 0; Index < 256; Index++)
 			{
@@ -2604,7 +2612,7 @@ ULONG64 ByNameGetProcessObject(PWCHAR ProcessName)
 							{
 								CProcessInfo ProcessInfo = { 0 };
 
-								WriteBufferToProcessStructEx(&ProcessInfo, TableData);//½«½ø³ÌĞÅÏ¢Ğ´Èë½á¹¹Ìå
+								WriteBufferToProcessStructEx(&ProcessInfo, TableData);//å°†è¿›ç¨‹ä¿¡æ¯å†™å…¥ç»“æ„ä½“
 
 								UNICODE_STRING pSrcName = { 0 };
 								UNICODE_STRING pDstName = { 0 };
@@ -2614,10 +2622,10 @@ ULONG64 ByNameGetProcessObject(PWCHAR ProcessName)
 								RtlInitUnicodeString(&pSrcName, ProcessInfo.FullFileName);
 								RtlInitUnicodeString(&pDstName, pszBuf);
 
-								//ÕıÔò±í´ïÊ½²éÕÒÂ·¾¶ÃûÖĞµÄexeÃû³Æ
+								//æ­£åˆ™è¡¨è¾¾å¼æŸ¥æ‰¾è·¯å¾„åä¸­çš„exeåç§°
 								if (FsRtlIsNameInExpression(&pDstName, &pSrcName, FALSE, NULL) == TRUE)
 								{
-									return TableData; //·µ»ØEPROCESS
+									return TableData; //è¿”å›EPROCESS
 								}
 							}
 						}
@@ -2625,7 +2633,7 @@ ULONG64 ByNameGetProcessObject(PWCHAR ProcessName)
 				}
 			}
 			break;
-		case 1://¶ş¼¶¾ä±ú±í
+		case 1://äºŒçº§å¥æŸ„è¡¨
 			TableCode &= 0xFFFFFFFFFFFFFFFC;
 			for (Index1 = 0; Index1 < 512; Index1++)
 			{
@@ -2653,7 +2661,7 @@ ULONG64 ByNameGetProcessObject(PWCHAR ProcessName)
 								{
 									CProcessInfo ProcessInfo = { 0 };
 
-									WriteBufferToProcessStructEx(&ProcessInfo, TableData);//½«½ø³ÌĞÅÏ¢Ğ´Èë½á¹¹Ìå
+									WriteBufferToProcessStructEx(&ProcessInfo, TableData);//å°†è¿›ç¨‹ä¿¡æ¯å†™å…¥ç»“æ„ä½“
 
 									UNICODE_STRING pSrcName = { 0 };
 									UNICODE_STRING pDstName = { 0 };
@@ -2663,10 +2671,10 @@ ULONG64 ByNameGetProcessObject(PWCHAR ProcessName)
 									RtlInitUnicodeString(&pSrcName, ProcessInfo.FullFileName);
 									RtlInitUnicodeString(&pDstName, pszBuf);
 
-									//ÕıÔò±í´ïÊ½²éÕÒÂ·¾¶ÃûÖĞµÄexeÃû³Æ
+									//æ­£åˆ™è¡¨è¾¾å¼æŸ¥æ‰¾è·¯å¾„åä¸­çš„exeåç§°
 									if (FsRtlIsNameInExpression(&pDstName, &pSrcName, FALSE, NULL) == TRUE)
 									{
-										return TableData; //·µ»ØEPROCESS
+										return TableData; //è¿”å›EPROCESS
 									}
 								}
 							}
@@ -2675,7 +2683,7 @@ ULONG64 ByNameGetProcessObject(PWCHAR ProcessName)
 				}
 			}
 			break;
-		case 2://Èı¼¶¾ä±ú±í
+		case 2://ä¸‰çº§å¥æŸ„è¡¨
 			TableCode &= 0xFFFFFFFFFFFFFFFC;
 			for (Index = 0; Index < 512; Index++)
 			{
@@ -2704,7 +2712,7 @@ ULONG64 ByNameGetProcessObject(PWCHAR ProcessName)
 										{
 											CProcessInfo ProcessInfo = { 0 };
 
-											WriteBufferToProcessStructEx(&ProcessInfo, TableData);//½«½ø³ÌĞÅÏ¢Ğ´Èë½á¹¹Ìå
+											WriteBufferToProcessStructEx(&ProcessInfo, TableData);//å°†è¿›ç¨‹ä¿¡æ¯å†™å…¥ç»“æ„ä½“
 
 											UNICODE_STRING pSrcName = { 0 };
 											UNICODE_STRING pDstName = { 0 };
@@ -2714,10 +2722,10 @@ ULONG64 ByNameGetProcessObject(PWCHAR ProcessName)
 											RtlInitUnicodeString(&pSrcName, ProcessInfo.FullFileName);
 											RtlInitUnicodeString(&pDstName, pszBuf);
 
-											//ÕıÔò±í´ïÊ½²éÕÒÂ·¾¶ÃûÖĞµÄexeÃû³Æ
+											//æ­£åˆ™è¡¨è¾¾å¼æŸ¥æ‰¾è·¯å¾„åä¸­çš„exeåç§°
 											if (FsRtlIsNameInExpression(&pDstName, &pSrcName, FALSE, NULL) == TRUE)
 											{
-												return TableData; //·µ»ØEPROCESS
+												return TableData; //è¿”å›EPROCESS
 											}
 										}
 									}
@@ -2742,7 +2750,7 @@ ULONG64 IsSysMoudle(ULONG64 pAddr)
 	}
 
 	////////////////////////////////////////////////////////////////////////
-	//±äÁ¿ÉùÃ÷ÇøÓò
+	//å˜é‡å£°æ˜åŒºåŸŸ
 	POBJECT_DIRECTORY RootDriverObject = 0;
 	POBJECT_DIRECTORY RootFileSystemObject = 0;
 	POBJECT_DIRECTORY_ENTRY CurrentDriverObjectEntry = 0;
@@ -2755,18 +2763,18 @@ ULONG64 IsSysMoudle(ULONG64 pAddr)
 	////////////////////////////////////////////////////////////////////////
 
 	////////////////////////////////////////////////////////////////////////
-	//±äÁ¿³õÊ¼»¯ÇøÓò
-	RootDriverObject = (POBJECT_DIRECTORY)obQueryRootDirectoryTable(&g_RootDriverName);			//»ñÈ¡DriverÄ¿Â¼¶ÔÏó
-	RootFileSystemObject = (POBJECT_DIRECTORY)obQueryRootDirectoryTable(&g_RootFileSystemName);	//»ñÈ¡FileSystemÄ¿Â¼¶ÔÏó
+	//å˜é‡åˆå§‹åŒ–åŒºåŸŸ
+	RootDriverObject = (POBJECT_DIRECTORY)obQueryRootDirectoryTable(&g_RootDriverName);			//è·å–Driverç›®å½•å¯¹è±¡
+	RootFileSystemObject = (POBJECT_DIRECTORY)obQueryRootDirectoryTable(&g_RootFileSystemName);	//è·å–FileSystemç›®å½•å¯¹è±¡
 	////////////////////////////////////////////////////////////////////////
 
 	////////////////////////////////////////////////////////////////////////
-	//ÏîÄ¿ĞèÇóÇøÓò
+	//é¡¹ç›®éœ€æ±‚åŒºåŸŸ
 
-	//±éÀú¶ÔÏó¹ÜÀíÆ÷ÖĞ DriverÄ¿Â¼
+	//éå†å¯¹è±¡ç®¡ç†å™¨ä¸­ Driverç›®å½•
 	if (MmIsAddressValid(RootDriverObject) && MmIsAddressValid(RootFileSystemObject))
 	{
-		//×î´óÊıÁ¿ 0-36
+		//æœ€å¤§æ•°é‡ 0-36
 		for (index = 0; index < NUMBER_HASH_BUCKETS; index++)
 		{
 
@@ -2792,7 +2800,7 @@ ULONG64 IsSysMoudle(ULONG64 pAddr)
 			} while (CurrentDriverObjectEntry != NULL);
 		}
 
-		//±éÀú¶ÔÏó¹ÜÀíÆ÷ÖĞ FileSystemÄ¿Â¼
+		//éå†å¯¹è±¡ç®¡ç†å™¨ä¸­ FileSystemç›®å½•
 		do
 		{
 			if (MmIsAddressValid(CurrentFileSystemObjectEntry))
@@ -2800,7 +2808,7 @@ ULONG64 IsSysMoudle(ULONG64 pAddr)
 				CurrectDriverObject = (PDRIVER_OBJECT)CurrentFileSystemObjectEntry->Object;
 				if (MmIsAddressValid(CurrectDriverObject))
 				{
-					//ÅĞ¶Ï²ÎÊı¶şµÄµØÖ·ÊÇ·ñÔÚ´ËÄ£¿éÄÚ
+					//åˆ¤æ–­å‚æ•°äºŒçš„åœ°å€æ˜¯å¦åœ¨æ­¤æ¨¡å—å†…
 					ULONG64 StartAddr = CurrectDriverObject->DriverStart;
 					ULONG64 EndStart = (ULONG64)CurrectDriverObject->DriverStart + CurrectDriverObject->DriverSize;
 					if (StartAddr < pAddr && pAddr <= EndStart)
@@ -2817,24 +2825,24 @@ ULONG64 IsSysMoudle(ULONG64 pAddr)
 	return NULL;
 }
 
-ULONG64 IsSysMoudle1(PDRIVER_OBJECT pDriver, ULONG64 pAddr)//±éÀú.Sys¶ÔÏó
+ULONG64 IsSysMoudle1(PDRIVER_OBJECT pDriver, ULONG64 pAddr)//éå†.Syså¯¹è±¡
 {
 	////////////////////////////////////////////////////////////////////////
-	//±äÁ¿ÉùÃ÷ÇøÓò
+	//å˜é‡å£°æ˜åŒºåŸŸ
 	PLDR_DATA_TABLE_ENTRY pLdr = 0;
 	PLIST_ENTRY CurrentListEntry = 0;
 	PLIST_ENTRY NextListEntry = 0;
 	////////////////////////////////////////////////////////////////////////
 
 	////////////////////////////////////////////////////////////////////////
-	//±äÁ¿³õÊ¼»¯ÇøÓò
+	//å˜é‡åˆå§‹åŒ–åŒºåŸŸ
 	pLdr = (PLDR_DATA_TABLE_ENTRY)pDriver->DriverSection;
 	CurrentListEntry = (PLIST_ENTRY)pLdr->InLoadOrderLinks.Flink;
 	NextListEntry = CurrentListEntry;
 	////////////////////////////////////////////////////////////////////////
 
 	////////////////////////////////////////////////////////////////////////
-	//ÏîÄ¿ĞèÇóÇøÓò
+	//é¡¹ç›®éœ€æ±‚åŒºåŸŸ
 	if (!MmIsAddressValid(pAddr))
 	{
 		return NULL;
@@ -2859,7 +2867,7 @@ ULONG64 IsSysMoudle1(PDRIVER_OBJECT pDriver, ULONG64 pAddr)//±éÀú.Sys¶ÔÏó
 
 ULONG64 IsSysModuleEx(ULONG64 pAddr, PCDriverInfo OutData)
 {
-	//ÑéÖ¤²ÎÊı
+	//éªŒè¯å‚æ•°
 	if (!MmIsAddressValid(OutData))
 	{
 		return FALSE;
@@ -2884,17 +2892,17 @@ ULONG64 IsSysModuleEx(ULONG64 pAddr, PCDriverInfo OutData)
 		ULONG64 StartAddr = Start;
 		ULONG64 EndAddr = Start + pCurDriverObjectInfo->Size;
 
-		//ÅĞ¶ÏµØÖ·ÊÇ·ñÔÚÕâ¸öÄ£¿éµÄÆğÊ¼µØÖ·ºÍ½áÊøµØÖ··¶Î§ÄÚ
+		//åˆ¤æ–­åœ°å€æ˜¯å¦åœ¨è¿™ä¸ªæ¨¡å—çš„èµ·å§‹åœ°å€å’Œç»“æŸåœ°å€èŒƒå›´å†…
 		if (StartAddr <= pAddr && pAddr <= EndAddr)
 		{
 			memcpy_s(OutData, sizeof(CDriverInfo), pCurDriverObjectInfo, sizeof(CDriverInfo));
 			dqRet = TRUE;
 		}
 
-		//Ö¸ÏòÏÂÒ»¸ö
+		//æŒ‡å‘ä¸‹ä¸€ä¸ª
 		pCurList = pCurList->Flink;
 
-		//ÊÍ·Å×ÊÔ´
+		//é‡Šæ”¾èµ„æº
 		SIZE_T AllocFreeSize = 0;
 		ZwFreeVirtualMemory(NtCurrentProcess(), &pCurDriverObjectInfo, &AllocFreeSize, MEM_RELEASE);
 	} while (pCurList != &pDriverInfo->List.List);
@@ -2948,7 +2956,7 @@ ULONG64 LookUpDriverObjectByName(PUNICODE_STRING pDriverName, PCDriverInfo pDriv
 
 			if (FsRtlIsNameInExpression(pDriverName, &pDstStr, TRUE, NULL))
 			{
-				//ÏàµÈ·µ»Ø¶ÔÏó
+				//ç›¸ç­‰è¿”å›å¯¹è±¡
 				dqRet = pCurDriverObjectInfo->DriverObject;
 
 				if (MmIsAddressValid(pDriverInfoParagma))
@@ -2960,10 +2968,10 @@ ULONG64 LookUpDriverObjectByName(PUNICODE_STRING pDriverName, PCDriverInfo pDriv
 			}
 		}
 
-		//Ö¸ÏòÏÂÒ»¸ö
+		//æŒ‡å‘ä¸‹ä¸€ä¸ª
 		pCurList = pCurList->Blink;
 
-		//ÊÍ·Å×ÊÔ´
+		//é‡Šæ”¾èµ„æº
 		SIZE_T AllocFreeSize = 0;
 		ZwFreeVirtualMemory(NtCurrentProcess(), &pCurDriverObjectInfo, &AllocFreeSize, MEM_RELEASE);
 	} while (pCurList != &pDriverInfo->List.List);
@@ -2981,10 +2989,10 @@ ULONG64 EnumShutdownCallBack(PCKernelCallBackInfo* OutData)
 	ULONG64 IsInit = MmIsAddressValid(OutData) && MmIsAddressValid(*OutData) && ((PCKernelCallBackInfo)(*OutData))->List.IsInitialize;
 
 	ULONG64 dqRet = 0;
-	//±êÖ¾
+	//æ ‡å¿—
 #define _SHOTDOWN_FLAGS 0x800u
 
-	//ShutDownCallBack »Øµ÷½á¹¹Ìå
+	//ShutDownCallBack å›è°ƒç»“æ„ä½“
 	typedef struct _ShutDownCallBack
 	{
 		CLIST_ENTRY List;
@@ -3004,13 +3012,13 @@ ULONG64 EnumShutdownCallBack(PCKernelCallBackInfo* OutData)
 		}
 
 		PDEVICE_OBJECT pDeviceObject = pCallBack->pDeviceObject;
-		if (MmIsAddressValid(pDeviceObject) && (pDeviceObject->Flags & _SHOTDOWN_FLAGS)/*ÅĞ¶Ï±êÖ¾*/)
+		if (MmIsAddressValid(pDeviceObject) && (pDeviceObject->Flags & _SHOTDOWN_FLAGS)/*åˆ¤æ–­æ ‡å¿—*/)
 		{
-			//»ñÈ¡Çı¶¯¶ÔÏó
+			//è·å–é©±åŠ¨å¯¹è±¡
 			PDRIVER_OBJECT pDriverObject = pDeviceObject->DriverObject;
 			if (MmIsAddressValid(pDriverObject))
 			{
-				//ÉêÇë¿Õ¼ä
+				//ç”³è¯·ç©ºé—´
 				PCKernelCallBackInfo pNewInfo = MyExAllocMemOry(sizeof(CKernelCallBackInfo), PAGE_READWRITE, UserMode);
 				if (pNewInfo == NULL)
 				{
@@ -3018,7 +3026,7 @@ ULONG64 EnumShutdownCallBack(PCKernelCallBackInfo* OutData)
 				}
 
 
-				//¿½±´Êı¾İ
+				//æ‹·è´æ•°æ®
 				pNewInfo->CallBackAddr = pDriverObject->MajorFunction[IRP_MJ_SHUTDOWN];
 				pNewInfo->Descr = pDeviceObject;
 				pNewInfo->CallBackType = um_KernalCallBackType_ShutDown;
@@ -3026,29 +3034,29 @@ ULONG64 EnumShutdownCallBack(PCKernelCallBackInfo* OutData)
 				CDriverInfo DriverInfo = { 0 };
 				if (IsSysModuleEx(pNewInfo->CallBackAddr, &DriverInfo))
 				{
-					//Æ«ÒÆ
+					//åç§»
 					pNewInfo->ModuleOffset = pNewInfo->CallBackAddr - DriverInfo.ImageBaseAddr;
-					//Â·¾¶
+					//è·¯å¾„
 					memcpy_s(pNewInfo->ModulePath, MY_MAX_PATH, DriverInfo.ImageFullBaseName, MY_MAX_PATH);
 				}
 
-				//²åÈëÁ´±í
+				//æ’å…¥é“¾è¡¨
 				if (IsInit != 0 && ((PCKernelCallBackInfo)(*OutData))->List.IsInitialize)
 				{
-					//²åÈëÁ´±íÀïÃæ
+					//æ’å…¥é“¾è¡¨é‡Œé¢
 					InsertHeadList(&((PCKernelCallBackInfo)(*OutData))->List.List, &pNewInfo->List.List);
 				}
 				else
 				{
-					pNewInfo->List.IsInitialize = TRUE;						//ÒÑ³õÊ¼»¯
-					InitializeListHead(&pNewInfo->List.List);				//³õÊ¼»¯Á´±íÍ·
-					*OutData = pNewInfo;									//¸³Öµ
+					pNewInfo->List.IsInitialize = TRUE;						//å·²åˆå§‹åŒ–
+					InitializeListHead(&pNewInfo->List.List);				//åˆå§‹åŒ–é“¾è¡¨å¤´
+					*OutData = pNewInfo;									//èµ‹å€¼
 					IsInit = TRUE;
 				}
 				dqRet++;
 			}
 		}
-		//Ö¸ÏòÏÂÒ»¸ö
+		//æŒ‡å‘ä¸‹ä¸€ä¸ª
 		pCurList = pCurList->Blink;
 	}
 	return dqRet;
@@ -3064,7 +3072,7 @@ ULONG64 EnumBugCheckCallback(PCKernelCallBackInfo* OutData)
 	ULONG64 IsInit = MmIsAddressValid(OutData) && MmIsAddressValid(*OutData) && ((PCKernelCallBackInfo)(*OutData))->List.IsInitialize;
 
 	ULONG64 dqRet = 0;
-	// BugCheck»Øµ÷ÀàĞÍ½á¹¹ PKBUGCHECK_CALLBACK_RECORD
+	// BugCheckå›è°ƒç±»å‹ç»“æ„ PKBUGCHECK_CALLBACK_RECORD
 
 	PLIST_ENTRY pCurList = ((PLIST_ENTRY)KeBugCheckCallbackListHead)->Blink;
 
@@ -3076,14 +3084,14 @@ ULONG64 EnumBugCheckCallback(PCKernelCallBackInfo* OutData)
 			break;
 		}
 
-		//ÉêÇë¿Õ¼ä
+		//ç”³è¯·ç©ºé—´
 		PCKernelCallBackInfo pNewInfo = MyExAllocMemOry(sizeof(CKernelCallBackInfo), PAGE_READWRITE, UserMode);
 		if (pNewInfo == NULL)
 		{
 			break;
 		}
 
-		//¿½±´Êı¾İ
+		//æ‹·è´æ•°æ®
 		pNewInfo->CallBackAddr = pCallBack->CallbackRoutine;
 		pNewInfo->Descr = pCallBack;
 		pNewInfo->CallBackType = um_KernalCallBackType_DbgCheck;
@@ -3091,29 +3099,29 @@ ULONG64 EnumBugCheckCallback(PCKernelCallBackInfo* OutData)
 		CDriverInfo DriverInfo = { 0 };
 		if (IsSysModuleEx(pNewInfo->CallBackAddr, &DriverInfo))
 		{
-			//Æ«ÒÆ
+			//åç§»
 			pNewInfo->ModuleOffset = pNewInfo->CallBackAddr - DriverInfo.ImageBaseAddr;
-			//Â·¾¶
+			//è·¯å¾„
 			memcpy_s(pNewInfo->ModulePath, MY_MAX_PATH, DriverInfo.ImageFullBaseName, MY_MAX_PATH);
 		}
 
-		//²åÈëÁ´±í
+		//æ’å…¥é“¾è¡¨
 		if (IsInit != 0 && ((PCKernelCallBackInfo)(*OutData))->List.IsInitialize)
 		{
-			//²åÈëÁ´±íÀïÃæ
+			//æ’å…¥é“¾è¡¨é‡Œé¢
 			InsertHeadList(&((PCKernelCallBackInfo)(*OutData))->List.List, &pNewInfo->List.List);
 		}
 		else
 		{
-			pNewInfo->List.IsInitialize = TRUE;						//ÒÑ³õÊ¼»¯
-			InitializeListHead(&pNewInfo->List.List);				//³õÊ¼»¯Á´±íÍ·
-			*OutData = pNewInfo;									//¸³Öµ
+			pNewInfo->List.IsInitialize = TRUE;						//å·²åˆå§‹åŒ–
+			InitializeListHead(&pNewInfo->List.List);				//åˆå§‹åŒ–é“¾è¡¨å¤´
+			*OutData = pNewInfo;									//èµ‹å€¼
 			IsInit = TRUE;
 		}
 
 		dqRet++;
 
-		//Ö¸ÏòÏÂÒ»¸ö
+		//æŒ‡å‘ä¸‹ä¸€ä¸ª
 		pCurList = pCurList->Blink;
 	}
 	return dqRet;
@@ -3121,35 +3129,35 @@ ULONG64 EnumBugCheckCallback(PCKernelCallBackInfo* OutData)
 
 ULONG64 EnumPnpCallBack(PCKernelCallBackInfo* OutData)
 {
-	//PnpDeviceClassNotifyList »Øµ÷½á¹¹
+	//PnpDeviceClassNotifyList å›è°ƒç»“æ„
 	typedef struct _PnpCallBackInfo
 	{
-		LIST_ENTRY List;        								//Ë«ÏòÁ´±í
+		LIST_ENTRY List;        								//åŒå‘é“¾è¡¨
 		ULONG32 ReserveFlags;   								//1 2 3
 		ULONG32 SessionId;      								//MmGetSessionIdEx((__int64)KeGetCurrentThread()->ApcState.Process);
 		ULONG64 v16;            								//ZwOpenSession(&v16, 0i64, &v18);    
-		PDRIVER_NOTIFICATION_CALLBACK_ROUTINE CallbackRoutine;	//»Øµ÷º¯ÊıµØÖ·
+		PDRIVER_NOTIFICATION_CALLBACK_ROUTINE CallbackRoutine;	//å›è°ƒå‡½æ•°åœ°å€
 		PVOID Context;
-		PDRIVER_OBJECT DriverObject;							//Çı¶¯¶ÔÏó½á¹¹Ìå
-		USHORT Count;           								//1   ¼ÆÊıÆ÷
+		PDRIVER_OBJECT DriverObject;							//é©±åŠ¨å¯¹è±¡ç»“æ„ä½“
+		USHORT Count;           								//1   è®¡æ•°å™¨
 		UCHAR ReserveFlags2;    								//2
-		UCHAR Reserve[5];       								//¶ÔÆë
+		UCHAR Reserve[5];       								//å¯¹é½
 		PULONG64 Lock;          								//&PnpTargetDeviceNotifyLock
 		PERESOURCE Resource;    								//
-		ULONG64 EventCategoryData;								//IoRegisterPlugPlayNotification ²ÎÊıÈı
+		ULONG64 EventCategoryData;								//IoRegisterPlugPlayNotification å‚æ•°ä¸‰
 		ULONG64 Reserve1;
 	}CPnpCallBackInfo, * PCPnpCallBackInfo;
 
-	//×¢:PnpDeviceClassNotifyList Á´±íÎª13¸ö,ËùÒÔĞèÒª±éÀú13´Î
+	//æ³¨:PnpDeviceClassNotifyList é“¾è¡¨ä¸º13ä¸ª,æ‰€ä»¥éœ€è¦éå†13æ¬¡
 
 	ULONG64 IsInit = MmIsAddressValid(OutData) && MmIsAddressValid(*OutData) && ((PCKernelCallBackInfo)(*OutData))->List.IsInitialize;
 
 	ULONG64 dqRet = 0;
 
-	//±éÀúPnpDeviceClassNotifyListÁ´±í
+	//éå†PnpDeviceClassNotifyListé“¾è¡¨
 	do
 	{
-		//ÑéÖ¤Á´±íÊÇ·ñÊÇÓĞĞ§µØÖ·
+		//éªŒè¯é“¾è¡¨æ˜¯å¦æ˜¯æœ‰æ•ˆåœ°å€
 		if (!MmIsAddressValid(PnpDeviceClassNotifyList))
 		{
 			break;
@@ -3168,7 +3176,7 @@ ULONG64 EnumPnpCallBack(PCKernelCallBackInfo* OutData)
 					break;
 				}
 
-				//ÉêÇë¿Õ¼ä
+				//ç”³è¯·ç©ºé—´
 				PCKernelCallBackInfo pNewInfo = MyExAllocMemOry(sizeof(CKernelCallBackInfo), PAGE_READWRITE, UserMode);
 				if (pNewInfo == NULL)
 				{
@@ -3183,37 +3191,37 @@ ULONG64 EnumPnpCallBack(PCKernelCallBackInfo* OutData)
 				CDriverInfo DriverInfo = { 0 };
 				if (IsSysModuleEx(pNewInfo->CallBackAddr, &DriverInfo))
 				{
-					//Æ«ÒÆ
+					//åç§»
 					pNewInfo->ModuleOffset = pNewInfo->CallBackAddr - DriverInfo.ImageBaseAddr;
-					//Â·¾¶
+					//è·¯å¾„
 					memcpy_s(pNewInfo->ModulePath, MY_MAX_PATH, DriverInfo.ImageFullBaseName, MY_MAX_PATH);
 				}
 
-				//²åÈëÁ´±í
+				//æ’å…¥é“¾è¡¨
 				if (IsInit != 0 && ((PCKernelCallBackInfo)(*OutData))->List.IsInitialize)
 				{
-					//²åÈëÁ´±íÀïÃæ
+					//æ’å…¥é“¾è¡¨é‡Œé¢
 					InsertHeadList(&((PCKernelCallBackInfo)(*OutData))->List.List, &pNewInfo->List.List);
 				}
 				else
 				{
-					pNewInfo->List.IsInitialize = TRUE;						//ÒÑ³õÊ¼»¯
-					InitializeListHead(&pNewInfo->List.List);				//³õÊ¼»¯Á´±íÍ·
-					*OutData = pNewInfo;									//¸³Öµ
+					pNewInfo->List.IsInitialize = TRUE;						//å·²åˆå§‹åŒ–
+					InitializeListHead(&pNewInfo->List.List);				//åˆå§‹åŒ–é“¾è¡¨å¤´
+					*OutData = pNewInfo;									//èµ‹å€¼
 					IsInit = TRUE;
 				}
 
 				dqRet++;
-				//Ö¸ÏòÏÂÒ»¸ö
+				//æŒ‡å‘ä¸‹ä¸€ä¸ª
 				pCurList = pCurList->Blink;
 			}
 		}
 	} while (0);
 
-	//±éÀúPnpDeferredRegistrationListÁ´±í
+	//éå†PnpDeferredRegistrationListé“¾è¡¨
 	do
 	{
-		//ÑéÖ¤Á´±íÊÇ·ñÊÇÓĞĞ§µØÖ·
+		//éªŒè¯é“¾è¡¨æ˜¯å¦æ˜¯æœ‰æ•ˆåœ°å€
 		if (!MmIsAddressValid(PnpDeferredRegistrationList))
 		{
 			break;
@@ -3229,7 +3237,7 @@ ULONG64 EnumPnpCallBack(PCKernelCallBackInfo* OutData)
 				break;
 			}
 
-			//ÉêÇë¿Õ¼ä
+			//ç”³è¯·ç©ºé—´
 			PCKernelCallBackInfo pNewInfo = MyExAllocMemOry(sizeof(CKernelCallBackInfo), PAGE_READWRITE, UserMode);
 			if (pNewInfo == NULL)
 			{
@@ -3244,38 +3252,38 @@ ULONG64 EnumPnpCallBack(PCKernelCallBackInfo* OutData)
 			CDriverInfo DriverInfo = { 0 };
 			if (IsSysModuleEx(pNewInfo->CallBackAddr, &DriverInfo))
 			{
-				//Æ«ÒÆ
+				//åç§»
 				pNewInfo->ModuleOffset = pNewInfo->CallBackAddr - DriverInfo.ImageBaseAddr;
-				//Â·¾¶
+				//è·¯å¾„
 				memcpy_s(pNewInfo->ModulePath, MY_MAX_PATH, DriverInfo.ImageFullBaseName, MY_MAX_PATH);
 			}
 
-			//²åÈëÁ´±í
+			//æ’å…¥é“¾è¡¨
 			if (IsInit != 0 && ((PCKernelCallBackInfo)(*OutData))->List.IsInitialize)
 			{
-				//²åÈëÁ´±íÀïÃæ
+				//æ’å…¥é“¾è¡¨é‡Œé¢
 				InsertHeadList(&((PCKernelCallBackInfo)(*OutData))->List.List, &pNewInfo->List.List);
 			}
 			else
 			{
-				pNewInfo->List.IsInitialize = TRUE;						//ÒÑ³õÊ¼»¯
-				InitializeListHead(&pNewInfo->List.List);				//³õÊ¼»¯Á´±íÍ·
-				*OutData = pNewInfo;									//¸³Öµ
+				pNewInfo->List.IsInitialize = TRUE;						//å·²åˆå§‹åŒ–
+				InitializeListHead(&pNewInfo->List.List);				//åˆå§‹åŒ–é“¾è¡¨å¤´
+				*OutData = pNewInfo;									//èµ‹å€¼
 				IsInit = TRUE;
 			}
 
 
 			dqRet++;
-			//Ö¸ÏòÏÂÒ»¸ö
+			//æŒ‡å‘ä¸‹ä¸€ä¸ª
 			pCurList = pCurList->Blink;
 		}
 	} while (0);
 
-	//±éÀúPnpProfileNotifyListÁ´±í
+	//éå†PnpProfileNotifyListé“¾è¡¨
 /*
 	do
 	{
-		//ÑéÖ¤Á´±íÊÇ·ñÊÇÓĞĞ§µØÖ·
+		//éªŒè¯é“¾è¡¨æ˜¯å¦æ˜¯æœ‰æ•ˆåœ°å€
 		if (!MmIsAddressValid(PnpProfileNotifyList))
 		{
 			break;
@@ -3291,7 +3299,7 @@ ULONG64 EnumPnpCallBack(PCKernelCallBackInfo* OutData)
 				break;
 			}
 
-			//ÉêÇë¿Õ¼ä
+			//ç”³è¯·ç©ºé—´
 			PCKernelCallBackInfo pNewInfo = MyExAllocMemOry(sizeof(CKernelCallBackInfo), PAGE_READWRITE, UserMode);
 			if (pNewInfo == NULL)
 			{
@@ -3306,31 +3314,31 @@ ULONG64 EnumPnpCallBack(PCKernelCallBackInfo* OutData)
 			CDriverInfo DriverInfo = { 0 };
 			if (IsSysModuleEx(pNewInfo->CallBackAddr, &DriverInfo))
 			{
-				//Æ«ÒÆ
+				//åç§»
 				pNewInfo->ModuleOffset = pNewInfo->CallBackAddr - DriverInfo.ImageBaseAddr;
-				//Â·¾¶
+				//è·¯å¾„
 				memcpy_s(pNewInfo->ModulePath, MY_MAX_PATH, DriverInfo.ImageFullBaseName, MY_MAX_PATH);
 			}
 
 			MyDbgPrintfEx("PnpProfileNotifyList Type:%I64X ModulePath:%ws Offset:%I64X Descr:%I64X CallBackAddr:%I64X\n", pNewInfo->CallBackType, pNewInfo->ModulePath, pNewInfo->ModuleOffset, pNewInfo->Descr, pNewInfo->CallBackAddr);
 
 
-			//²åÈëÁ´±í
+			//æ’å…¥é“¾è¡¨
 			if (IsInit != 0 && ((PCKernelCallBackInfo)(*OutData))->List.IsInitialize)
 			{
-				//²åÈëÁ´±íÀïÃæ
+				//æ’å…¥é“¾è¡¨é‡Œé¢
 				InsertHeadList(&((PCKernelCallBackInfo)(*OutData))->List.List, &pNewInfo->List.List);
 			}
 			else
 			{
-				pNewInfo->List.IsInitialize = TRUE;						//ÒÑ³õÊ¼»¯
-				InitializeListHead(&pNewInfo->List.List);				//³õÊ¼»¯Á´±íÍ·
-				*OutData = pNewInfo;									//¸³Öµ
+				pNewInfo->List.IsInitialize = TRUE;						//å·²åˆå§‹åŒ–
+				InitializeListHead(&pNewInfo->List.List);				//åˆå§‹åŒ–é“¾è¡¨å¤´
+				*OutData = pNewInfo;									//èµ‹å€¼
 				IsInit = TRUE;
 			}
 
 			dqRet++;
-			//Ö¸ÏòÏÂÒ»¸ö
+			//æŒ‡å‘ä¸‹ä¸€ä¸ª
 			pCurList = pCurList->Blink;
 		}
 	} while (0);*/
@@ -3361,7 +3369,7 @@ ULONG64 EnumLoadImageCallBack(PCKernelCallBackInfo* OutData)
 
 	ULONG64 dqRet = *PspLoadImageNotifyRoutineCount;
 
-	//±éÀúPspLoadImageNotifyRoutine ÀàĞÍÊÇ8×Ö½ÚÊı×é PspLoadImageNotifyRoutineCount´æ´¢µÄÊÇ LoadImage»Øµ÷ÊıÁ¿
+	//éå†PspLoadImageNotifyRoutine ç±»å‹æ˜¯8å­—èŠ‚æ•°ç»„ PspLoadImageNotifyRoutineCountå­˜å‚¨çš„æ˜¯ LoadImageå›è°ƒæ•°é‡
 
 	for (int i = 0; i < *PspLoadImageNotifyRoutineCount; i++)
 	{
@@ -3369,14 +3377,14 @@ ULONG64 EnumLoadImageCallBack(PCKernelCallBackInfo* OutData)
 		if (MmIsAddressValid(pCallBack))
 		{
 
-			//ÉêÇë¿Õ¼ä
+			//ç”³è¯·ç©ºé—´
 			PCKernelCallBackInfo pNewInfo = MyExAllocMemOry(sizeof(CKernelCallBackInfo), PAGE_READWRITE, UserMode);
 			if (pNewInfo == NULL)
 			{
 				break;
 			}
 
-			pNewInfo->CallBackAddr = pCallBack->CallBackPtr; //Çå³ı×îºó4Î»
+			pNewInfo->CallBackAddr = pCallBack->CallBackPtr; //æ¸…é™¤æœ€å4ä½
 			pNewInfo->CallBackType = um_KernalCallBackType_LoadImage;
 			pNewInfo->Descr = pCallBack;
 
@@ -3384,23 +3392,23 @@ ULONG64 EnumLoadImageCallBack(PCKernelCallBackInfo* OutData)
 			CDriverInfo DriverInfo = { 0 };
 			if (IsSysModuleEx(pNewInfo->CallBackAddr, &DriverInfo))
 			{
-				//Æ«ÒÆ
+				//åç§»
 				pNewInfo->ModuleOffset = pNewInfo->CallBackAddr - DriverInfo.ImageBaseAddr;
-				//Â·¾¶
+				//è·¯å¾„
 				memcpy_s(pNewInfo->ModulePath, MY_MAX_PATH, DriverInfo.ImageFullBaseName, MY_MAX_PATH);
 			}
 
-			//²åÈëÁ´±í
+			//æ’å…¥é“¾è¡¨
 			if (IsInit != 0 && ((PCKernelCallBackInfo)(*OutData))->List.IsInitialize)
 			{
-				//²åÈëÁ´±íÀïÃæ
+				//æ’å…¥é“¾è¡¨é‡Œé¢
 				InsertHeadList(&((PCKernelCallBackInfo)(*OutData))->List.List, &pNewInfo->List.List);
 			}
 			else
 			{
-				pNewInfo->List.IsInitialize = TRUE;						//ÒÑ³õÊ¼»¯
-				InitializeListHead(&pNewInfo->List.List);				//³õÊ¼»¯Á´±íÍ·
-				*OutData = pNewInfo;									//¸³Öµ
+				pNewInfo->List.IsInitialize = TRUE;						//å·²åˆå§‹åŒ–
+				InitializeListHead(&pNewInfo->List.List);				//åˆå§‹åŒ–é“¾è¡¨å¤´
+				*OutData = pNewInfo;									//èµ‹å€¼
 				IsInit = TRUE;
 			}
 		}
@@ -3417,7 +3425,7 @@ ULONG64 EnumCreateProcessCallBack(PCKernelCallBackInfo* OutData)
 		return FALSE;
 	}
 
-	//»Øµ÷½á¹¹
+	//å›è°ƒç»“æ„
 	typedef struct _LoadImageCallBackInfo
 	{
 		ULONG64 Reserve;
@@ -3433,14 +3441,14 @@ ULONG64 EnumCreateProcessCallBack(PCKernelCallBackInfo* OutData)
 		PCLoadImageCallBackInfo pCallBack = (PCLoadImageCallBackInfo)(PspCreateProcessNotifyRoutine[i] & ~0xF);
 		if (MmIsAddressValid(pCallBack))
 		{
-			//ÉêÇë¿Õ¼ä
+			//ç”³è¯·ç©ºé—´
 			PCKernelCallBackInfo pNewInfo = MyExAllocMemOry(sizeof(CKernelCallBackInfo), PAGE_READWRITE, UserMode);
 			if (pNewInfo == NULL)
 			{
 				break;
 			}
 
-			pNewInfo->CallBackAddr = pCallBack->CallBackPtr; //Çå³ı×îºó4Î»
+			pNewInfo->CallBackAddr = pCallBack->CallBackPtr; //æ¸…é™¤æœ€å4ä½
 			pNewInfo->CallBackType = um_KernalCallBackType_CreateProcess;
 			pNewInfo->Descr = pCallBack;
 
@@ -3448,23 +3456,23 @@ ULONG64 EnumCreateProcessCallBack(PCKernelCallBackInfo* OutData)
 			CDriverInfo DriverInfo = { 0 };
 			if (IsSysModuleEx(pNewInfo->CallBackAddr, &DriverInfo))
 			{
-				//Æ«ÒÆ
+				//åç§»
 				pNewInfo->ModuleOffset = pNewInfo->CallBackAddr - DriverInfo.ImageBaseAddr;
-				//Â·¾¶
+				//è·¯å¾„
 				memcpy_s(pNewInfo->ModulePath, MY_MAX_PATH, DriverInfo.ImageFullBaseName, MY_MAX_PATH);
 			}
 
-			//²åÈëÁ´±í
+			//æ’å…¥é“¾è¡¨
 			if (IsInit != 0 && ((PCKernelCallBackInfo)(*OutData))->List.IsInitialize)
 			{
-				//²åÈëÁ´±íÀïÃæ
+				//æ’å…¥é“¾è¡¨é‡Œé¢
 				InsertHeadList(&((PCKernelCallBackInfo)(*OutData))->List.List, &pNewInfo->List.List);
 			}
 			else
 			{
-				pNewInfo->List.IsInitialize = TRUE;						//ÒÑ³õÊ¼»¯
-				InitializeListHead(&pNewInfo->List.List);				//³õÊ¼»¯Á´±íÍ·
-				*OutData = pNewInfo;									//¸³Öµ
+				pNewInfo->List.IsInitialize = TRUE;						//å·²åˆå§‹åŒ–
+				InitializeListHead(&pNewInfo->List.List);				//åˆå§‹åŒ–é“¾è¡¨å¤´
+				*OutData = pNewInfo;									//èµ‹å€¼
 				IsInit = TRUE;
 			}
 		}
@@ -3482,7 +3490,7 @@ ULONG64 EnumCreateThreadCallBack(PCKernelCallBackInfo* OutData)
 	}
 
 
-	//»Øµ÷½á¹¹
+	//å›è°ƒç»“æ„
 	typedef struct _LoadImageCallBackInfo
 	{
 		ULONG64 Reserve;
@@ -3498,14 +3506,14 @@ ULONG64 EnumCreateThreadCallBack(PCKernelCallBackInfo* OutData)
 		PCLoadImageCallBackInfo pCallBack = (PCLoadImageCallBackInfo)(PspCreateThreadNotifyRoutine[i] & ~0xF);
 		if (MmIsAddressValid(pCallBack))
 		{
-			//ÉêÇë¿Õ¼ä
+			//ç”³è¯·ç©ºé—´
 			PCKernelCallBackInfo pNewInfo = MyExAllocMemOry(sizeof(CKernelCallBackInfo), PAGE_READWRITE, UserMode);
 			if (pNewInfo == NULL)
 			{
 				break;
 			}
 
-			pNewInfo->CallBackAddr = pCallBack->CallBackPtr; //Çå³ı×îºó4Î»
+			pNewInfo->CallBackAddr = pCallBack->CallBackPtr; //æ¸…é™¤æœ€å4ä½
 			pNewInfo->CallBackType = um_KernalCallBackType_CreateThread;
 			pNewInfo->Descr = pCallBack;
 
@@ -3513,23 +3521,23 @@ ULONG64 EnumCreateThreadCallBack(PCKernelCallBackInfo* OutData)
 			CDriverInfo DriverInfo = { 0 };
 			if (IsSysModuleEx(pNewInfo->CallBackAddr, &DriverInfo))
 			{
-				//Æ«ÒÆ
+				//åç§»
 				pNewInfo->ModuleOffset = pNewInfo->CallBackAddr - DriverInfo.ImageBaseAddr;
-				//Â·¾¶
+				//è·¯å¾„
 				memcpy_s(pNewInfo->ModulePath, MY_MAX_PATH, DriverInfo.ImageFullBaseName, MY_MAX_PATH);
 			}
 
-			//²åÈëÁ´±í
+			//æ’å…¥é“¾è¡¨
 			if (IsInit != 0 && ((PCKernelCallBackInfo)(*OutData))->List.IsInitialize)
 			{
-				//²åÈëÁ´±íÀïÃæ
+				//æ’å…¥é“¾è¡¨é‡Œé¢
 				InsertHeadList(&((PCKernelCallBackInfo)(*OutData))->List.List, &pNewInfo->List.List);
 			}
 			else
 			{
-				pNewInfo->List.IsInitialize = TRUE;						//ÒÑ³õÊ¼»¯
-				InitializeListHead(&pNewInfo->List.List);				//³õÊ¼»¯Á´±íÍ·
-				*OutData = pNewInfo;									//¸³Öµ
+				pNewInfo->List.IsInitialize = TRUE;						//å·²åˆå§‹åŒ–
+				InitializeListHead(&pNewInfo->List.List);				//åˆå§‹åŒ–é“¾è¡¨å¤´
+				*OutData = pNewInfo;									//èµ‹å€¼
 				IsInit = TRUE;
 			}
 		}
@@ -3551,10 +3559,10 @@ ULONG64 EnumRegistryCallBack(PCKernelCallBackInfo* OutData)
 		ULONG32 ReverseFlags1;			//(*((_DWORD *)v11 + 5) ^ a5)^v12 & 1
 		ULONG64 Reverse0;
 		ULONG64 Context;
-		ULONG64 CallBackPtr;			//º¯ÊıÖ¸Õë 
+		ULONG64 CallBackPtr;			//å‡½æ•°æŒ‡é’ˆ 
 		USHORT Altitude0;				//&CmLegacyAltitude
 		USHORT Altitude1;				//&CmLegacyAltitude
-		ULONG32 Reverse;				//¶ÔÆë
+		ULONG32 Reverse;				//å¯¹é½
 		ULONG64 NewAllocBuf2;			//ExAllocatePoolWithTag(PagedPool, *(unsigned __int16 *)a3, 0x61634D43u)
 		ULONG64 NewAllocBuf0;			//ExAllocatePoolWithTag(PagedPool, 0x50ui64, 0x62634D43u)+8
 		ULONG64 NewAllocBuf1;			//ExAllocatePoolWithTag(PagedPool, 0x50ui64, 0x62634D43u)+8
@@ -3576,42 +3584,42 @@ ULONG64 EnumRegistryCallBack(PCKernelCallBackInfo* OutData)
 			break;
 		}
 
-		//ÉêÇë¿Õ¼ä
+		//ç”³è¯·ç©ºé—´
 		PCKernelCallBackInfo pNewInfo = MyExAllocMemOry(sizeof(CKernelCallBackInfo), PAGE_READWRITE, UserMode);
 		if (pNewInfo == NULL)
 		{
 			break;
 		}
 
-		pNewInfo->CallBackAddr = pCallBack->CallBackPtr; //Çå³ı×îºó4Î»
+		pNewInfo->CallBackAddr = pCallBack->CallBackPtr; //æ¸…é™¤æœ€å4ä½
 		pNewInfo->CallBackType = um_KernalCallBackType_CreateRegistry;
 		pNewInfo->Descr = pCallBack;
 
 		CDriverInfo DriverInfo = { 0 };
 		if (IsSysModuleEx(pNewInfo->CallBackAddr, &DriverInfo))
 		{
-			//Æ«ÒÆ
+			//åç§»
 			pNewInfo->ModuleOffset = pNewInfo->CallBackAddr - DriverInfo.ImageBaseAddr;
-			//Â·¾¶
+			//è·¯å¾„
 			memcpy_s(pNewInfo->ModulePath, MY_MAX_PATH, DriverInfo.ImageFullBaseName, MY_MAX_PATH);
 		}
 
-		//²åÈëÁ´±í
+		//æ’å…¥é“¾è¡¨
 		if (IsInit != 0 && ((PCKernelCallBackInfo)(*OutData))->List.IsInitialize)
 		{
-			//²åÈëÁ´±íÀïÃæ
+			//æ’å…¥é“¾è¡¨é‡Œé¢
 			InsertHeadList(&((PCKernelCallBackInfo)(*OutData))->List.List, &pNewInfo->List.List);
 		}
 		else
 		{
-			pNewInfo->List.IsInitialize = TRUE;						//ÒÑ³õÊ¼»¯
-			InitializeListHead(&pNewInfo->List.List);				//³õÊ¼»¯Á´±íÍ·
-			*OutData = pNewInfo;									//¸³Öµ
+			pNewInfo->List.IsInitialize = TRUE;						//å·²åˆå§‹åŒ–
+			InitializeListHead(&pNewInfo->List.List);				//åˆå§‹åŒ–é“¾è¡¨å¤´
+			*OutData = pNewInfo;									//èµ‹å€¼
 			IsInit = TRUE;
 		}
 
 		dqRet++;
-		//Ö¸ÏòÏÂÒ»¸ö
+		//æŒ‡å‘ä¸‹ä¸€ä¸ª
 		pCurList = pCurList->Blink;
 	}
 	return dqRet;
@@ -3619,7 +3627,7 @@ ULONG64 EnumRegistryCallBack(PCKernelCallBackInfo* OutData)
 
 ULONG64 EnumIoTimer(PCKernelCallBackInfo* OutData)
 {
-	//»Øµ÷½á¹¹Ìå
+	//å›è°ƒç»“æ„ä½“
 	typedef struct _IO_TIMER
 	{
 		INT16        Type;
@@ -3646,7 +3654,7 @@ ULONG64 EnumIoTimer(PCKernelCallBackInfo* OutData)
 		PIO_TIMER Timer = CONTAINING_RECORD(pListStart, IO_TIMER, TimerList);
 		if (Timer && MmIsAddressValid(Timer))
 		{
-			//ÉêÇë¿Õ¼ä
+			//ç”³è¯·ç©ºé—´
 			PCKernelCallBackInfo pNewInfo = MyExAllocMemOry(sizeof(CKernelCallBackInfo), PAGE_READWRITE, UserMode);
 			if (pNewInfo == NULL)
 			{
@@ -3660,30 +3668,30 @@ ULONG64 EnumIoTimer(PCKernelCallBackInfo* OutData)
 			CDriverInfo DriverInfo = { 0 };
 			if (IsSysModuleEx(pNewInfo->CallBackAddr, &DriverInfo))
 			{
-				//Æ«ÒÆ
+				//åç§»
 				pNewInfo->ModuleOffset = pNewInfo->CallBackAddr - DriverInfo.ImageBaseAddr;
-				//Â·¾¶
+				//è·¯å¾„
 				memcpy_s(pNewInfo->ModulePath, MY_MAX_PATH, DriverInfo.ImageFullBaseName, MY_MAX_PATH);
 			}
 
-			//²åÈëÁ´±í
+			//æ’å…¥é“¾è¡¨
 			if (IsInit != 0 && ((PCKernelCallBackInfo)(*OutData))->List.IsInitialize)
 			{
-				//²åÈëÁ´±íÀïÃæ
+				//æ’å…¥é“¾è¡¨é‡Œé¢
 				InsertHeadList(&((PCKernelCallBackInfo)(*OutData))->List.List, &pNewInfo->List.List);
 			}
 			else
 			{
-				pNewInfo->List.IsInitialize = TRUE;						//ÒÑ³õÊ¼»¯
-				InitializeListHead(&pNewInfo->List.List);				//³õÊ¼»¯Á´±íÍ·
-				*OutData = pNewInfo;									//¸³Öµ
+				pNewInfo->List.IsInitialize = TRUE;						//å·²åˆå§‹åŒ–
+				InitializeListHead(&pNewInfo->List.List);				//åˆå§‹åŒ–é“¾è¡¨å¤´
+				*OutData = pNewInfo;									//èµ‹å€¼
 				IsInit = TRUE;
 			}
-			//ÊıÁ¿¼Ó1
+			//æ•°é‡åŠ 1
 			nCount++;
 		}
 
-		//Ö¸ÏòÏÂÒ»¸ö½á¹¹
+		//æŒ‡å‘ä¸‹ä¸€ä¸ªç»“æ„
 		pListStart = pListStart->Blink;
 	} while (pListStart != IopTimerQueueHead);
 
@@ -3698,61 +3706,61 @@ ULONG64 EnumObjectTypeCallBack(ULONG64 pObjectType, PCObjectTypeCallBackInfo* Ou
 		return FALSE;
 	}
 
-	//»Øµ÷½á¹¹
+	//å›è°ƒç»“æ„
 	typedef struct _ObjectCallBackInfoExtend
 	{
-		LIST_ENTRY List;                            //Á´±íCallbackList 
-		OB_OPERATION Operations;                    //±êÖ¾
-		ULONG64 pSelf;								 //Ö¸Ïò×Ô¼ºÍ·²¿ PCObjectCallBackInfo
-		POBJECT_TYPE ObjectType;                    //¶ÔÏóÀàĞÍ½á¹¹Ìå
-		POB_PRE_OPERATION_CALLBACK PreOperation;    //»Øµ÷º¯Êı
-		POB_POST_OPERATION_CALLBACK PostOperation;  //»Øµ÷º¯Êı
+		LIST_ENTRY List;                            //é“¾è¡¨CallbackList 
+		OB_OPERATION Operations;                    //æ ‡å¿—
+		ULONG64 pSelf;								 //æŒ‡å‘è‡ªå·±å¤´éƒ¨ PCObjectCallBackInfo
+		POBJECT_TYPE ObjectType;                    //å¯¹è±¡ç±»å‹ç»“æ„ä½“
+		POB_PRE_OPERATION_CALLBACK PreOperation;    //å›è°ƒå‡½æ•°
+		POB_POST_OPERATION_CALLBACK PostOperation;  //å›è°ƒå‡½æ•°
 		unsigned long long int Reserve2;
 	}CObjectCallBackInfoExtend, * PCObjectCallBackInfoExtend;
 
 	typedef struct _ObjectCallBackInfo
 	{
-		unsigned short Version;                     //°æ±¾
-		unsigned long long int RegistrationContext; //´«µİµÄ²ÎÊı
-		UNICODE_STRING Altitude;                    //º£°Î¸ß¶È
-		ULONG64 ObjCallBackInfoExtend;              //À©Õ¹½á¹¹ _ObjectCallBackInfoExtend
+		unsigned short Version;                     //ç‰ˆæœ¬
+		unsigned long long int RegistrationContext; //ä¼ é€’çš„å‚æ•°
+		UNICODE_STRING Altitude;                    //æµ·æ‹”é«˜åº¦
+		ULONG64 ObjCallBackInfoExtend;              //æ‰©å±•ç»“æ„ _ObjectCallBackInfoExtend
 	}CObjectCallBackInfo, * PCObjectCallBackInfo;
 
 
 	ULONG64 IsInit = MmIsAddressValid(OutData) && MmIsAddressValid(*OutData) && ((PCKernelCallBackInfo)(*OutData))->List.IsInitialize;
 
 
-	//ÓÃÓÚ·µ»ØÊı¾İ
+	//ç”¨äºè¿”å›æ•°æ®
 	ULONG64 nRetIndex = 0;
 
-	//_OBJECT_TYPE Ê×µØÖ·
+	//_OBJECT_TYPE é¦–åœ°å€
 	ULONG64 pObject = *(PULONG64)pObjectType;
 	if (!MmIsAddressValid(pObject))
 	{
 		return nRetIndex;
 	}
 
-	//ÅĞ¶ÏSupportsObjectCallbacksÎ»ÊÇ·ñÖ§³Ö»Øµ÷×¢²á   [+0x002 ( 6: 6)] SupportsObjectCallbacks : 0x1 [Type: unsigned char]
+	//åˆ¤æ–­SupportsObjectCallbacksä½æ˜¯å¦æ”¯æŒå›è°ƒæ³¨å†Œ   [+0x002 ( 6: 6)] SupportsObjectCallbacks : 0x1 [Type: unsigned char]
 	if (!*(PUSHORT)(pObject + _OBJECT_TYPE_OBJECT_TYPE_INITIALIZER_ObjectTypeFlags) & _ObjectTypeFlags_SupportsObjectCallbacks_byte)
 	{
 		return nRetIndex;
 	}
 
-	//»ñÈ¡¶ÔÏóÀàĞÍÃû³Æ
+	//è·å–å¯¹è±¡ç±»å‹åç§°
 	PUNICODE_STRING pObjectTypeName = (PUNICODE_STRING)(pObject + _OBJECT_TYPE_Name);
 	if (!MmIsAddressValid(pObjectTypeName))
 	{
 		return nRetIndex;
 	}
 
-	//»ñÈ¡¶ÔÏó»Øµ÷Á´±í
+	//è·å–å¯¹è±¡å›è°ƒé“¾è¡¨
 	PLIST_ENTRY pCallbackList = (PUNICODE_STRING)(pObject + _OBJECT_TYPE_CallbackList);
 	if (!MmIsAddressValid(pCallbackList))
 	{
 		return nRetIndex;
 	}
 
-	//¿ªÊ¼±éÀú
+	//å¼€å§‹éå†
 	PLIST_ENTRY pStart = pCallbackList->Flink;
 	do
 	{
@@ -3768,7 +3776,7 @@ ULONG64 EnumObjectTypeCallBack(ULONG64 pObjectType, PCObjectTypeCallBackInfo* Ou
 		}
 
 		{
-			//ÉêÇë¿Õ¼ä
+			//ç”³è¯·ç©ºé—´
 			PCObjectTypeCallBackInfo pNewInfo = MyExAllocMemOry(sizeof(CObjectTypeCallBackInfo), PAGE_READWRITE, UserMode);
 			if (pNewInfo == NULL)
 			{
@@ -3776,16 +3784,16 @@ ULONG64 EnumObjectTypeCallBack(ULONG64 pObjectType, PCObjectTypeCallBackInfo* Ou
 			}
 
 			memcpy_s(pNewInfo->szObjectTypeName, MAX_BASE_FILE_NAME, pObjectTypeName->Buffer, pObjectTypeName->Length);
-			//º£°Î
+			//æµ·æ‹”
 			memcpy_s(pNewInfo->Altitude, MAX_BASE_FILE_NAME, pObjectInfo->Altitude.Buffer, pObjectInfo->Altitude.Length);
-			//¾ä±ú
+			//å¥æŸ„
 			pNewInfo->pHandle = pObjectInfoEx->pSelf;
-			//»Øµ÷º¯ÊıPreOperation
+			//å›è°ƒå‡½æ•°PreOperation
 			pNewInfo->PreOperation = pObjectInfoEx->PreOperation;
-			//»Øµ÷º¯ÊıPostOperation
+			//å›è°ƒå‡½æ•°PostOperation
 			pNewInfo->PostOperation = pObjectInfoEx->PostOperation;
 
-			//»ñÈ¡ËùÔÚÄ£¿éÂ·¾¶
+			//è·å–æ‰€åœ¨æ¨¡å—è·¯å¾„
 			ULONG64 Addr = pNewInfo->PreOperation;
 			if (Addr == NULL)
 			{
@@ -3798,17 +3806,17 @@ ULONG64 EnumObjectTypeCallBack(ULONG64 pObjectType, PCObjectTypeCallBackInfo* Ou
 				memcpy_s(pNewInfo->ModulePath, MY_MAX_PATH, pDriverInfo.ImageFullBaseName, MY_MAX_PATH);
 			}
 
-			//²åÈëÁ´±í
+			//æ’å…¥é“¾è¡¨
 			if (IsInit != 0 && ((PCObjectTypeCallBackInfo)(*OutData))->List.IsInitialize)
 			{
-				//²åÈëÁ´±íÀïÃæ
+				//æ’å…¥é“¾è¡¨é‡Œé¢
 				InsertHeadList(&((PCObjectTypeCallBackInfo)(*OutData))->List.List, &pNewInfo->List.List);
 			}
 			else
 			{
-				pNewInfo->List.IsInitialize = TRUE;						//ÒÑ³õÊ¼»¯
-				InitializeListHead(&pNewInfo->List.List);				//³õÊ¼»¯Á´±íÍ·
-				*OutData = pNewInfo;									//¸³Öµ
+				pNewInfo->List.IsInitialize = TRUE;						//å·²åˆå§‹åŒ–
+				InitializeListHead(&pNewInfo->List.List);				//åˆå§‹åŒ–é“¾è¡¨å¤´
+				*OutData = pNewInfo;									//èµ‹å€¼
 				IsInit = TRUE;
 			}
 		}
@@ -3821,7 +3829,7 @@ ULONG64 EnumObjectTypeCallBack(ULONG64 pObjectType, PCObjectTypeCallBackInfo* Ou
 
 ULONG64 EnumObjectTypeCallBackEx(ULONG64 pObjectType, PCObjectTypeCallBackExInfo* OutData)
 {
-	//ÑéÖ¤²ÎÊıÊÇ·ñÓĞĞ§
+	//éªŒè¯å‚æ•°æ˜¯å¦æœ‰æ•ˆ
 	if (!MmIsAddressValid(pObjectType))
 	{
 		return FALSE;
@@ -3833,7 +3841,7 @@ ULONG64 EnumObjectTypeCallBackEx(ULONG64 pObjectType, PCObjectTypeCallBackExInfo
 		return FALSE;
 	}
 
-	//ÉêÇë¿Õ¼ä
+	//ç”³è¯·ç©ºé—´
 	ULONG64 IsInit = MmIsAddressValid(OutData) && MmIsAddressValid(*OutData) && ((PCKernelCallBackInfo)(*OutData))->List.IsInitialize;
 
 
@@ -3850,31 +3858,31 @@ ULONG64 EnumObjectTypeCallBackEx(ULONG64 pObjectType, PCObjectTypeCallBackExInfo
 
 	do
 	{
-		//ÉêÇë¿Õ¼ä
+		//ç”³è¯·ç©ºé—´
 		PCObjectTypeCallBackExInfo pNewInfo = MyExAllocMemOry(sizeof(CObjectTypeCallBackExInfo), PAGE_READWRITE, UserMode);
 		if (pNewInfo == NULL)
 		{
 			break;
 		}
 
-		//¸³Öµ
-		//ValidAccessMaskÖµ
+		//èµ‹å€¼
+		//ValidAccessMaskå€¼
 		pNewInfo->ValidAccessMask = *(PULONG32)(TypeInfo + _OBJECT_TYPE_INITIALIZER_ValidAccessMask);
-		//¶ÔÏó
+		//å¯¹è±¡
 		pNewInfo->Object = pObjectType;
-		//¿½±´ÀàĞÍÃû
+		//æ‹·è´ç±»å‹å
 		memcpy_s(pNewInfo->TypeName, MAX_BASE_FILE_NAME, pTypeName->Buffer, pTypeName->Length < MAX_BASE_FILE_NAME ? pTypeName->Length : MAX_BASE_FILE_NAME);
 
-		//Ö¸Ïò»Øµ÷ÆğÊ¼µØÖ·
+		//æŒ‡å‘å›è°ƒèµ·å§‹åœ°å€
 		PULONG64 CallBackFunAddr = (TypeInfo + _OBJECT_TYPE_INITIALIZER_DumpProcedure);
-		//8¸ö»Øµ÷
+		//8ä¸ªå›è°ƒ
 		for (int i = 0; i < OBJECT_TYPE_CALLBACK_MAX_NUMBER; i++)
 		{
-			//¸³Öµº¯ÊıµØÖ·
+			//èµ‹å€¼å‡½æ•°åœ°å€
 			pNewInfo->FunAddr[i].FunAddr = CallBackFunAddr[i];
-			//»Øµ÷ÀàĞÍ
+			//å›è°ƒç±»å‹
 			pNewInfo->FunAddr[i].FunType = i;
-			//»Øµ÷ËùÔÚÄ£¿é
+			//å›è°ƒæ‰€åœ¨æ¨¡å—
 			CDriverInfo pInfo = { 0 };
 			if (pNewInfo->FunAddr[i].FunAddr != 0 && IsSysModuleEx(pNewInfo->FunAddr[i].FunAddr, &pInfo))
 			{
@@ -3882,17 +3890,17 @@ ULONG64 EnumObjectTypeCallBackEx(ULONG64 pObjectType, PCObjectTypeCallBackExInfo
 			}
 		}
 
-		//²åÈëÁ´±í
+		//æ’å…¥é“¾è¡¨
 		if (IsInit != 0 && ((PCObjectTypeCallBackExInfo)(*OutData))->List.IsInitialize)
 		{
-			//²åÈëÁ´±íÀïÃæ
+			//æ’å…¥é“¾è¡¨é‡Œé¢
 			InsertHeadList(&((PCObjectTypeCallBackExInfo)(*OutData))->List.List, &pNewInfo->List.List);
 		}
 		else
 		{
-			pNewInfo->List.IsInitialize = TRUE;						//ÒÑ³õÊ¼»¯
-			InitializeListHead(&pNewInfo->List.List);				//³õÊ¼»¯Á´±íÍ·
-			*OutData = pNewInfo;									//¸³Öµ
+			pNewInfo->List.IsInitialize = TRUE;						//å·²åˆå§‹åŒ–
+			InitializeListHead(&pNewInfo->List.List);				//åˆå§‹åŒ–é“¾è¡¨å¤´
+			*OutData = pNewInfo;									//èµ‹å€¼
 			IsInit = TRUE;
 		}
 
@@ -3903,12 +3911,12 @@ ULONG64 EnumObjectTypeCallBackEx(ULONG64 pObjectType, PCObjectTypeCallBackExInfo
 
 ULONG64 EnumCallBack(PCCallBackInfo* OutData)
 {
-	//¼ÇÂ¼ÊıÁ¿
+	//è®°å½•æ•°é‡
 	ULONG64 nCount = 0;
 
 	ULONG64 IsInit = MmIsAddressValid(OutData) && MmIsAddressValid(*OutData) && ((PCKernelCallBackInfo)(*OutData))->List.IsInitialize;
 
-	POBJECT_DIRECTORY RootCallBackDir = (POBJECT_DIRECTORY)obQueryRootDirectoryTable(&g_RootCallbackName);			//»ñÈ¡CallBackÄ¿Â¼¶ÔÏó
+	POBJECT_DIRECTORY RootCallBackDir = (POBJECT_DIRECTORY)obQueryRootDirectoryTable(&g_RootCallbackName);			//è·å–CallBackç›®å½•å¯¹è±¡
 
 	for (int index = 0; index < NUMBER_HASH_BUCKETS; index++)
 	{
@@ -3917,17 +3925,17 @@ ULONG64 EnumCallBack(PCCallBackInfo* OutData)
 		{
 			do
 			{
-				//»ñÈ¡¶ÔÏó
+				//è·å–å¯¹è±¡
 				PMY_CALLBACK_OBJECT pCallBackObject = pRootCallBackDirEntry->Object;
 				if (MmIsAddressValid(pCallBackObject))
 				{
-					//»ñÈ¡ÀàĞÍÃû  // /CallBack/xxxxxx
+					//è·å–ç±»å‹å  // /CallBack/xxxxxx
 					POBJECT_HEADER_NAME_INFO ObjectNameInfo = (POBJECT_HEADER_NAME_INFO)ObQueryNameInfo(pCallBackObject);
 
 
 					PLIST_ENTRY pRegCallBackList = &pCallBackObject->RegisteredCallbacks;
 
-					//É¸Ñ¡Á´±íÎª¿ÕµÄÊı¾İ
+					//ç­›é€‰é“¾è¡¨ä¸ºç©ºçš„æ•°æ®
 					if (pRegCallBackList == pCallBackObject->RegisteredCallbacks.Flink == pCallBackObject->RegisteredCallbacks.Blink)
 					{
 						goto While_END;
@@ -3943,46 +3951,46 @@ ULONG64 EnumCallBack(PCCallBackInfo* OutData)
 						PMY_CALLBACK_REGISTRATION pCallbackObjectAddr = pRegCallBackList;
 						PCALLBACK_FUNCTION pCallbackFunction = pCallbackObjectAddr->CallbackFunction;
 
-						if (MmIsAddressValid(pCallbackFunction) && ((ULONG64)pCallbackFunction & 0xF) == 0 /*É¸Ñ¡ÎŞĞ§µÄµØÖ·*/)
+						if (MmIsAddressValid(pCallbackFunction) && ((ULONG64)pCallbackFunction & 0xF) == 0 /*ç­›é€‰æ— æ•ˆçš„åœ°å€*/)
 						{
-							//ÉêÇë¿Õ¼ä
+							//ç”³è¯·ç©ºé—´
 							PCCallBackInfo pNewInfo = MyExAllocMemOry(sizeof(CObjectTypeCallBackInfo), PAGE_READWRITE, UserMode);
 							if (pNewInfo == NULL)
 							{
 								break;
 							}
 							if (ObjectNameInfo)
-								//¿½±´ÀàĞÍÃû
+								//æ‹·è´ç±»å‹å
 								swprintf(pNewInfo->szTypeName, L"/CallBack/%ws", ObjectNameInfo->Name.Buffer);
-							//º¯ÊıµØÖ·
+							//å‡½æ•°åœ°å€
 							pNewInfo->dqFunctionAddr = pCallbackFunction;
-							//¶ÔÏóµØÖ·
+							//å¯¹è±¡åœ°å€
 							pNewInfo->dqObjectAddr = pCallbackObjectAddr;
-							//ËùÔÚÄ£¿é
+							//æ‰€åœ¨æ¨¡å—
 							CDriverInfo DiverMsg = { 0 };
 							IsSysModuleEx(pCallbackFunction, &DiverMsg);
 							swprintf(pNewInfo->szPath, L"%ws", DiverMsg.ImageFullBaseName);
 
-							//²åÈëÁ´±í
+							//æ’å…¥é“¾è¡¨
 							if (IsInit != 0 && ((PCCallBackInfo)(*OutData))->List.IsInitialize)
 							{
-								//²åÈëÁ´±íÀïÃæ
+								//æ’å…¥é“¾è¡¨é‡Œé¢
 								InsertHeadList(&((PCCallBackInfo)(*OutData))->List.List, &pNewInfo->List.List);
 							}
 							else
 							{
-								pNewInfo->List.IsInitialize = TRUE;						//ÒÑ³õÊ¼»¯
-								InitializeListHead(&pNewInfo->List.List);				//³õÊ¼»¯Á´±íÍ·
-								*OutData = pNewInfo;									//¸³Öµ
+								pNewInfo->List.IsInitialize = TRUE;						//å·²åˆå§‹åŒ–
+								InitializeListHead(&pNewInfo->List.List);				//åˆå§‹åŒ–é“¾è¡¨å¤´
+								*OutData = pNewInfo;									//èµ‹å€¼
 								IsInit = TRUE;
 							}
-							//ÊıÁ¿¼Ó1
+							//æ•°é‡åŠ 1
 							nCount++;
 						}
-						pRegCallBackList = pRegCallBackList->Blink;//»ñÈ¡ÏÂÒ»¸ö
+						pRegCallBackList = pRegCallBackList->Blink;//è·å–ä¸‹ä¸€ä¸ª
 					} while (pRegCallBackList != &pCallBackObject->RegisteredCallbacks);
 				While_END:
-					//±éÀú×ÓÏî
+					//éå†å­é¡¹
 					pRootCallBackDirEntry = pRootCallBackDirEntry->ChainLink;
 				}
 			} while (pRootCallBackDirEntry != NULL);
@@ -3993,7 +4001,7 @@ ULONG64 EnumCallBack(PCCallBackInfo* OutData)
 
 ULONG64 GetDriverMsg(ULONG64 DriverObject, PCDriverInfo pOutData)
 {
-	//ÑéÖ¤µØÖ·ÓĞĞ§ĞÔ
+	//éªŒè¯åœ°å€æœ‰æ•ˆæ€§
 	if (!MmIsAddressValid(DriverObject) || !MmIsAddressValid(pOutData))
 	{
 		return FALSE;
@@ -4006,30 +4014,30 @@ ULONG64 GetDriverMsg(ULONG64 DriverObject, PCDriverInfo pOutData)
 	ULONG64 DriverSize = *(PULONG64)(DriverObject + _DRIVER_OBJECT_DriverSize);
 	ULONG64 DriverExtension = *(PULONG64)(DriverObject + _DRIVER_OBJECT_DriverExtension);
 
-	//¸³ÖµÇı¶¯¶ÔÏóµØÖ·
+	//èµ‹å€¼é©±åŠ¨å¯¹è±¡åœ°å€
 	pDriverOutData->DriverObject = DriverObject;
 
-	//¸³ÖµÇı¶¯¼ÓÔØ»ùÖ·
+	//èµ‹å€¼é©±åŠ¨åŠ è½½åŸºå€
 	pDriverOutData->ImageBaseAddr = DriverStart;
 
-	//¸³ÖµÇı¶¯´óĞ¡
+	//èµ‹å€¼é©±åŠ¨å¤§å°
 	pDriverOutData->ImageBaseAddr = DriverSize;
 
 	if (MmIsAddressValid(DriverSection))
 	{
-		//¿½±´Â·¾¶
+		//æ‹·è´è·¯å¾„
 		PUNICODE_STRING FullDllName = DriverSection + _LDR_DATA_TABLE_ENTRY_FullDllName;
 		wcscpy_s(pDriverOutData->ImageFullBaseName, MAX_PATH * sizeof(WCHAR), FullDllName->Buffer);
 		pDriverOutData->ImageFullBaseNameLength = FullDllName->MaximumLength;
 
-		//¿½±´Çı¶¯Ãû³Æ
+		//æ‹·è´é©±åŠ¨åç§°
 		PUNICODE_STRING BaseDllName = DriverSection + _LDR_DATA_TABLE_ENTRY_BaseDllName;
 		wcscpy_s(pDriverOutData->DriverName, MAX_PATH * sizeof(WCHAR), BaseDllName->Buffer);
 	}
 
 	if (MmIsAddressValid(DriverExtension))
 	{
-		//¿½±´·şÎñÃû³Æ
+		//æ‹·è´æœåŠ¡åç§°
 		PUNICODE_STRING ServiceKeyName = DriverExtension + _DRIVER_EXTENSION_ServiceKeyName;
 		wcscpy_s(pDriverOutData->ServerName, MAX_PATH * sizeof(WCHAR), ServiceKeyName->Buffer);
 	}
@@ -4041,11 +4049,11 @@ ULONG64 EnumMiniFilter(ULONG64 Filter, PCMiniFilterCallBackInfo* OutData, PULONG
 {
 	if (!MmIsAddressValid(Filter))
 	{
-		MyDbgPrintfEx("[%ws] ÎŞĞ§µÄFilter\n", __FUNCTION__);
+		MyDbgPrintfEx("[%ws] æ— æ•ˆçš„Filter\n", __FUNCTION__);
 		return -1;
 	}
 
-	//¶¨Î»µ±Ç°¶ÔÏó
+	//å®šä½å½“å‰å¯¹è±¡
 	ULONG64 FilterObject = Filter;
 	ULONG64 FilterObjectEnd = ((ULONG64)(((PLIST_ENTRY)(FilterObject + _FLT_OBJECT_PrimaryLink))->Blink) - _FLT_OBJECT_PrimaryLink);
 	//PUNICODE_STRING pName = NULL;
@@ -4056,14 +4064,14 @@ ULONG64 EnumMiniFilter(ULONG64 Filter, PCMiniFilterCallBackInfo* OutData, PULONG
 
 	ULONG64 DriverObject = 0;
 
-	//»Øµ÷ÀàĞÍÃû³ÆºÍÀàĞÍ
+	//å›è°ƒç±»å‹åç§°å’Œç±»å‹
 	typedef  struct _CMiniFilterFunCallBackType
 	{
-		UCHAR cType;							//ÀàĞÍ
-		WCHAR pTypeName[MAX_BASE_FILE_NAME];	//ÀàĞÍÃû³Æ
+		UCHAR cType;							//ç±»å‹
+		WCHAR pTypeName[MAX_BASE_FILE_NAME];	//ç±»å‹åç§°
 	}CMiniFilterFunCallBackType, * PCMiniFilterFunCallBackType;
 
-	//´æ´¢»Øµ÷ÀàĞÍÃû³ÆÁË
+	//å­˜å‚¨å›è°ƒç±»å‹åç§°äº†
 	CMiniFilterFunCallBackType szFilterType[] = {
 	{IRP_MJ_CREATE,L"IRP_MJ_CREATE"},
 	{IRP_MJ_CREATE_NAMED_PIPE,L"IRP_MJ_CREATE_NAMED_PIPE"},
@@ -4119,20 +4127,20 @@ ULONG64 EnumMiniFilter(ULONG64 Filter, PCMiniFilterCallBackInfo* OutData, PULONG
 			goto TABLE_RET;
 		}
 
-		//¶¨Î»Ãû×Ö
+		//å®šä½åå­—
 		//pName = (FilterObject + _FLT_FILTER_Name);
-		//»ñÈ¡»Øµ÷µØÖ·
+		//è·å–å›è°ƒåœ°å€
 		pCallBack = *(PULONG64)(FilterObject + _FLT_FILTER_Operations);
 
-		//¶¨Î»º£°Î
+		//å®šä½æµ·æ‹”
 		pAltitude = (FilterObject + _FLT_FILTER_DefaultAltitude);
 
-		//¶¨Î»Çı¶¯¶ÔÏó
+		//å®šä½é©±åŠ¨å¯¹è±¡
 		DriverObject = *(PULONG64)(FilterObject + _FLT_FILTER_DriverObject);
 
-		while (*(PUCHAR)pCallBack != IRP_MJ_OPERATION_END/*Ñ­»·½áÊø±êÖ¾0x80*/)
+		while (*(PUCHAR)pCallBack != IRP_MJ_OPERATION_END/*å¾ªç¯ç»“æŸæ ‡å¿—0x80*/)
 		{
-			//»ñÈ¡×¢²áµÄ½á¹¹Ìå
+			//è·å–æ³¨å†Œçš„ç»“æ„ä½“
 			PFLT_OPERATION_REGISTRATION pOperation = pCallBack;
 			if (!MmIsAddressValid(pOperation))
 			{
@@ -4140,7 +4148,7 @@ ULONG64 EnumMiniFilter(ULONG64 Filter, PCMiniFilterCallBackInfo* OutData, PULONG
 			}
 
 			{
-				//ÉêÇë¿Õ¼ä
+				//ç”³è¯·ç©ºé—´
 				PCMiniFilterCallBackInfo pNewInfo = MyExAllocMemOry(sizeof(CMiniFilterCallBackInfo), PAGE_READWRITE, UserMode);
 				if (pNewInfo == NULL)
 				{
@@ -4148,7 +4156,7 @@ ULONG64 EnumMiniFilter(ULONG64 Filter, PCMiniFilterCallBackInfo* OutData, PULONG
 				}
 
 
-				//¿½±´Ãû³Æ
+				//æ‹·è´åç§°
 				int Typeindex = 0;
 				for (Typeindex = 0; Typeindex < sizeof(szFilterType) / sizeof(szFilterType[0]); Typeindex++)
 				{
@@ -4164,16 +4172,16 @@ ULONG64 EnumMiniFilter(ULONG64 Filter, PCMiniFilterCallBackInfo* OutData, PULONG
 					swprintf(pNewInfo->szFilterTypeName, L"Unknown(%X)", pOperation->MajorFunction);
 				}
 
-				//¿½±´PostOperation
+				//æ‹·è´PostOperation
 				pNewInfo->PostOperation = pOperation->PostOperation;
 
-				//¿½±´PreOperation
+				//æ‹·è´PreOperation
 				pNewInfo->PreOperation = pOperation->PreOperation;
 
-				//¿½±´¹ıÂËÆ÷µØÖ·
+				//æ‹·è´è¿‡æ»¤å™¨åœ°å€
 				pNewInfo->pFilterAddr = FilterObject;
 
-				//¿½±´º£°Î
+				//æ‹·è´æµ·æ‹”
 				PWCHAR Altitude = pNewInfo->Altitude;
 				memcpy_s(Altitude, MAX_BASE_FILE_NAME, pAltitude->Buffer, pAltitude->MaximumLength);
 
@@ -4184,29 +4192,29 @@ ULONG64 EnumMiniFilter(ULONG64 Filter, PCMiniFilterCallBackInfo* OutData, PULONG
 					wcscpy_s(pNewInfo->ModulePath, MY_MAX_PATH, DriverInfo.ImageFullBaseName);
 				}
 
-				//²åÈëÁ´±í
+				//æ’å…¥é“¾è¡¨
 				if (IsInit != 0 && ((PCCallBackInfo)(*OutData))->List.IsInitialize)
 				{
-					//²åÈëÁ´±íÀïÃæ
+					//æ’å…¥é“¾è¡¨é‡Œé¢
 					InsertHeadList(&((PCCallBackInfo)(*OutData))->List.List, &pNewInfo->List.List);
 				}
 				else
 				{
-					pNewInfo->List.IsInitialize = TRUE;						//ÒÑ³õÊ¼»¯
-					InitializeListHead(&pNewInfo->List.List);				//³õÊ¼»¯Á´±íÍ·
-					*OutData = pNewInfo;									//¸³Öµ
+					pNewInfo->List.IsInitialize = TRUE;						//å·²åˆå§‹åŒ–
+					InitializeListHead(&pNewInfo->List.List);				//åˆå§‹åŒ–é“¾è¡¨å¤´
+					*OutData = pNewInfo;									//èµ‹å€¼
 					IsInit = TRUE;
 				}
-				//ÊıÁ¿¼Ñ¼Ñ
+				//æ•°é‡ä½³ä½³
 				nIndex++;
 			}
-			//Ö¸ÏòÏÂÒ»¸ö»Øµ÷
+			//æŒ‡å‘ä¸‹ä¸€ä¸ªå›è°ƒ
 			pCallBack = pCallBack + sizeof(FLT_OPERATION_REGISTRATION);
 		}
 
 	TABLE_1:
 
-		//ÏòÇ°±éÀú»ñÈ¡ÏÂÒ»¸ö¶ÔÏó
+		//å‘å‰éå†è·å–ä¸‹ä¸€ä¸ªå¯¹è±¡
 		FilterObject = ((ULONG64)(((PLIST_ENTRY)((ULONG64)FilterObject + _FLT_OBJECT_PrimaryLink))->Flink) - _FLT_OBJECT_PrimaryLink);
 	} while (FilterObject != FilterObjectEnd);
 
@@ -4223,7 +4231,7 @@ TABLE_RET:
 
 ULONG64 EnumSysObjectMajorFunction(ULONG64 DriverObject, PCSysMajorFunctionInfo* OutData)
 {
-	//ÑéÖ¤²ÎÊı
+	//éªŒè¯å‚æ•°
 	if (!MmIsAddressValid(DriverObject))
 	{
 		return FALSE;
@@ -4231,7 +4239,7 @@ ULONG64 EnumSysObjectMajorFunction(ULONG64 DriverObject, PCSysMajorFunctionInfo*
 
 	ULONG64 IsInit = MmIsAddressValid(OutData) && MmIsAddressValid(*OutData) && ((PCKernelCallBackInfo)(*OutData))->List.IsInitialize;
 
-	//±éÀúIRPÅÉÇ²º¯Êı
+	//éå†IRPæ´¾é£å‡½æ•°
 	PULONG64 pMajorFunctionAddr = (DriverObject + _DRIVER_OBJECT_MajorFunction);
 
 	for (int i = 0; i < MAJORFUNCTION_MAX_NUMBER; i++)
@@ -4241,85 +4249,85 @@ ULONG64 EnumSysObjectMajorFunction(ULONG64 DriverObject, PCSysMajorFunctionInfo*
 			continue;
 		}
 
-		//ÉêÇë¿Õ¼ä
+		//ç”³è¯·ç©ºé—´
 		PCSysMajorFunctionInfo pNewInfo = MyExAllocMemOry(sizeof(CSysMajorFunctionInfo), PAGE_READWRITE, UserMode);
 		if (pNewInfo == NULL)
 		{
 			break;
 		}
 
-		//º¯ÊıµØÖ·
+		//å‡½æ•°åœ°å€
 		pNewInfo->FunAddr = pMajorFunctionAddr[i];
-		//ĞòºÅ
+		//åºå·
 		pNewInfo->Ord = i;
-		//ÀàĞÍ
+		//ç±»å‹
 		pNewInfo->Type = i;
 
-		//¿½±´Â·¾¶
+		//æ‹·è´è·¯å¾„
 		CDriverInfo DriverInfo = { 0 };
 		if (IsSysModuleEx(pNewInfo->FunAddr, &DriverInfo))
 		{
 			memcpy_s(pNewInfo->ModulePath, MY_MAX_PATH, DriverInfo.ImageFullBaseName, MY_MAX_PATH);
 		}
 
-		//²åÈëÁ´±í
+		//æ’å…¥é“¾è¡¨
 		if (IsInit != 0 && ((PCSysMajorFunctionInfo)(*OutData))->List.IsInitialize)
 		{
-			//²åÈëÁ´±íÀïÃæ
+			//æ’å…¥é“¾è¡¨é‡Œé¢
 			InsertHeadList(&((PCSysMajorFunctionInfo)(*OutData))->List.List, &pNewInfo->List.List);
 		}
 		else
 		{
-			pNewInfo->List.IsInitialize = TRUE;						//ÒÑ³õÊ¼»¯
-			InitializeListHead(&pNewInfo->List.List);				//³õÊ¼»¯Á´±íÍ·
-			*OutData = pNewInfo;									//¸³Öµ
+			pNewInfo->List.IsInitialize = TRUE;						//å·²åˆå§‹åŒ–
+			InitializeListHead(&pNewInfo->List.List);				//åˆå§‹åŒ–é“¾è¡¨å¤´
+			*OutData = pNewInfo;									//èµ‹å€¼
 			IsInit = TRUE;
 		}
 	}
 
-	//±éÀú¿ìËÙIRPÅÉÇ²º¯Êı
+	//éå†å¿«é€ŸIRPæ´¾é£å‡½æ•°
 	PULONG64 pFastMajorFunctionAddr = *(PULONG64)(DriverObject + _DRIVER_OBJECT_FastIoDispatch);
 	if (MmIsAddressValid(pFastMajorFunctionAddr))
 	{
-		for (int i = 1 /*´ÓÒ»¿ªÊ¼*/; i < (sizeof(FAST_IO_DISPATCH) / sizeof(ULONG64)); i++)
+		for (int i = 1 /*ä»ä¸€å¼€å§‹*/; i < (sizeof(FAST_IO_DISPATCH) / sizeof(ULONG64)); i++)
 		{
 			if (pFastMajorFunctionAddr[i] == 0)
 			{
 				continue;
 			}
 
-			//ÉêÇë¿Õ¼ä
+			//ç”³è¯·ç©ºé—´
 			PCSysMajorFunctionInfo pNewInfo = MyExAllocMemOry(sizeof(CSysMajorFunctionInfo), PAGE_READWRITE, UserMode);
 			if (pNewInfo == NULL)
 			{
 				break;
 			}
 
-			//º¯ÊıµØÖ·
+			//å‡½æ•°åœ°å€
 			pNewInfo->FunAddr = pFastMajorFunctionAddr[i];
-			//ĞòºÅ
+			//åºå·
 			pNewInfo->Ord = i;
-			//ÀàĞÍ
+			//ç±»å‹
 			pNewInfo->Type = i + IRP_MJ_MAXIMUM_FUNCTION;
 
-			//¿½±´Â·¾¶
+			//æ‹·è´è·¯å¾„
 			CDriverInfo DriverInfo = { 0 };
 			if (IsSysModuleEx(pNewInfo->FunAddr, &DriverInfo))
 			{
 				memcpy_s(pNewInfo->ModulePath, MY_MAX_PATH, DriverInfo.ImageFullBaseName, MY_MAX_PATH);
 			}
 
-			//²åÈëÁ´±í
+			//æ’å…¥é“¾è¡¨
 			if (IsInit != 0 && ((PCSysMajorFunctionInfo)(*OutData))->List.IsInitialize)
 			{
-				//²åÈëÁ´±íÀïÃæ
+				//æ’å…¥é“¾è¡¨é‡Œé¢
 				InsertHeadList(&((PCSysMajorFunctionInfo)(*OutData))->List.List, &pNewInfo->List.List);
 			}
 			else
 			{
-				pNewInfo->List.IsInitialize = TRUE;						//ÒÑ³õÊ¼»¯
-				InitializeListHead(&pNewInfo->List.List);				//³õÊ¼»¯Á´±íÍ·
-				*OutData = pNewInfo;									//¸³Öµ
+				pNewInfo->List.IsInitialize = TRUE;						//å·²åˆå§‹åŒ–
+				InitializeListHead(&pNewInfo->List.List);				//åˆå§‹åŒ–é“¾è¡¨å¤´
+				*OutData = pNewInfo;									//èµ‹å€¼
 				IsInit = TRUE;
 			}
 		}
@@ -4340,25 +4348,25 @@ ULONG64 MyIoThreadToProcess(ULONG64 Thread)
 
 ULONG64 EnumDpcTimer(PCDPcInfo* OutData)
 {
-	//ÑéÖ¤ÄÚºËÖĞËùÊ¹ÓÃµÄ±äÁ¿µØÖ·ÊÇ·ñÓĞĞ§
+	//éªŒè¯å†…æ ¸ä¸­æ‰€ä½¿ç”¨çš„å˜é‡åœ°å€æ˜¯å¦æœ‰æ•ˆ
 	if (!MmIsAddressValid(KiProcessorBlock) || !MmIsAddressValid(KiWaitNever) || !MmIsAddressValid(KiWaitAlways))
 	{
 		return FALSE;
 	}
 
-	//ÑéÖ¤Á´±íÊÇ·ñ³õÊ¼»¯
+	//éªŒè¯é“¾è¡¨æ˜¯å¦åˆå§‹åŒ–
 	ULONG64 IsInit = MmIsAddressValid(OutData) && MmIsAddressValid(*OutData) && ((PCKernelCallBackInfo)(*OutData))->List.IsInitialize;
 
-	//´æ´¢ÊıÁ¿
+	//å­˜å‚¨æ•°é‡
 	ULONG64 Index = 0;
 
 	for (int i = 0; i < KeNumberProcessors; i++)
 	{
-		//»ñÈ¡CPU»·¾³¿ì
+		//è·å–CPUç¯å¢ƒå¿«
 		PUCHAR pKprcb = KiProcessorBlock[i];
 		if (MmIsAddressValid(pKprcb))
 		{
-			//»ñÈ¡´æ´¢DPCµÄ±í
+			//è·å–å­˜å‚¨DPCçš„è¡¨
 			PKTIMER_TABLE TimerTable = (PKTIMER_TABLE)(pKprcb + _KPRCB_TimerTable);
 
 			//MyDbgPrintfEx("TimerTable:%I64X\n", TimerTable);
@@ -4369,70 +4377,70 @@ ULONG64 EnumDpcTimer(PCDPcInfo* OutData)
 				//MyDbgPrintfEx("TimerEntries:%I64X\n", TimerEntries);
 
 				// +0x200 TimerEntries     : [2] [256] _KTIMER_TABLE_ENTRY
-				//¶şÎ¬Êı×é 
+				//äºŒç»´æ•°ç»„ 
 				for (int j = 0; j < (TIMERENTRIES_MAX_NUMBER_UP * TIMERENTRIES_MAX_NUMBER_DOWN); j++)
 				{
-					//»ñÈ¡Á´±í
+					//è·å–é“¾è¡¨
 					PLIST_ENTRY pListEntryHeader = (PLIST_ENTRY)&TimerEntries[j].Entry;
 
 					if (MmIsAddressValid(pListEntryHeader))
 					{
-						//Ñ­»·±éÀúÁ´±í
+						//å¾ªç¯éå†é“¾è¡¨
 						for (PLIST_ENTRY pListEntry = pListEntryHeader->Blink; pListEntry != pListEntryHeader; pListEntry = pListEntry->Blink)
 						{
-							//Ö¸ÏòKTIMER½á¹¹Í·
+							//æŒ‡å‘KTIMERç»“æ„å¤´
 							PKTIMER pTimer = CONTAINING_RECORD(pListEntry, KTIMER, TimerListEntry);
 							//MyDbgPrintfEx("pTimer:%I64X\n", pTimer);
 							if (MmIsAddressValid(pTimer))
 							{
-								//»ñÈ¡DPC
+								//è·å–DPC
 								ULONG64 Dpc = pTimer->Dpc;
 
-								//ÏµÍ³¼ÓÃÜº¯Êı
+								//ç³»ç»ŸåŠ å¯†å‡½æ•°
 								//Dpc = (KiWaitNever ^ _rotr64(Timer ^ _byteswap_uint64(Dpc ^ KiWaitAlways),KiWaitNever));
 
-								//½âÃÜ
-								Dpc = Dpc ^ *KiWaitNever;								// Òì»ò
-								Dpc = _rotl64(Dpc, *KiWaitNever);						// Ñ­»·×óÒÆ
-								Dpc = Dpc ^ (ULONG64)pTimer;							// Òì»ò
-								Dpc = _byteswap_uint64(Dpc);							// µßµ¹Ë³Ğò
-								Dpc = Dpc ^ *KiWaitAlways;								// Òì»ò
+								//è§£å¯†
+								Dpc = Dpc ^ *KiWaitNever;								// å¼‚æˆ–
+								Dpc = _rotl64(Dpc, *KiWaitNever);						// å¾ªç¯å·¦ç§»
+								Dpc = Dpc ^ (ULONG64)pTimer;							// å¼‚æˆ–
+								Dpc = _byteswap_uint64(Dpc);							// é¢ å€’é¡ºåº
+								Dpc = Dpc ^ *KiWaitAlways;								// å¼‚æˆ–
 
-								//ÑéÖ¤DPC¶ÔÏóÊÇ·ñÕıÈ·
+								//éªŒè¯DPCå¯¹è±¡æ˜¯å¦æ­£ç¡®
 								if (MmIsAddressValid(Dpc))
 								{
 									PKDPC pDpc = (PKDPC)Dpc;
 
-									//ÉêÇë¿Õ¼ä
+									//ç”³è¯·ç©ºé—´
 									PCDPcInfo pNewInfo = MyExAllocMemOry(sizeof(CDPcInfo), PAGE_READWRITE, UserMode);
 									if (pNewInfo == NULL)
 									{
 										break;
 									}
 
-									pNewInfo->DpcObject = pDpc;	//Dpc¶ÔÏó
-									pNewInfo->TimeObject = pTimer;//Time¶ÔÏó
-									pNewInfo->FunCtionStartAddr = pDpc->DeferredRoutine;//º¯ÊıµØÖ·
-									pNewInfo->TriggerCycle = pTimer->Period;	//´¥·¢ÖÜÆÚ
+									pNewInfo->DpcObject = pDpc;	//Dpcå¯¹è±¡
+									pNewInfo->TimeObject = pTimer;//Timeå¯¹è±¡
+									pNewInfo->FunCtionStartAddr = pDpc->DeferredRoutine;//å‡½æ•°åœ°å€
+									pNewInfo->TriggerCycle = pTimer->Period;	//è§¦å‘å‘¨æœŸ
 
-									//¿½±´Â·¾¶
+									//æ‹·è´è·¯å¾„
 									CDriverInfo DriverInfo = { 0 };
 									if (IsSysModuleEx(pNewInfo->FunCtionStartAddr, &DriverInfo))
 									{
 										memcpy_s(pNewInfo->ModulePath, MY_MAX_PATH, DriverInfo.ImageFullBaseName, MY_MAX_PATH);
 									}
 
-									//²åÈëÁ´±í
+									//æ’å…¥é“¾è¡¨
 									if (IsInit != 0 && ((PCDPcInfo)(*OutData))->List.IsInitialize)
 									{
-										//²åÈëÁ´±íÀïÃæ
+										//æ’å…¥é“¾è¡¨é‡Œé¢
 										InsertHeadList(&((PCDPcInfo)(*OutData))->List.List, &pNewInfo->List.List);
 									}
 									else
 									{
-										pNewInfo->List.IsInitialize = TRUE;						//ÒÑ³õÊ¼»¯
-										InitializeListHead(&pNewInfo->List.List);		//³õÊ¼»¯Á´±íÍ·
-										*OutData = pNewInfo;									//¸³Öµ
+										pNewInfo->List.IsInitialize = TRUE;						//å·²åˆå§‹åŒ–
+										InitializeListHead(&pNewInfo->List.List);		//åˆå§‹åŒ–é“¾è¡¨å¤´
+										*OutData = pNewInfo;									//èµ‹å€¼
 										IsInit = TRUE;
 									}
 									Index++;
@@ -4451,13 +4459,13 @@ ULONG64 AlterPspNotifyEnableMask(ULONG32 Value)
 {
 	if (MmIsAddressValid(g_PspNotifyEnableMaskInfo.pSrcMask) && (*(PULONG32)g_PspNotifyEnableMaskInfo.pSrcMask != Value))
 	{
-		//·ÃÎÊ±êÖ¾ÎªÕæ
+		//è®¿é—®æ ‡å¿—ä¸ºçœŸ
 		g_PspNotifyEnableMaskInfo.nVisit = TRUE;
-		//·ÃÎÊ´ÎÊı++
+		//è®¿é—®æ¬¡æ•°++
 		g_PspNotifyEnableMaskInfo.nVisitCount++;
-		//±£´æ¾ÉµÄ
+		//ä¿å­˜æ—§çš„
 		g_PspNotifyEnableMaskInfo.pOldMask = *(PULONG32)g_PspNotifyEnableMaskInfo.pSrcMask;
-		//Ìæ»»³ÉĞÂµÄ
+		//æ›¿æ¢æˆæ–°çš„
 		*(PULONG32)g_PspNotifyEnableMaskInfo.pSrcMask = Value;
 		return TRUE;
 	}
@@ -4467,16 +4475,16 @@ ULONG64 AlterPspNotifyEnableMask(ULONG32 Value)
 ULONG64 EnumWorkThreadStack()
 {
 	//__debugbreak();
-	//ÑéÖ¤È«¾Ö±äÁ¿
+	//éªŒè¯å…¨å±€å˜é‡
 	if (!MmIsAddressValid(PspSystemPartition))
 	{
 		return FALSE;
 	}
-	//´æ´¢ÊıÁ¿
+	//å­˜å‚¨æ•°é‡
 	ULONG64 dqRet = 0;
 	//  if ( !(unsigned __int8)ExpQueueWorkItem(*((_QWORD *)PspSystemPartition + 2), WorkItem, v4, 0xFFFFFFFF, 0) )
 
-	//¼Ó2µÄÎ»ÖÃ
+	//åŠ 2çš„ä½ç½®
 	ULONG64 ExPartition = *(PULONG64)((ULONG64)*PspSystemPartition + _EPARTITION_ExPartition);
 	if (!MmIsAddressValid(ExPartition))
 	{
@@ -4484,15 +4492,15 @@ ULONG64 EnumWorkThreadStack()
 	}
 
 	//v20 = a1->WorkQueues[v15->NodeNumber];      // _EX_WORK_QUEUE
-	//ÎÒÃÇÊÇ±éÀúËùÒÔÖ»ĞèÒª»ñÈ¡WorkQueues¾ÍĞĞÁË,È»ºó±éÀúÃ¿Ò»Ïî
+	//æˆ‘ä»¬æ˜¯éå†æ‰€ä»¥åªéœ€è¦è·å–WorkQueueså°±è¡Œäº†,ç„¶åéå†æ¯ä¸€é¡¹
 
 	ULONG64 WorkQueues = *(PULONG64)(ExPartition + _EX_PARTITION_WorkQueues);
-	//ÕâÊÇ¸öÈı¼¶Ö¸Õë    +0x008 WorkQueues       : 0xffff9b04`f0c9f330  -> 0xffff9b04`f0c73060  -> 0xffff9b04`f0c90c60 _EX_WORK_QUEUE
+	//è¿™æ˜¯ä¸ªä¸‰çº§æŒ‡é’ˆ    +0x008 WorkQueues       : 0xffff9b04`f0c9f330  -> 0xffff9b04`f0c73060  -> 0xffff9b04`f0c90c60 _EX_WORK_QUEUE
 	if (!MmIsAddressValid(WorkQueues))
 	{
 		return FALSE;
 	}
-	//ÔÙÈ¡Á½´Î
+	//å†å–ä¸¤æ¬¡
 	for (int i = 0; i < 2; i++)
 	{
 		WorkQueues = *(PULONG64)WorkQueues;
@@ -4509,8 +4517,8 @@ ULONG64 EnumWorkThreadStack()
 		return FALSE;
 	}
 
-	//¿ªÊ¼±éÀú
-	for (PLIST_ENTRY pCurList = WaitListHead->Flink; pCurList != WaitListHead; pCurList = pCurList->Flink, dqRet++/*ÊıÁ¿¼Ó¼Ó*/)
+	//å¼€å§‹éå†
+	for (PLIST_ENTRY pCurList = WaitListHead->Flink; pCurList != WaitListHead; pCurList = pCurList->Flink, dqRet++/*æ•°é‡åŠ åŠ */)
 	{
 		// 
 
@@ -4522,9 +4530,375 @@ ULONG64 EnumWorkThreadStack()
 	return dqRet;
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// æšä¸¾å†…æ ¸å·¥ä½œçº¿ç¨‹é˜Ÿåˆ—ï¼šå®è´¨å°±æ˜¯ System è¿›ç¨‹(PID=4)ä¸­çš„æ‰€æœ‰çº¿ç¨‹ã€‚
+// è¿™äº›çº¿ç¨‹çš„ StartAddress è½åœ¨ ntoskrnl æˆ–ç¬¬ä¸‰æ–¹é©±åŠ¨é‡Œï¼Œå¤ç”¨ IsSysModuleEx è§£ææ‰€å±æ¨¡å—ï¼Œ
+// å­—æ®µæ²¿ç”¨ CProcessThreadInfoï¼Œé¿å…å¼•å…¥æ–°çš„ä¼ è¾“ç»“æ„å’Œèµ„æºæ–‡ä»¶æ”¹åŠ¨ã€‚
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ULONG64 EnumWorkerThread(PCProcessThreadInfo* OutData)
+{
+	if (!MmIsAddressValid(OutData))
+	{
+		return 0;
+	}
+
+	// System è¿›ç¨‹ EPROCESSï¼ˆPID=4ï¼‰
+	ULONG64 SystemEprocess = PsLookUpProcessByProcessId((HANDLE)4);
+	if (!MmIsAddressValid(SystemEprocess))
+	{
+		return 0;
+	}
+
+	ULONG64 IsInit = MmIsAddressValid(*OutData) && ((PCProcessThreadInfo)(*OutData))->List.IsInitialize;
+	ULONG64 Count = 0;
+	ULONG64 SystemPid = *(PULONG64)(SystemEprocess + _EPROCESS_UniqueProcessId);
+	PLIST_ENTRY ListHead = (PLIST_ENTRY)(SystemEprocess + _EPROCESS_ThreadListHead);
+
+	for (PLIST_ENTRY Cur = ListHead->Flink; MmIsAddressValid(Cur) && Cur != ListHead; Cur = Cur->Flink)
+	{
+		ULONG64 Thread = (ULONG64)Cur - _ETHREAD_ThreadListEntry;
+		if (!MmIsAddressValid((PVOID)Thread))
+		{
+			break;
+		}
+
+		ULONG64 TPid = *(PULONG64)(Thread + _KTHREAD_UniqueProcess);
+		if (TPid != SystemPid)
+		{
+			continue;
+		}
+
+		PCProcessThreadInfo pNewInfo = MyExAllocMemOry(sizeof(CProcessThreadInfo), PAGE_READWRITE, UserMode);
+		if (pNewInfo == NULL)
+		{
+			break;
+		}
+
+		pNewInfo->Ethread = Thread;
+		pNewInfo->UniqueThread = *(PULONG64)(Thread + _KTHREAD_UniqueThread);
+		pNewInfo->Priority = *(PCHAR)(Thread + _KTHREAD_Priority);
+		pNewInfo->State = *(PUCHAR)(Thread + _KTHREAD_State);
+		pNewInfo->ContextSwitches = *(PULONG32)(Thread + _KTHREAD_ContextSwitches);
+		pNewInfo->Teb = *(PULONG64)(Thread + _KTHREAD_Teb);
+		// System è¿›ç¨‹çº¿ç¨‹çš„å…¥å£åœ¨å†…æ ¸æ€ï¼šç”¨ ETHREAD.StartAddressï¼ˆå†…æ ¸ routineï¼‰ï¼Œ
+		// ä¸æ˜¯ Win32StartAddressï¼ˆç”¨æˆ·æ€çº¿ç¨‹æ‰ç”¨å¾—åˆ°ï¼‰ã€‚
+		pNewInfo->StartAddress = *(PULONG64)(Thread + _ETHREAD_StartAddress);
+		pNewInfo->ThreadTypeFlag = 0;
+
+		PLARGE_INTEGER CreateTime = (PLARGE_INTEGER)(Thread + _ETHREAD_CreateTime);
+		if (MmIsAddressValid(CreateTime))
+		{
+			LARGE_INTEGER LocalTime = { 0 };
+			ExSystemTimeToLocalTime(CreateTime, &LocalTime);
+			CTIME_FIELDS Tf = { 0 };
+			RtlTimeToTimeFields(&LocalTime, &Tf);
+			pNewInfo->CreateTime = Tf;
+		}
+
+		// è§£æ StartAddress æ‰€åœ¨å†…æ ¸æ¨¡å—
+		CDriverInfo DriverInfo = { 0 };
+		if (pNewInfo->StartAddress && IsSysModuleEx(pNewInfo->StartAddress, &DriverInfo))
+		{
+			memcpy_s(pNewInfo->MoudleName, sizeof(pNewInfo->MoudleName), DriverInfo.ImageFullBaseName, sizeof(pNewInfo->MoudleName));
+		}
+
+		//æ’å…¥é“¾è¡¨
+		if (IsInit != 0 && ((PCProcessThreadInfo)(*OutData))->List.IsInitialize)
+		{
+			InsertHeadList(&((PCProcessThreadInfo)(*OutData))->List.List, &pNewInfo->List.List);
+		}
+		else
+		{
+			pNewInfo->List.IsInitialize = TRUE;
+			InitializeListHead(&pNewInfo->List.List);
+			*OutData = pNewInfo;
+			IsInit = TRUE;
+		}
+
+		Count++;
+	}
+
+	return Count;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// æšä¸¾ Wdf01000.sys å†…éƒ¨çš„ WdfFunctions å‡½æ•°è¡¨ã€‚
+// æ€è·¯ï¼š
+//   1. é€šè¿‡ PsLoadedModuleList æ‰¾ Wdf01000.sys æ¨¡å—åŸºå€ + å¤§å° + å®Œæ•´è·¯å¾„ã€‚
+//   2. å–å®ƒçš„å¯¼å‡º WdfVersionBindã€‚è¯¥å¯¼å‡ºä¼šæŠŠ BindInfo->FuncTable = &WdfFunctions å†™è¿›è°ƒç”¨æ–¹
+//      ç»“æ„ï¼Œç¼–è¯‘å‡ºæ¥ä¸€å®šåŒ…å« `lea r?, [rip+disp32]` æŒ‡å‘ WdfFunctions å…¨å±€ã€‚
+//   3. ç”¨ HDE64 åæ±‡ç¼– WdfVersionBind å‰ ~512 å­—èŠ‚ï¼Œæšä¸¾æ¯ä¸ª lea-rip ç›®æ ‡ï¼Œè®¡ç®—è¯¥ç›®æ ‡å¤„
+//      è¿ç»­çš„åˆæ³•å†…æ ¸æŒ‡é’ˆæ¡ç›®æ•°ï¼Œé€‰æœ€é•¿çš„å°±æ˜¯ WdfFunctions è¡¨ã€‚
+//   4. éå†è¡¨é¡¹ï¼›æŒ‡é’ˆä¸åœ¨ Wdf01000.sys æ¨¡å—èŒƒå›´å†…å³æ ‡ Hookï¼Œå¹¶å°½é‡ç”¨ IsSysModuleEx åæŸ¥
+//      å®é™…æ‰€å±æ¨¡å—è·¯å¾„ï¼ˆå¸®åŠ©å®šä½ hook æ¥æºï¼‰ã€‚
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// æŠŠå•æ¡è¯Šæ–­å­—ç¬¦ä¸²ä½œä¸ºä¸€ä¸ª CWdfInfo é¡¹æ’è¿› *OutData é“¾è¡¨é‡Œâ€”â€”è¿™æ ·ä¸å¼€ DbgView ä¹Ÿèƒ½ç«‹åˆ»
+// åœ¨ R3 åˆ—è¡¨é‡Œçœ‹åˆ° EnumWdfFunction å¤±è´¥å‘ç”Ÿåœ¨å“ªä¸ªåˆ†æ”¯ã€‚
+static VOID WdfPushDiag(PCWdfInfo* OutData, const char* AsciiMsg)
+{
+	if (!MmIsAddressValid(OutData)) return;
+	PCWdfInfo p = MyExAllocMemOry(sizeof(CWdfInfo), PAGE_READWRITE, UserMode);
+	if (!p) return;
+	p->pFunOrder = 0;
+	p->pFunAddr = 0;
+	p->pSrcFunAddr = 0;
+	p->HookType = 0;
+	// ModulePath æ˜¯ WCHAR[]ï¼›æŠŠ ASCII ç›´æ¥å±•å®½è¿›å»
+	WCHAR* dst = p->ModulePath;
+	SIZE_T cap = sizeof(p->ModulePath) / sizeof(WCHAR);
+	SIZE_T i = 0;
+	for (; AsciiMsg[i] && i + 1 < cap; i++) dst[i] = (WCHAR)(UCHAR)AsciiMsg[i];
+	dst[i] = 0;
+	if (MmIsAddressValid(*OutData) && ((PCWdfInfo)(*OutData))->List.IsInitialize)
+	{
+		InsertHeadList(&((PCWdfInfo)(*OutData))->List.List, &p->List.List);
+	}
+	else
+	{
+		p->List.IsInitialize = TRUE;
+		InitializeListHead(&p->List.List);
+		*OutData = p;
+	}
+}
+
+ULONG64 EnumWdfFunction(PCWdfInfo* OutData)
+{
+	if (!MmIsAddressValid(OutData))
+	{
+		return 0;
+	}
+
+	// 1. æ‰¾ Wdf01000.sys åŸºå€ + å¤§å°
+	ULONG_PTR Wdf01000Size = 0;
+	ULONG64 Wdf01000Base = QuerySysModule((PUCHAR)"Wdf01000.sys", &Wdf01000Size);
+	if (Wdf01000Base == 0 || Wdf01000Size == 0)
+	{
+		MyDbgPrintfEx("[%s] Wdf01000.sys not loaded.\n", __FUNCTION__);
+		WdfPushDiag(OutData, "DIAG: Wdf01000.sys NOT LOADED");
+		return 1;
+	}
+	ULONG64 Wdf01000End = Wdf01000Base + Wdf01000Size;
+
+	// 2. å–å®ƒçš„å®Œæ•´è·¯å¾„ï¼ˆç”¨äºå›å¡« ModulePathï¼‰
+	WCHAR Wdf01000Path[MY_MAX_PATH] = { 0 };
+	BOOLEAN GotPath = FALSE;
+	if (MmIsAddressValid(PsLoadedModuleList))
+	{
+		PLIST_ENTRY Head = PsLoadedModuleList;
+		for (PLIST_ENTRY Cur = Head->Flink; MmIsAddressValid(Cur) && Cur != Head; Cur = Cur->Flink)
+		{
+			PLDR_DATA_TABLE_ENTRY Ldr = CONTAINING_RECORD(Cur, LDR_DATA_TABLE_ENTRY, InLoadOrderLinks);
+			if (!MmIsAddressValid(Ldr) || !MmIsAddressValid(Ldr->FullDllName.Buffer))
+			{
+				continue;
+			}
+			if ((ULONG64)Ldr->DllBase == Wdf01000Base)
+			{
+				USHORT cb = Ldr->FullDllName.Length;
+				if (cb > sizeof(Wdf01000Path) - sizeof(WCHAR)) cb = sizeof(Wdf01000Path) - sizeof(WCHAR);
+				memcpy(Wdf01000Path, Ldr->FullDllName.Buffer, cb);
+				GotPath = TRUE;
+				break;
+			}
+		}
+	}
+
+	// 3. å¯å‘å¼æ‰«æ PAGEWdfV / .data æ‰¾ FuncTable åœ¨æŸäº› Windows æ„å»ºä¸Š race / guard page
+	//    ä¼šå¯¼è‡´ bugcheckï¼ˆMmIsAddressValid ä¸è¶³ä»¥ä¿æŠ¤ä»»æ„å†…æ ¸æŒ‡é’ˆè§£å¼•ç”¨ï¼‰ã€‚
+	//    åœ¨æ”¹ç”¨æ›´ç¨³çš„æ–¹å¼ï¼ˆèµ° WdfLdr.sys WdfVersionBind / å®¢æˆ·é©±åŠ¨ .dataï¼‰å‰ï¼Œ
+	//    å…ˆæŠŠè¿™æ¡è·¯å…³æ‰ï¼Œé¿å…å†è“å±ã€‚
+	{
+		char buf[160];
+		RtlStringCbPrintfA(buf, sizeof(buf),
+			"DIAG: WDF enum disabled (Wdf01000 base=%I64X size=%I64X) - safer impl pending",
+			Wdf01000Base, (ULONG64)Wdf01000Size);
+		WdfPushDiag(OutData, buf);
+		return 1;
+	}
+
+	// ---- ä¸‹é¢è¿™æ®µå¯å‘å¼å®ç°æš‚æ—¶ç¦ç”¨ ----
+#if 0
+	// 3. å®šä½ Wdf01000.sys å†…çš„ "PAGEWdfV" èŠ‚ â€”â€” KMDF æŠŠå‡½æ•°è¡¨å’Œç»‘å®šä¿¡æ¯(WDF_BIND_INFO)
+	//    éƒ½æ”¾åœ¨è¿™ä¸ªç‰¹å®šèŠ‚é‡Œã€‚æ–°ç‰ˆæœ¬ Wdf01000.sys å·²ç»æ²¡æœ‰å¯¼å‡ºè¡¨ï¼Œä½†èŠ‚åä¸€ç›´æ²¡å˜ã€‚
+	PIMAGE_DOS_HEADER pDos = (PIMAGE_DOS_HEADER)Wdf01000Base;
+	if (!MmIsAddressValid(pDos) || pDos->e_magic != IMAGE_DOS_SIGNATURE)
+	{
+		MyDbgPrintfEx("[%s] bad DOS header.\n", __FUNCTION__);
+		WdfPushDiag(OutData, "DIAG: bad DOS header");
+		return 1;
+	}
+	PIMAGE_NT_HEADERS64 pNt = (PIMAGE_NT_HEADERS64)(Wdf01000Base + pDos->e_lfanew);
+	if (!MmIsAddressValid(pNt) || pNt->Signature != IMAGE_NT_SIGNATURE)
+	{
+		MyDbgPrintfEx("[%s] bad NT header.\n", __FUNCTION__);
+		WdfPushDiag(OutData, "DIAG: bad NT header");
+		return 1;
+	}
+
+	ULONG64 ScanStart = 0;
+	ULONG   ScanBytes = 0;
+	PIMAGE_SECTION_HEADER pSec = IMAGE_FIRST_SECTION(pNt);
+	MyDbgPrintfEx("[EnumWdfFunction] Wdf01000 base=%I64X size=%I64X sections=%u\n",
+		Wdf01000Base, (ULONG64)Wdf01000Size, (ULONG)pNt->FileHeader.NumberOfSections);
+	for (USHORT i = 0; i < pNt->FileHeader.NumberOfSections; i++)
+	{
+		char nm[9] = { 0 };
+		memcpy(nm, pSec[i].Name, 8);
+		MyDbgPrintfEx("[EnumWdfFunction] sect[%u] name=%-8s rva=%08X vsize=%08X chr=%08X\n",
+			(ULONG)i, nm, pSec[i].VirtualAddress, pSec[i].Misc.VirtualSize,
+			pSec[i].Characteristics);
+	}
+
+	// 4. PAGEWdfV å­˜çš„æ˜¯ WDF_BIND_INFOï¼ŒFuncTable æŒ‡å‘çœŸå‡½æ•°æŒ‡é’ˆæ•°ç»„ã€‚
+	//    ä½†æœ‰çš„ KMDF æ„å»ºé‡Œ FuncTable ç›´æ¥è½åœ¨åˆ«çš„ PAGEWdf* èŠ‚é‡Œ / æˆ– .data èŠ‚ã€‚
+	//    æ‰€ä»¥è¿™é‡Œ**éå† Wdf01000.sys çš„æ‰€æœ‰å¯å†™/åˆ†é¡µèŠ‚**åšæ‰«æã€‚
+	ULONG64 BestTable = 0;
+	ULONG   BestCount = 0;
+	const ULONG MaxEntries = 2048;
+	ULONG   CandidateSeen = 0;
+	ULONG   CandidateProbed = 0;
+	ULONG   SectionsScanned = 0;
+
+	for (USHORT si = 0; si < pNt->FileHeader.NumberOfSections; si++)
+	{
+		// åªæ‰«æå¯èƒ½å«æ•°æ®çš„èŠ‚ï¼šåŒ…å« "PAGE" / ".data" / ".rdata" å‰ç¼€ï¼Œ
+		// æˆ–æ˜¾å¼å¸¦ INITIALIZED_DATA ç‰¹å¾ä½ã€‚
+		BOOLEAN IsData =
+			(memcmp(pSec[si].Name, "PAGE", 4) == 0) ||
+			(memcmp(pSec[si].Name, ".data", 5) == 0) ||
+			(memcmp(pSec[si].Name, ".rdata", 6) == 0) ||
+			((pSec[si].Characteristics & IMAGE_SCN_CNT_INITIALIZED_DATA) &&
+			 !(pSec[si].Characteristics & IMAGE_SCN_MEM_EXECUTE));
+		if (!IsData) continue;
+
+		ULONG64 SecStart = Wdf01000Base + pSec[si].VirtualAddress;
+		ULONG64 SecEnd = SecStart + pSec[si].Misc.VirtualSize;
+		if (pSec[si].Misc.VirtualSize < sizeof(ULONG64) * 8) continue;
+		SectionsScanned++;
+
+		ScanStart = SecStart;
+		ScanBytes = pSec[si].Misc.VirtualSize;
+		ULONG64 ScanEnd = SecEnd;
+
+		for (ULONG64 cur = ScanStart; cur + sizeof(ULONG64) <= ScanEnd; cur += sizeof(ULONG64))
+		{
+			ULONG64 candidate = 0;
+			__try { candidate = *(PULONG64)cur; }
+			__except (EXCEPTION_EXECUTE_HANDLER) { continue; }
+
+			if ((candidate >> 48) != 0xFFFF) continue;
+			if (candidate & 7) continue;
+			if (!MmIsAddressValid((PVOID)candidate)) continue;
+			CandidateSeen++;
+
+			ULONG64 first = 0;
+			__try { first = *(PULONG64)candidate; }
+			__except (EXCEPTION_EXECUTE_HANDLER) { continue; }
+			if (first < Wdf01000Base || first >= Wdf01000End) continue;
+
+			ULONG  Count = 0;
+			ULONG64* Tbl = (ULONG64*)candidate;
+			__try
+			{
+				while (Count < MaxEntries)
+				{
+					if ((((ULONG64)&Tbl[Count]) & 0xFFF) == 0 &&
+						!MmIsAddressValid(&Tbl[Count]))
+					{
+						break;
+					}
+					ULONG64 ptr = Tbl[Count];
+					if (ptr == 0) break;
+					if ((ptr >> 48) != 0xFFFF) break;
+					if (ptr < Wdf01000Base || ptr >= Wdf01000End) break;
+					Count++;
+				}
+			}
+			__except (EXCEPTION_EXECUTE_HANDLER) {}
+
+			if (Count >= 4) CandidateProbed++;
+			if (Count > 4)
+			{
+				MyDbgPrintfEx("[EnumWdfFunction]   sect=%u slot=%I64X cand=%I64X cnt=%u\n",
+					(ULONG)si, cur, candidate, Count);
+			}
+
+			if (Count > BestCount)
+			{
+				BestCount = Count;
+				BestTable = candidate;
+			}
+		}
+	} // end section loop
+	MyDbgPrintfEx("[EnumWdfFunction] scan done: scannedSects=%u kernelPtrs=%u probedOk=%u best=%I64X cnt=%u\n",
+		SectionsScanned, CandidateSeen, CandidateProbed, BestTable, BestCount);
+
+	if (BestTable == 0 || BestCount == 0)
+	{
+		MyDbgPrintfEx("[%s] WdfFunctions table not located.\n", __FUNCTION__);
+		char buf[160];
+		RtlStringCbPrintfA(buf, sizeof(buf),
+			"DIAG: not located sects=%u kPtrs=%u probed=%u base=%I64X",
+			SectionsScanned, CandidateSeen, CandidateProbed, Wdf01000Base);
+		WdfPushDiag(OutData, buf);
+		return 1;
+	}
+
+	MyDbgPrintfEx("[%s] WdfFunctions @%I64X count=%u\n", __FUNCTION__, BestTable, BestCount);
+
+	// 5. è¾“å‡ºæ¯ä¸ªè¡¨é¡¹
+	ULONG64* WdfFunctions = (ULONG64*)BestTable;
+	ULONG64 IsInit = MmIsAddressValid(*OutData) && ((PCWdfInfo)(*OutData))->List.IsInitialize;
+	ULONG64 Count = 0;
+
+	for (ULONG i = 0; i < BestCount; i++)
+	{
+		ULONG64 FunAddr = WdfFunctions[i];
+
+		PCWdfInfo pNewInfo = MyExAllocMemOry(sizeof(CWdfInfo), PAGE_READWRITE, UserMode);
+		if (pNewInfo == NULL)
+		{
+			break;
+		}
+
+		pNewInfo->pFunOrder = i;
+		pNewInfo->pFunAddr = FunAddr;
+		// æ²¡æœ‰å†å²åŸºçº¿è¡¨ï¼ŒåŸå§‹åœ°å€ç½® 0 ç”± R3 æ˜¾ç¤º "--"
+		pNewInfo->pSrcFunAddr = 0;
+		pNewInfo->HookType = (FunAddr >= Wdf01000Base && FunAddr < Wdf01000End) ? 0 : 1;
+
+		// åæŸ¥å½“å‰å‡½æ•°å®é™…æ‰€å±æ¨¡å—ï¼ˆè¢« hook æ—¶è¿™é‡Œå°±æ˜¯ hook æ¨¡å—ï¼‰
+		CDriverInfo DI = { 0 };
+		if (IsSysModuleEx(FunAddr, &DI))
+		{
+			memcpy_s(pNewInfo->ModulePath, sizeof(pNewInfo->ModulePath), DI.ImageFullBaseName, sizeof(pNewInfo->ModulePath));
+		}
+		else if (GotPath)
+		{
+			memcpy_s(pNewInfo->ModulePath, sizeof(pNewInfo->ModulePath), Wdf01000Path, sizeof(pNewInfo->ModulePath));
+		}
+
+		if (IsInit != 0 && ((PCWdfInfo)(*OutData))->List.IsInitialize)
+		{
+			InsertHeadList(&((PCWdfInfo)(*OutData))->List.List, &pNewInfo->List.List);
+		}
+		else
+		{
+			pNewInfo->List.IsInitialize = TRUE;
+			InitializeListHead(&pNewInfo->List.List);
+			*OutData = pNewInfo;
+			IsInit = TRUE;
+		}
+		Count++;
+	}
+
+	return Count;
+#endif
+}
+
 ULONG64 EnumHalDispatchTable(ULONG64 HalTable, ULONG64 TableSize, PCHalFunTableInfo* OutData)
 {
-	//ÑéÖ¤²ÎÊıÒ»ÊÇ·ñÓĞĞ§ 
+	//éªŒè¯å‚æ•°ä¸€æ˜¯å¦æœ‰æ•ˆ 
 	if (!MmIsAddressValid(HalTable))
 	{
 		return FALSE;
@@ -4533,38 +4907,38 @@ ULONG64 EnumHalDispatchTable(ULONG64 HalTable, ULONG64 TableSize, PCHalFunTableI
 	ULONG64 IsInit = MmIsAddressValid(OutData) && MmIsAddressValid(*OutData) && ((PCHalFunTableInfo)(*OutData))->List.IsInitialize;
 
 
-	//Ñ­»·±éÀúHalDispatchTable±íÖĞµÄÊı¾İ ´óĞ¡Îª HAL_DISPATCH ½á¹¹Ìå-8 
+	//å¾ªç¯éå†HalDispatchTableè¡¨ä¸­çš„æ•°æ® å¤§å°ä¸º HAL_DISPATCH ç»“æ„ä½“-8 
 	int i = 0;
 	for (i = 1; i < TableSize; i++)
 	{
-		//ÉêÇë¿Õ¼ä
+		//ç”³è¯·ç©ºé—´
 		PCHalFunTableInfo pNewInfo = MyExAllocMemOry(sizeof(CHalFunTableInfo), PAGE_READWRITE, UserMode);
 		if (pNewInfo == NULL)
 		{
 			break;
 		}
 
-		pNewInfo->pFunOrder = i - 1;								//ĞòºÅ
-		pNewInfo->pFunAddr = ((PULONG64)HalTable)[i];				//º¯ÊıµØÖ·
+		pNewInfo->pFunOrder = i - 1;								//åºå·
+		pNewInfo->pFunAddr = ((PULONG64)HalTable)[i];				//å‡½æ•°åœ°å€
 
-		//¿½±´Â·¾¶
+		//æ‹·è´è·¯å¾„
 		CDriverInfo DriverInfo = { 0 };
 		if (IsSysModuleEx(pNewInfo->pFunAddr, &DriverInfo))
 		{
 			memcpy_s(pNewInfo->ModulePath, MY_MAX_PATH, DriverInfo.ImageFullBaseName, MY_MAX_PATH);
 		}
 
-		//²åÈëÁ´±í
+		//æ’å…¥é“¾è¡¨
 		if (IsInit != 0 && ((PCHalFunTableInfo)(*OutData))->List.IsInitialize)
 		{
-			//²åÈëÁ´±íÀïÃæ
+			//æ’å…¥é“¾è¡¨é‡Œé¢
 			InsertHeadList(&((PCHalFunTableInfo)(*OutData))->List.List, &pNewInfo->List.List);
 		}
 		else
 		{
-			pNewInfo->List.IsInitialize = TRUE;						//ÒÑ³õÊ¼»¯
-			InitializeListHead(&pNewInfo->List.List);				//³õÊ¼»¯Á´±íÍ·
-			*OutData = pNewInfo;									//¸³Öµ
+			pNewInfo->List.IsInitialize = TRUE;						//å·²åˆå§‹åŒ–
+			InitializeListHead(&pNewInfo->List.List);				//åˆå§‹åŒ–é“¾è¡¨å¤´
+			*OutData = pNewInfo;									//èµ‹å€¼
 			IsInit = TRUE;
 		}
 	}
@@ -4586,26 +4960,26 @@ ULONG64 EnumFileSystemDevice(ULONG64 pListEntry, ULONG64 nType, PCFileSystemDevi
 
 	for (PLIST_ENTRY pCurList = pList->Flink; pCurList != pList; pCurList = pCurList->Flink)
 	{
-		//»ñÈ¡Éè±¸¶ÔÏó
+		//è·å–è®¾å¤‡å¯¹è±¡
 		PDEVICE_OBJECT pDeviceObj = (PDEVICE_OBJECT)((ULONG64)pCurList - _DEVICE_OBJECT_Queue);
 		if (MmIsAddressValid(pDeviceObj))
 		{
-			//ÉêÇë¿Õ¼ä
+			//ç”³è¯·ç©ºé—´
 			PCFileSystemDeviceInfo pNewInfo = MyExAllocMemOry(sizeof(CFileSystemDeviceInfo), PAGE_READWRITE, UserMode);
 			if (pNewInfo == NULL)
 			{
 				break;
 			}
-			//ÀàĞÍ
+			//ç±»å‹
 			pNewInfo->nType = nType;
 
-			//Éè±¸¶ÔÏó
+			//è®¾å¤‡å¯¹è±¡
 			pNewInfo->DeviceObject = pDeviceObj;
 
-			//Çı¶¯¶ÔÏó
+			//é©±åŠ¨å¯¹è±¡
 			pNewInfo->DriverObject = (ULONG64)pDeviceObj->DriverObject;
 
-			//¿½±´Çı¶¯¶ÔÏóÃû³Æ
+			//æ‹·è´é©±åŠ¨å¯¹è±¡åç§°
 			if (MmIsAddressValid(pNewInfo->DriverObject))
 			{
 				PUNICODE_STRING pDriverName = (PUNICODE_STRING) & ((PDRIVER_OBJECT)pNewInfo->DriverObject)->DriverName;
@@ -4616,23 +4990,23 @@ ULONG64 EnumFileSystemDevice(ULONG64 pListEntry, ULONG64 nType, PCFileSystemDevi
 				}
 			}
 
-			//¿½±´Éè±¸Ãû³Æ
+			//æ‹·è´è®¾å¤‡åç§°
 			if (MmIsAddressValid(pNewInfo->DeviceObject))
 			{
 				//PUNICODE_STRING DeviceName = ((PDEVICE_OBJECT)pNewInfo->DeviceObject)->DeviceExtension;
 			}
 
-			//²åÈëÁ´±í
+			//æ’å…¥é“¾è¡¨
 			if (IsInit != 0 && ((PCFileSystemDeviceInfo)(*OutData))->List.IsInitialize)
 			{
-				//²åÈëÁ´±íÀïÃæ
+				//æ’å…¥é“¾è¡¨é‡Œé¢
 				InsertHeadList(&((PCFileSystemDeviceInfo)(*OutData))->List.List, &pNewInfo->List.List);
 			}
 			else
 			{
-				pNewInfo->List.IsInitialize = TRUE;								//ÒÑ³õÊ¼»¯
-				InitializeListHead(&pNewInfo->List.List);				//³õÊ¼»¯Á´±íÍ·
-				*OutData = pNewInfo;											//¸³Öµ
+				pNewInfo->List.IsInitialize = TRUE;								//å·²åˆå§‹åŒ–
+				InitializeListHead(&pNewInfo->List.List);				//åˆå§‹åŒ–é“¾è¡¨å¤´
+				*OutData = pNewInfo;											//èµ‹å€¼
 				IsInit = TRUE;
 			}
 		}
@@ -4642,7 +5016,7 @@ ULONG64 EnumFileSystemDevice(ULONG64 pListEntry, ULONG64 nType, PCFileSystemDevi
 
 ULONG64 SSDTTable()
 {
-	//»ñÈ¡KiServiceTableµØÖ·Æ«ÒÆ
+	//è·å–KiServiceTableåœ°å€åç§»
 
 	if (!MmIsAddressValid(KeServiceDescriptorTable))
 	{
@@ -4652,9 +5026,9 @@ ULONG64 SSDTTable()
 	//__debugbreak();
 
 	//
-	// »ñÈ¡¾ÉµÄKiServiceTableµØÖ·±í
-	// È»ºó¸ù¾İ¾ÉµÄKiServiceTableµØÖ·-¾ÉµÄImageBase »ñÈ¡Æ«ÒÆ
-	// ¸ù¾İKiServiceTableÆ«ÒÆ+ĞÂµÄImageBase »ñÈ¡µÄĞÂµÄKiServiceTableµØÖ·
+	// è·å–æ—§çš„KiServiceTableåœ°å€è¡¨
+	// ç„¶åæ ¹æ®æ—§çš„KiServiceTableåœ°å€-æ—§çš„ImageBase è·å–åç§»
+	// æ ¹æ®KiServiceTableåç§»+æ–°çš„ImageBase è·å–çš„æ–°çš„KiServiceTableåœ°å€
 	// 
 	ULONG64 OldKiServiceTable = ((PKSYSTEM_SERVICE_TABLE)KeServiceDescriptorTable)->ServiceTableBase;
 	ULONG64 FunctionCount = ((PKSYSTEM_SERVICE_TABLE)KeServiceDescriptorTable)->NumberOfService;
@@ -4663,7 +5037,7 @@ ULONG64 SSDTTable()
 	PULONG32 NewKiServiceTable = OldKiServiceTableOffset + g_NewNtoskrnlAddr;
 
 	//
-	// ÖØĞÂÓ³ÉäÒ»·İKiServiceTable±í »ñÈ¡KiServiceTableÖĞµÄÄÚÈİ
+	// é‡æ–°æ˜ å°„ä¸€ä»½KiServiceTableè¡¨ è·å–KiServiceTableä¸­çš„å†…å®¹
 	//
 	if (g_NewKiServiceTable == NULL)
 	{
@@ -4673,7 +5047,7 @@ ULONG64 SSDTTable()
 			RtlZeroMemory(g_NewKiServiceTable, FunctionCount * sizeof(ULONG32));
 
 			//
-			// ¼ÆËãKiServiceTable±íÖĞµÄÊı¾İ,±£´æµ½g_NewKiServiceTableÖĞ
+			// è®¡ç®—KiServiceTableè¡¨ä¸­çš„æ•°æ®,ä¿å­˜åˆ°g_NewKiServiceTableä¸­
 			//
 
 			ULONG32 KiServiceTableBase = (ULONG32)NewKiServiceTable;
@@ -4682,9 +5056,9 @@ ULONG64 SSDTTable()
 			{
 
 				//
-				//	ĞŞ¸´Ëã·¨ :
-				//					¸ù¾İÎÄ¼şÖĞ KiServiceTable ±íµÄÊı¾İ - (ULONG32)KiServiceTableµØÖ· + (ULONG32)ĞÂµÄNtoskrnelÄ£¿é»ùÖ·
-				//					Ê¹ÓÃÊÇ ĞÂµÄKiServiceTable»ùÖ· + ĞŞ¸´ºóµÄÊı¾İ
+				//	ä¿®å¤ç®—æ³• :
+				//					æ ¹æ®æ–‡ä»¶ä¸­ KiServiceTable è¡¨çš„æ•°æ® - (ULONG32)KiServiceTableåœ°å€ + (ULONG32)æ–°çš„Ntoskrnelæ¨¡å—åŸºå€
+				//					ä½¿ç”¨æ˜¯ æ–°çš„KiServiceTableåŸºå€ + ä¿®å¤åçš„æ•°æ®
 				//
 
 				g_NewKiServiceTable[i] = NewKiServiceTable[i] - KiServiceTableBase + NewImage;
@@ -4725,7 +5099,7 @@ ULONG64 LoadNtosKrnel()
 	{
 		ImageDll = MmLoadSystemImage(&NtoskrnelPath, NULL, NULL, MM_LOAD_IMAGE_AND_LOCKDOWN, &g_NewNtoskrnlHandle, &g_NewNtoskrnlAddr);
 
-		//ĞŞ¸´SSDT
+		//ä¿®å¤SSDT
 		SSDTTable();
 	}
 	return TRUE;
@@ -4761,7 +5135,7 @@ ULONG64 UnLoadKernelModule()
 
 ULONG64 SSDTTShadowable()
 {
-	//»ñÈ¡KiServiceTableµØÖ·Æ«ÒÆ
+	//è·å–KiServiceTableåœ°å€åç§»
 
 	if (!MmIsAddressValid(KeServiceDescriptorTable))
 	{
@@ -4769,22 +5143,22 @@ ULONG64 SSDTTShadowable()
 	}
 
 	//
-	// »ñÈ¡¾ÉµÄKiServiceTableµØÖ·±í
-	// È»ºó¸ù¾İ¾ÉµÄKiServiceTableµØÖ·-¾ÉµÄImageBase »ñÈ¡Æ«ÒÆ
-	// ¸ù¾İKiServiceTableÆ«ÒÆ+ĞÂµÄImageBase »ñÈ¡µÄĞÂµÄKiServiceTableµØÖ·
+	// è·å–æ—§çš„KiServiceTableåœ°å€è¡¨
+	// ç„¶åæ ¹æ®æ—§çš„KiServiceTableåœ°å€-æ—§çš„ImageBase è·å–åç§»
+	// æ ¹æ®KiServiceTableåç§»+æ–°çš„ImageBase è·å–çš„æ–°çš„KiServiceTableåœ°å€
 	// 
 	ULONG64 nServiceTableShadow = (ULONG64)KeServiceDescriptorTableShadow + sizeof(KSYSTEM_SERVICE_TABLE);
 	if (MmIsAddressValid(nServiceTableShadow))
 	{
-		ULONG64 FunctionCount = ((PKSYSTEM_SERVICE_TABLE)nServiceTableShadow)->NumberOfService;							//»ñÈ¡SSDT±íÊıÁ¿
-		ULONG64 OldW32pServiceTable = ((PKSYSTEM_SERVICE_TABLE)nServiceTableShadow)->ServiceTableBase;					//»ñÈ¡SSDTº¯Êı»ùµØÖ·
+		ULONG64 FunctionCount = ((PKSYSTEM_SERVICE_TABLE)nServiceTableShadow)->NumberOfService;							//è·å–SSDTè¡¨æ•°é‡
+		ULONG64 OldW32pServiceTable = ((PKSYSTEM_SERVICE_TABLE)nServiceTableShadow)->ServiceTableBase;					//è·å–SSDTå‡½æ•°åŸºåœ°å€
 
 		ULONG64 OldW32pServiceTableOffset = OldW32pServiceTable - g_Win32kAddr;
 
 		PULONG32 NewW32pServiceTable = OldW32pServiceTableOffset + g_NewWin32kAddr;
 
 		//
-		// ÖØĞÂÓ³ÉäÒ»·İKiServiceTable±í »ñÈ¡KiServiceTableÖĞµÄÄÚÈİ
+		// é‡æ–°æ˜ å°„ä¸€ä»½KiServiceTableè¡¨ è·å–KiServiceTableä¸­çš„å†…å®¹
 		//
 		if (g_NewW32pServiceTable == NULL)
 		{
@@ -4794,7 +5168,7 @@ ULONG64 SSDTTShadowable()
 				RtlZeroMemory(g_NewW32pServiceTable, FunctionCount * sizeof(ULONG32));
 
 				//
-				// ¼ÆËãKiServiceTable±íÖĞµÄÊı¾İ,±£´æµ½g_NewKiServiceTableÖĞ
+				// è®¡ç®—KiServiceTableè¡¨ä¸­çš„æ•°æ®,ä¿å­˜åˆ°g_NewKiServiceTableä¸­
 				//
 
 				ULONG32 KiServiceTableBase = (ULONG32)NewW32pServiceTable;
@@ -4803,9 +5177,9 @@ ULONG64 SSDTTShadowable()
 				{
 
 					//
-					//	ĞŞ¸´Ëã·¨ :
-					//					¸ù¾İÎÄ¼şÖĞ KiServiceTable ±íµÄÊı¾İ - (ULONG32)KiServiceTableµØÖ· + (ULONG32)ĞÂµÄNtoskrnelÄ£¿é»ùÖ·
-					//					Ê¹ÓÃÊÇ ĞÂµÄKiServiceTable»ùÖ· + ĞŞ¸´ºóµÄÊı¾İ
+					//	ä¿®å¤ç®—æ³• :
+					//					æ ¹æ®æ–‡ä»¶ä¸­ KiServiceTable è¡¨çš„æ•°æ® - (ULONG32)KiServiceTableåœ°å€ + (ULONG32)æ–°çš„Ntoskrnelæ¨¡å—åŸºå€
+					//					ä½¿ç”¨æ˜¯ æ–°çš„KiServiceTableåŸºå€ + ä¿®å¤åçš„æ•°æ®
 					//
 
 					g_NewW32pServiceTable[i] = (ULONG32)(NewW32pServiceTable[i] - KiServiceTableBase + NewImage) << 4;
@@ -4845,7 +5219,7 @@ ULONG64 LoadWin32k()
 		ImageDll = MmLoadSystemImage(&Win32kPath, NULL, NULL, MM_LOAD_IMAGE_AND_LOCKDOWN, &g_NewWin32kHandle, &g_NewWin32kAddr);
 		//MyDbgPrintfEx("NewImageBase:%I64X ImageHandle:%I64X\n", g_NewWin32kAddr, g_NewWin32kHandle);
 
-		//ĞŞ¸´SSDTShadow
+		//ä¿®å¤SSDTShadow
 		SSDTTShadowable();
 	}
 	return TRUE;
@@ -4873,7 +5247,7 @@ ULONG64 UnLoadWin32k()
 
 	}
 
-	//ÊÍ·Å×ÊÔ´
+	//é‡Šæ”¾èµ„æº
 	if (MmIsAddressValid(g_NewW32pServiceTable))
 	{
 		ExFreePool(g_NewW32pServiceTable);
@@ -4933,7 +5307,7 @@ ULONG64 GetDeviceAttachTo(ULONG64 DeviceObject)
 		return NULL;
 	}
 
-	//·µ»Ø¸½¼ÓµÄ¶ÔÏó
+	//è¿”å›é™„åŠ çš„å¯¹è±¡
 	return DeviceObjectExtension->AttachedTo;
 }
 
@@ -4953,17 +5327,17 @@ ULONG64 GetRootAtttachTo(ULONG64 DriverObject, PCFilterDeviceInfo* OutData)
 	{
 		PDEVICE_OBJECT pAttachedDevice = pCurDevice->AttachedDevice;
 
-		//ÅĞ¶ÏÊÇ·ñÓĞ¸½¼ÓµÄÉè±¸
+		//åˆ¤æ–­æ˜¯å¦æœ‰é™„åŠ çš„è®¾å¤‡
 		if (MmIsAddressValid(pAttachedDevice))
 		{
-			//											//ÉêÇë¿Õ¼ä
+			//											//ç”³è¯·ç©ºé—´
 			PCFilterDeviceInfo pNewInfo = MyExAllocMemOry(sizeof(CFilterDeviceInfo), PAGE_READWRITE, UserMode);
 			if (pNewInfo == NULL)
 			{
 				break;
 			}
 
-			pNewInfo->FilterDeviceObject = pAttachedDevice; //¸½¼ÓµÄÉè±¸
+			pNewInfo->FilterDeviceObject = pAttachedDevice; //é™„åŠ çš„è®¾å¤‡
 
 			POBJECT_NAME_INFORMATION pFilterDeviceName = obGetObjectNameEx(pAttachedDevice);
 			if (pFilterDeviceName)
@@ -4988,7 +5362,7 @@ ULONG64 GetRootAtttachTo(ULONG64 DriverObject, PCFilterDeviceInfo* OutData)
 			swprintf(szBuf1, L"%ws*", szBuf);
 			RtlInitUnicodeString(&CurDriverName, szBuf1);
 
-			//»ñÈ¡¹ıÂËÇı¶¯ĞÅÏ¢
+			//è·å–è¿‡æ»¤é©±åŠ¨ä¿¡æ¯
 			CDriverInfo FilterDriverInfo = { 0 };
 			if (LookUpDriverObjectByName(&CurDriverName, &FilterDriverInfo))
 			{
@@ -5012,26 +5386,26 @@ ULONG64 GetRootAtttachTo(ULONG64 DriverObject, PCFilterDeviceInfo* OutData)
 
 			wcscpy_s(pNewInfo->TypeName, FILTER_DEVICE_TYPENAME_LEN, ppDriverName->Buffer);
 
-			//²åÈëÁ´±í
+			//æ’å…¥é“¾è¡¨
 			if (IsInit != 0 && ((PCFilterDeviceInfo)(*OutData))->List.IsInitialize)
 			{
-				//²åÈëÁ´±íÀïÃæ
+				//æ’å…¥é“¾è¡¨é‡Œé¢
 				InsertHeadList(&((PCFilterDeviceInfo)(*OutData))->List.List, &pNewInfo->List.List);
 			}
 			else
 			{
-				pNewInfo->List.IsInitialize = TRUE;						//ÒÑ³õÊ¼»¯
-				InitializeListHead(&pNewInfo->List.List);				//³õÊ¼»¯Á´±íÍ·
-				*OutData = pNewInfo;									//¸³Öµ
+				pNewInfo->List.IsInitialize = TRUE;						//å·²åˆå§‹åŒ–
+				InitializeListHead(&pNewInfo->List.List);				//åˆå§‹åŒ–é“¾è¡¨å¤´
+				*OutData = pNewInfo;									//èµ‹å€¼
 				IsInit = TRUE;
 			}
 
 			nIndex++;
 		}
-		//»ñÈ¡ÏÂÒ»¸öÉè±¸
+		//è·å–ä¸‹ä¸€ä¸ªè®¾å¤‡
 		pCurDevice = pCurDevice->NextDevice;
 	}
-	//·µ»Ø¸½¼ÓµÄ¶ÔÏó
+	//è¿”å›é™„åŠ çš„å¯¹è±¡
 	return nIndex;
 }
 
@@ -5084,75 +5458,75 @@ ULONG64 EnumFilterDriver(PCFilterDeviceInfo* pFilterDevice)
 		if (MmIsAddressValid(pRawDriver))
 		{
 			nIndexVal = GetRootAtttachTo(pRawDriver, pFilterDevice);
-			MyDbgPrintfEx("pRawDriverµ±Ç°¹ıÂËÇı¶¯ÊıÁ¿Îª£º%08X\n", nIndexVal);
+			MyDbgPrintfEx("pRawDriverå½“å‰è¿‡æ»¤é©±åŠ¨æ•°é‡ä¸ºï¼š%08X\n", nIndexVal);
 			nIndex += nIndexVal;
 		}
 
 		if (MmIsAddressValid(pKbdClassDriver))
 		{
 			nIndexVal = GetRootAtttachTo(pKbdClassDriver, pFilterDevice);
-			MyDbgPrintfEx("pRawDriverµ±Ç°¹ıÂËÇı¶¯ÊıÁ¿Îª£º%08X\n", nIndexVal);
+			MyDbgPrintfEx("pRawDriverå½“å‰è¿‡æ»¤é©±åŠ¨æ•°é‡ä¸ºï¼š%08X\n", nIndexVal);
 			nIndex += nIndexVal;
 		}
 
 		if (MmIsAddressValid(pI8042prtDriver))
 		{
 			nIndexVal = GetRootAtttachTo(pI8042prtDriver, pFilterDevice);
-			MyDbgPrintfEx("pI8042prtDriverµ±Ç°¹ıÂËÇı¶¯ÊıÁ¿Îª£º%08X\n", nIndexVal);
+			MyDbgPrintfEx("pI8042prtDriverå½“å‰è¿‡æ»¤é©±åŠ¨æ•°é‡ä¸ºï¼š%08X\n", nIndexVal);
 			nIndex += nIndexVal;
 		}
 
 		if (MmIsAddressValid(pTcpipDriver))
 		{
 			nIndexVal = GetRootAtttachTo(pTcpipDriver, pFilterDevice);
-			MyDbgPrintfEx("pTcpipDriverµ±Ç°¹ıÂËÇı¶¯ÊıÁ¿Îª£º%08X\n", nIndexVal);
+			MyDbgPrintfEx("pTcpipDriverå½“å‰è¿‡æ»¤é©±åŠ¨æ•°é‡ä¸ºï¼š%08X\n", nIndexVal);
 			nIndex += nIndexVal;
 		}
 
 		if (MmIsAddressValid(pNsiproxyDriver))
 		{
 			nIndexVal = GetRootAtttachTo(pNsiproxyDriver, pFilterDevice);
-			MyDbgPrintfEx("pNsiproxyDriverµ±Ç°¹ıÂËÇı¶¯ÊıÁ¿Îª£º%08X\n", nIndexVal);
+			MyDbgPrintfEx("pNsiproxyDriverå½“å‰è¿‡æ»¤é©±åŠ¨æ•°é‡ä¸ºï¼š%08X\n", nIndexVal);
 			nIndex += nIndexVal;
 		}
 
 		if (MmIsAddressValid(pTdxDriver))
 		{
 			nIndexVal = GetRootAtttachTo(pTdxDriver, pFilterDevice);
-			MyDbgPrintfEx("pTdxDriverµ±Ç°¹ıÂËÇı¶¯ÊıÁ¿Îª£º%08X\n", nIndexVal);
+			MyDbgPrintfEx("pTdxDriverå½“å‰è¿‡æ»¤é©±åŠ¨æ•°é‡ä¸ºï¼š%08X\n", nIndexVal);
 			nIndex += nIndexVal;
 		}
 
 		if (MmIsAddressValid(pNdisDriver))
 		{
 			nIndexVal = GetRootAtttachTo(pNdisDriver, pFilterDevice);
-			MyDbgPrintfEx("pNdisDriverµ±Ç°¹ıÂËÇı¶¯ÊıÁ¿Îª£º%08X\n", nIndexVal);
+			MyDbgPrintfEx("pNdisDriverå½“å‰è¿‡æ»¤é©±åŠ¨æ•°é‡ä¸ºï¼š%08X\n", nIndexVal);
 			nIndex += nIndexVal;
 		}
 
 		if (MmIsAddressValid(pPnpManagerDriver))
 		{
 			nIndexVal = GetRootAtttachTo(pPnpManagerDriver, pFilterDevice);
-			MyDbgPrintfEx("pPnpManagerDriverµ±Ç°¹ıÂËÇı¶¯ÊıÁ¿Îª£º%08X\n", nIndexVal);
+			MyDbgPrintfEx("pPnpManagerDriverå½“å‰è¿‡æ»¤é©±åŠ¨æ•°é‡ä¸ºï¼š%08X\n", nIndexVal);
 			nIndex += nIndexVal;
 		}
 
 		if (MmIsAddressValid(pVolume))
 		{
 			nIndexVal = GetRootAtttachTo(pVolume, pFilterDevice);
-			MyDbgPrintfEx("pVolumeµ±Ç°¹ıÂËÇı¶¯ÊıÁ¿Îª£º%08X\n", nIndexVal);
+			MyDbgPrintfEx("pVolumeå½“å‰è¿‡æ»¤é©±åŠ¨æ•°é‡ä¸ºï¼š%08X\n", nIndexVal);
 			nIndex += nIndexVal;
 		}
 
 		if (MmIsAddressValid(pDisk))
 		{
 			nIndexVal = GetRootAtttachTo(pDisk, pFilterDevice);
-			MyDbgPrintfEx("pDiskµ±Ç°¹ıÂËÇı¶¯ÊıÁ¿Îª£º%08X\n", nIndexVal);
+			MyDbgPrintfEx("pDiskå½“å‰è¿‡æ»¤é©±åŠ¨æ•°é‡ä¸ºï¼š%08X\n", nIndexVal);
 			nIndex += nIndexVal;
 		}
 	}
 
-	MyDbgPrintfEx("µ±Ç°¹ıÂËÇı¶¯ÊıÁ¿Îª£º%08X\n", nIndex);
+	MyDbgPrintfEx("å½“å‰è¿‡æ»¤é©±åŠ¨æ•°é‡ä¸ºï¼š%08X\n", nIndex);
 
 	return nIndex;
 }

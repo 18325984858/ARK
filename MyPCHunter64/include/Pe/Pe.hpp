@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #ifdef _KERNEL_MODE
 #include <ntimage.h>
@@ -436,7 +436,7 @@ namespace Pe
 			}
 
 			////////////////////////////////////////////////////
-			//* »ñÈ¡ÎÄ¼şµÄ´óĞ¡
+			//* è·å–æ–‡ä»¶çš„å¤§å°
 			fseek(file, 0, SEEK_END);
 			size_t sbsize = ftell(file);
 			fseek(file, 0, SEEK_SET);
@@ -450,7 +450,7 @@ namespace Pe
 			fread_s(nbuffer, sbsize, 1, sbsize, file);
 			if (!nbuffer)
 			{
-				//printf_s("¶ÁÈ¡ÎÄ¼şÊ§°Ü!\n");
+				//printf_s("è¯»å–æ–‡ä»¶å¤±è´¥!\n");
 				fclose(file);
 				return NULL;
 			}
@@ -643,7 +643,7 @@ namespace Pe
 				return m_size;
 			}
 
-			//¸üÕı½ÚÎÄ¼şÆ«ÒÆ
+			//æ›´æ­£èŠ‚æ–‡ä»¶åç§»
 			for (DWORD i = 0; i < pFileHeader->NumberOfSections; i++)
 			{
 				if (pSectionHeader[i].PointerToRawData != 0)
@@ -652,10 +652,10 @@ namespace Pe
 				}
 			}
 
-			//ĞŞÕıÍ·´óĞ¡
+			//ä¿®æ­£å¤´å¤§å°
 			pOptionalHeader->SizeOfHeaders = pOptionalHeader->SizeOfHeaders + nSize;
 
-			//ÉêÇëĞÂµÄ»º³åÇø,½«Êı¾İ¿½±´
+			//ç”³è¯·æ–°çš„ç¼“å†²åŒº,å°†æ•°æ®æ‹·è´
 			PVOID pNewBuf = malloc(m_size + nSize);
 			if (pNewBuf == NULL)
 			{
@@ -664,9 +664,9 @@ namespace Pe
 			memset(pNewBuf, 0, m_size + nSize);
 
 
-			//¿½±´Í·
+			//æ‹·è´å¤´
 			memcpy(pNewBuf, m_base, nHeaderSize);
-			//¿½±´½Ú±í
+			//æ‹·è´èŠ‚è¡¨
 			memcpy((PVOID)((ULONG64)pNewBuf + nHeaderSize + nSize), (PVOID)((ULONG64)m_base + nHeaderSize), m_size - nHeaderSize);
 
 			if (m_base)
@@ -692,15 +692,15 @@ namespace Pe
 			ULONG64 size = (ULONG64)&section[file->NumberOfSections] - (ULONG64)nt;
 			ULONG64 rmsize = (ULONG64)nt - (ULONG64)rmaddr;
 
-			memcpy_s(rmaddr, rmsize + size, (PVOID)(ULONG64)nt, size);//½«DosÍ·ÒÔÏÂµÄÊı¾İ¿ªÊ¼SizeOfHeadersÒÔÄÚµÄÊı¾İÒÆ¶¯µ½DOSÍ·µÄÄ©Î²´¦
+			memcpy_s(rmaddr, rmsize + size, (PVOID)(ULONG64)nt, size);//å°†Doså¤´ä»¥ä¸‹çš„æ•°æ®å¼€å§‹SizeOfHeadersä»¥å†…çš„æ•°æ®ç§»åŠ¨åˆ°DOSå¤´çš„æœ«å°¾å¤„
 
-			dos->e_lfanew = (ULONG64)rmaddr - (ULONG64)m_base;//¸ü¸Äe_lfanewÊôĞÔ
+			dos->e_lfanew = (ULONG64)rmaddr - (ULONG64)m_base;//æ›´æ”¹e_lfanewå±æ€§
 
 			file = (PIMAGE_FILE_HEADER)((PUCHAR)headers().nt() + sizeof(DWORD));
 			section = sections().m_sections;
 
 			PULONG64 setzero = (PULONG64)&section[file->NumberOfSections];
-			memset(setzero, 0, rmsize);//½«×îºóÒ»¸ö±íµÄÊı¾İÄ©ÉèÖÃ0,stub´óĞ¡µÄ¿Õ¼ä
+			memset(setzero, 0, rmsize);//å°†æœ€åä¸€ä¸ªè¡¨çš„æ•°æ®æœ«è®¾ç½®0,stubå¤§å°çš„ç©ºé—´
 			return rmsize;
 		}
 
@@ -712,7 +712,7 @@ namespace Pe
 
 			ULONG64 nRet = m_size;
 
-			//¼ÆËã¿Õ°×¾ÖÓò´óĞ¡ 
+			//è®¡ç®—ç©ºç™½å±€åŸŸå¤§å° 
 			ULONG64 nBlackOfficeSize = pOptionalHeader->SizeOfHeaders - ((ULONG64)&pSectionHeader[pFileHeader->NumberOfSections] - (ULONG64)m_base);
 			ULONG64 nSectionSize1 = sizeof(IMAGE_SECTION_HEADER);
 
@@ -739,10 +739,10 @@ namespace Pe
 
 			IMAGE_SECTION_HEADER cSection = { 0 };
 
-			//¿½±´Ò»·İÆäËû½Ú±íÊı¾İ
+			//æ‹·è´ä¸€ä»½å…¶ä»–èŠ‚è¡¨æ•°æ®
 			memcpy(&cSection, &pSectionHeader[pFileHeader->NumberOfSections - 1], sizeof(IMAGE_SECTION_HEADER));
 
-			//ĞŞ¸Äµ±Ç°½Ú±í
+			//ä¿®æ”¹å½“å‰èŠ‚è¡¨
 			cSection.VirtualAddress = pSectionHeader[pFileHeader->NumberOfSections - 1].VirtualAddress + AlignFun(pOptionalHeader->SectionAlignment, pSectionHeader[pFileHeader->NumberOfSections - 1].Misc.VirtualSize);
 			cSection.Misc.VirtualSize = nSectionSize;
 
@@ -754,11 +754,11 @@ namespace Pe
 			memcpy(&cSection.Name, SectionName, strlen(SectionName) + 1 < 8 ? strlen(SectionName) + 1 : 8);
 			memcpy(&pSectionHeader[pFileHeader->NumberOfSections], &cSection, sizeof(IMAGE_SECTION_HEADER));
 
-			//ĞŞ¸Ä¿ÉÑ¡Í·ºÍÎÄ¼şÍ·ÊôĞÔ
+			//ä¿®æ”¹å¯é€‰å¤´å’Œæ–‡ä»¶å¤´å±æ€§
 			pOptionalHeader->SizeOfImage = pOptionalHeader->SizeOfImage + AlignFun(pOptionalHeader->SectionAlignment, nSectionSize);
 			pFileHeader->NumberOfSections = pFileHeader->NumberOfSections + 1;
 
-			//ĞÂµÄ¿Õ¼ä´óĞ¡
+			//æ–°çš„ç©ºé—´å¤§å°
 			DWORD NewSpaceSize = nRet + AlignFun(pOptionalHeader->FileAlignment, nSectionSize);
 			PVOID pNewBuf = malloc(NewSpaceSize);
 			if (pNewBuf == NULL)

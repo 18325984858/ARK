@@ -1,4 +1,4 @@
-#include "Head.h"
+ï»¿#include "Head.h"
 #include "CommunCation.h"
 #include "Interface.h"
 #include "Struct.h"
@@ -6,10 +6,10 @@
 #include "Filter.h"
 #include "Ssdt.h"
 
-PFLT_PORT g_AppPort = { 0 };											//´æ´¢Í¨ĞÅµÄÈı»·Á´½Ó¶Ë¿Ú
-PFLT_FILTER g_pFilter = { 0 };											//´æ´¢×¢²áµÄÎÄ¼ş¹ıÂËÆ÷Ö¸Õë
-PFLT_PORT g_pServerPort = { 0 };										//´æ´¢Í¨ĞÅµÄ0»·¶Ë¿Ú
-CKerneMessageList g_KernelMessageList = { 0 };							//´æ´¢ÏûÏ¢Á´±í
+PFLT_PORT g_AppPort = { 0 };											//å­˜å‚¨é€šä¿¡çš„ä¸‰ç¯é“¾æ¥ç«¯å£
+PFLT_FILTER g_pFilter = { 0 };											//å­˜å‚¨æ³¨å†Œçš„æ–‡ä»¶è¿‡æ»¤å™¨æŒ‡é’ˆ
+PFLT_PORT g_pServerPort = { 0 };										//å­˜å‚¨é€šä¿¡çš„0ç¯ç«¯å£
+CKerneMessageList g_KernelMessageList = { 0 };							//å­˜å‚¨æ¶ˆæ¯é“¾è¡¨
 
 
 CONST FLT_OPERATION_REGISTRATION MyCallbacks[MAX_FLT_NUMBER] = {
@@ -22,16 +22,16 @@ CONST FLT_OPERATION_REGISTRATION MyCallbacks[MAX_FLT_NUMBER] = {
 
 	{ IRP_MJ_OPERATION_END } };
 
-//×¢²áÎÄ¼ş¹ıÂËÆ÷Ê±»Øµ÷½á¹¹
+//æ³¨å†Œæ–‡ä»¶è¿‡æ»¤å™¨æ—¶å›è°ƒç»“æ„
 CONST FLT_REGISTRATION FilterRegistration = {
 
 	sizeof(FLT_REGISTRATION),						//  Size
 	FLT_REGISTRATION_VERSION,						//  Version
-	0,												//  Flags //FLTFL_REGISTRATION_DO_NOT_SUPPORT_SERVICE_STOP²»ÔÊĞíÇ¿ÖÆĞ¶ÔØ
+	0,												//  Flags //FLTFL_REGISTRATION_DO_NOT_SUPPORT_SERVICE_STOPä¸å…è®¸å¼ºåˆ¶å¸è½½
 
 	NULL,											//  Context
 	MyCallbacks,									//  Operation callbacks
-	FsFilterUnload,									//  Ğ¶ÔØ»Øµ÷,Ìæ»»³ÉÇı¶¯»Øµ÷
+	FsFilterUnload,									//  å¸è½½å›è°ƒ,æ›¿æ¢æˆé©±åŠ¨å›è°ƒ
 
 	FsFilterInstanceSetup,							//  InstanceSetup
 	FsFilterInstanceQueryTeardown,					//  InstanceQueryTeardown
@@ -44,9 +44,9 @@ CONST FLT_REGISTRATION FilterRegistration = {
 };
 
 
-/*³õÊ¼»¯Çı¶¯ËùĞèµÄ×¢²á±í²Ù×÷
- *²ÎÊıÒ»:ÎÄ¼şÂ·¾¶
- *²ÎÊı¶ş:Î´Ê¹ÓÃ
+/*åˆå§‹åŒ–é©±åŠ¨æ‰€éœ€çš„æ³¨å†Œè¡¨æ“ä½œ
+ *å‚æ•°ä¸€:æ–‡ä»¶è·¯å¾„
+ *å‚æ•°äºŒ:æœªä½¿ç”¨
  */
 ULONG64 InitRegistryInfo(_In_ PDRIVER_OBJECT pDriverObject, _In_ PUNICODE_STRING pRegistryPath)
 {
@@ -71,7 +71,7 @@ ULONG64 InitRegistryInfo(_In_ PDRIVER_OBJECT pDriverObject, _In_ PUNICODE_STRING
 	WCHAR szImagePath[256] = { 0 };
 
 	//
-	//»ñÈ¡Çı¶¯Ãû³Æ
+	//è·å–é©±åŠ¨åç§°
 	//
 	PWCHAR pName = pRegistryPath->Buffer;
 	ULONG64 nNameIndex = 0;
@@ -80,8 +80,8 @@ ULONG64 InitRegistryInfo(_In_ PDRIVER_OBJECT pDriverObject, _In_ PUNICODE_STRING
 	{
 		if (pName[i] == L'\\')
 		{
-			nNameIndex = i + 1; //¼ÇÂ¼µ±Ç°×Ö·û'\'µÄÎ»ÖÃ
-			nNameLen = 0;		//¼ÇÂ¼'\'³¤¶Èµ½ÏÂÒ»¸ö'\'µÄ³¤¶È
+			nNameIndex = i + 1; //è®°å½•å½“å‰å­—ç¬¦'\'çš„ä½ç½®
+			nNameLen = 0;		//è®°å½•'\'é•¿åº¦åˆ°ä¸‹ä¸€ä¸ª'\'çš„é•¿åº¦
 		}
 		nNameLen++;
 	}
@@ -90,9 +90,9 @@ ULONG64 InitRegistryInfo(_In_ PDRIVER_OBJECT pDriverObject, _In_ PUNICODE_STRING
 	RtlStringCbPrintfW(szDescription, sizeof(szDescription[0]) * 256, L"%ws Mini-Filter Driver", &pName[nNameIndex]);
 
 	//RtlInitUnicodeString(&pImagePath, L"system32\DRIVERS\");
-		//Ğ´ÈëÂ·¾¶Îª 
+		//å†™å…¥è·¯å¾„ä¸º 
 		//
-		//-|¼ÆËã»ú
+		//-|è®¡ç®—æœº
 		//	-|HKEY_LOCAL_MACHINE
 		//		-|SYSTEM
 		//			-|CurrentControlSet
@@ -103,7 +103,7 @@ ULONG64 InitRegistryInfo(_In_ PDRIVER_OBJECT pDriverObject, _In_ PUNICODE_STRING
 	RtlWriteRegistryValue(RTL_REGISTRY_ABSOLUTE, pRegistryPath->Buffer, L"DependOnService", REG_MULTI_SZ, pFltMgr.Buffer, pFltMgr.Length);
 	RtlWriteRegistryValue(RTL_REGISTRY_ABSOLUTE, pRegistryPath->Buffer, L"Group", REG_SZ, pGroup.Buffer, pGroup.Length);
 	RtlWriteRegistryValue(RTL_REGISTRY_ABSOLUTE, pRegistryPath->Buffer, L"Tag", REG_DWORD, &dwTag, sizeof(dwTag));
-	//ÀàĞÍÉèÖÃ 2 Ğ¶ÔØÎŞ·´Ó¦
+	//ç±»å‹è®¾ç½® 2 å¸è½½æ— ååº”
 	//RtlWriteRegistryValue(RTL_REGISTRY_ABSOLUTE, pRegistryPath->Buffer, L"Type", REG_DWORD, &dwType, sizeof(dwType));
 	RtlWriteRegistryValue(RTL_REGISTRY_ABSOLUTE, pRegistryPath->Buffer, L"ImagePath", REG_EXPAND_SZ, szImagePath, wcslen(szImagePath) * sizeof(WCHAR));
 	RtlWriteRegistryValue(RTL_REGISTRY_ABSOLUTE, pRegistryPath->Buffer, L"SupportedFeatures", REG_DWORD, &dwSupportedFeatures, sizeof(dwSupportedFeatures));
@@ -111,9 +111,9 @@ ULONG64 InitRegistryInfo(_In_ PDRIVER_OBJECT pDriverObject, _In_ PUNICODE_STRING
 	/*************************************************************************************************************************************************/
 	WCHAR szNewPath[256] = { 0 };
 	WCHAR szInstanceName[256] = { 0 };
-	//Ğ´ÈëÂ·¾¶Îª 
+	//å†™å…¥è·¯å¾„ä¸º 
 	//
-	//-|¼ÆËã»ú
+	//-|è®¡ç®—æœº
 	//	-|HKEY_LOCAL_MACHINE
 	//		-|SYSTEM
 	//			-|CurrentControlSet
@@ -127,16 +127,16 @@ ULONG64 InitRegistryInfo(_In_ PDRIVER_OBJECT pDriverObject, _In_ PUNICODE_STRING
 	ULONG32 dwFlags = 0;
 	UNICODE_STRING pAltitude = { 0 };
 	RtlInitUnicodeString(&pAltitude, L"370030");
-	//Ğ´ÈëÂ·¾¶Îª 
+	//å†™å…¥è·¯å¾„ä¸º 
 	//
-	//-|¼ÆËã»ú
+	//-|è®¡ç®—æœº
 	//	-|HKEY_LOCAL_MACHINE
 	//		-|SYSTEM
 	//			-|CurrentControlSet
 	//				-|Services 
 	//					-|MyFristFsFilter
 	//						-|Instances 
-	//							-|Çı¶¯Ãû + Instances 
+	//							-|é©±åŠ¨å + Instances 
 	RtlStringCbPrintfW(szNewPath, sizeof(szNewPath[0]) * 256, L"%ws\\%ws", szNewPath, szInstanceName);
 	RtlWriteRegistryValue(RTL_REGISTRY_ABSOLUTE, szNewPath, L"Altitude", REG_SZ, pAltitude.Buffer, pAltitude.Length);
 	RtlWriteRegistryValue(RTL_REGISTRY_ABSOLUTE, szNewPath, L"Flags", REG_DWORD, &dwFlags, sizeof(dwFlags));
@@ -162,37 +162,45 @@ NTSTATUS FsFilterUnload(_In_ FLT_FILTER_UNLOAD_FLAGS Flags)
 		g_pFilter = NULL;
 	}
 
-	//¹Ø±ÕETWHook
+	//å…³é—­ETWHook
 	EtwStop();
 
-	//Ğ¶ÔØÖØÔØµÄÄÚºËÊı¾İ
+	//å¸è½½é‡è½½çš„å†…æ ¸æ•°æ®
 	UnLoadKernelModule();
 
-	//Ğ¶ÔØÖØÔØµÄWin32kÊı¾İ
+	//å¸è½½é‡è½½çš„Win32kæ•°æ®
 	UnLoadWin32k();
 
-	//µÈ´ıËùÓĞApiÖ´ĞĞÍê³É²Å·µ»Ø
-	while (g_ApiCallNumber) {}
+	// ç­‰å¾…æ‰€æœ‰ hook å›è°ƒè¿”å› â€”â€” ä¸è¦å¿™ç­‰æ­»å¾ªç¯å æ»¡æ ¸å¿ƒï¼Œ
+	// æ”¹ç”¨ KeDelayExecutionThread è®©å‡º CPUï¼Œæ¯ 10ms æ£€æŸ¥ä¸€æ¬¡ã€‚
+	{
+		LARGE_INTEGER interval;
+		interval.QuadPart = -10 * 1000 * 10; // 10ms (ç›¸å¯¹æ—¶é—´ï¼Œå•ä½ 100ns)
+		while (g_ApiCallNumber != 0)
+		{
+			KeDelayExecutionThread(KernelMode, FALSE, &interval);
+		}
+	}
 
 
-	//Í¨ÖªÈı»·
+	//é€šçŸ¥ä¸‰ç¯
 	ULONG PreviousState = NULL;
 	NTSTATUS nStatus = ZwSetEvent(g_hExitEvent, &PreviousState);
 	if (nStatus == STATUS_INVALID_HANDLE)
 	{
-		MyDbgPrintfEx("Ìá¹©µÄ EventHandle ²ÎÊıÎŞĞ§¡£\n");
+		MyDbgPrintfEx("æä¾›çš„ EventHandle å‚æ•°æ— æ•ˆã€‚\n");
 	}
 	else if (nStatus == STATUS_INSUFFICIENT_RESOURCES)
 	{
-		MyDbgPrintfEx("ÎŞ·¨·ÖÅä´Ëº¯ÊıËùĞèµÄ×ÊÔ´¡£\n");
+		MyDbgPrintfEx("æ— æ³•åˆ†é…æ­¤å‡½æ•°æ‰€éœ€çš„èµ„æºã€‚\n");
 	}
 	else if (nStatus == STATUS_ACCESS_DENIED)
 	{
-		MyDbgPrintfEx("µ÷ÓÃ·½Ã»ÓĞĞŞ¸Ä EventHandle ²ÎÊıÖ¸¶¨µÄÊÂ¼şËùĞèµÄÈ¨ÏŞ\n");
+		MyDbgPrintfEx("è°ƒç”¨æ–¹æ²¡æœ‰ä¿®æ”¹ EventHandle å‚æ•°æŒ‡å®šçš„äº‹ä»¶æ‰€éœ€çš„æƒé™\n");
 	}
 	else
 	{
-		MyDbgPrintfEx("Í¨Öª³É¹¦!Status:%08X\n", ZwClose(g_hExitEvent));
+		MyDbgPrintfEx("é€šçŸ¥æˆåŠŸ!Status:%08X\n", ZwClose(g_hExitEvent));
 	}
 
 	return STATUS_SUCCESS;
@@ -229,15 +237,15 @@ ULONG64 ToUserSendGetStructInfoMessgae(const WCHAR* pModule, const WCHAR* pClass
 {
 	if (!pModule || !pClassType || !memberName)
 	{
-		MyDbgPrintfEx("[%ws] ²ÎÊı´íÎó!\n", __FUNCTIONW__);
+		MyDbgPrintfEx("[%ws] å‚æ•°é”™è¯¯!\n", __FUNCTIONW__);
 		return;
 	}
 
 	CFilterUserGetMessageStructInfo Pack = { 0 };
 
-	Pack.StructInfo.nOffset = 0; // Æ«ÒÆÁ¿³õÊ¼»¯Îª0
-	Pack.Header.PackType = um_FilterMessageDataType_GetStructOffset; // ÉèÖÃ°üÀàĞÍ
-	Pack.Header.PackSize = sizeof(CFilterUserGetMessageStructInfo); // ÉèÖÃ°ü´óĞ¡
+	Pack.StructInfo.nOffset = 0; // åç§»é‡åˆå§‹åŒ–ä¸º0
+	Pack.Header.PackType = um_FilterMessageDataType_GetStructOffset; // è®¾ç½®åŒ…ç±»å‹
+	Pack.Header.PackSize = sizeof(CFilterUserGetMessageStructInfo); // è®¾ç½®åŒ…å¤§å°
 
 	wcscpy(Pack.StructInfo.szModuleName, pModule);
 	wcscpy(Pack.StructInfo.szClassType, pClassType);
@@ -248,12 +256,12 @@ ULONG64 ToUserSendGetStructInfoMessgae(const WCHAR* pModule, const WCHAR* pClass
 	ULONG ReplyLength = sizeof(ReplyBuffer);
 
 
-	//ÉèÖÃ³¬Ê±Ê±¼äÎª1Ãë
+	//è®¾ç½®è¶…æ—¶æ—¶é—´ä¸º1ç§’
 	LARGE_INTEGER timeout;
-	timeout.QuadPart = -20 * 1000 * 1000; // 2Ãë³¬Ê±£¨µ¥Î»Îª100ÄÉÃë£¬¸ºÖµ±íÊ¾Ïà¶ÔÊ±¼ä£©
+	timeout.QuadPart = -20 * 1000 * 1000; // 2ç§’è¶…æ—¶ï¼ˆå•ä½ä¸º100çº³ç§’ï¼Œè´Ÿå€¼è¡¨ç¤ºç›¸å¯¹æ—¶é—´ï¼‰
 
 
-	// ·¢ËÍÏûÏ¢µ½¹ıÂËÆ÷
+	// å‘é€æ¶ˆæ¯åˆ°è¿‡æ»¤å™¨
 	NTSTATUS status = FltSendMessage(g_pFilter, &g_AppPort, &Pack.Header.PackType, Pack.Header.PackSize - sizeof(FILTER_MESSAGE_HEADER), ReplyBuffer, &ReplyLength, &timeout);
 	if (NT_SUCCESS(status))
 	{
@@ -262,16 +270,16 @@ ULONG64 ToUserSendGetStructInfoMessgae(const WCHAR* pModule, const WCHAR* pClass
 			PCStructInfo pReply = (PCStructInfo)((ULONG64)ReplyBuffer + (sizeof(CFilterGetMessageHeadInfo) - sizeof(FILTER_REPLY_HEADER)));
 
 			if (MmIsAddressValid(pReply))
-				return pReply->nOffset; // ·µ»ØÆ«ÒÆÁ¿
+				return pReply->nOffset; // è¿”å›åç§»é‡
 		}
 		else
 		{
-			MyDbgPrintfEx("[%ws] ·µ»ØÊı¾İ³¤¶È´íÎó! ReplyLength:%016I64X\n", __FUNCTIONW__, ReplyLength);
+			MyDbgPrintfEx("[%ws] è¿”å›æ•°æ®é•¿åº¦é”™è¯¯! ReplyLength:%016I64X\n", __FUNCTIONW__, ReplyLength);
 		}
 	}
-	else if (STATUS_TIMEOUT != status/*³¬Ê±*/)
+	else if (STATUS_TIMEOUT != status/*è¶…æ—¶*/)
 	{
-		MyDbgPrintfEx("[%ws] °ü³¬Ê±! ReplyLength:%016I64X\n", __FUNCTIONW__, ReplyLength);
+		MyDbgPrintfEx("[%ws] åŒ…è¶…æ—¶! ReplyLength:%016I64X\n", __FUNCTIONW__, ReplyLength);
 	}
 	return -1;
 }
@@ -280,15 +288,15 @@ ULONG64 ToUserSendGetStructSizeMessgae(const WCHAR* pModule, const WCHAR* pClass
 {
 	if (!pClassName || !pModule)
 	{
-		MyDbgPrintfEx("[%ws] ²ÎÊı´íÎó!\n", __FUNCTIONW__);
+		MyDbgPrintfEx("[%ws] å‚æ•°é”™è¯¯!\n", __FUNCTIONW__);
 		return;
 	}
 
 	CFilterUserGetMessageStructSize Pack = { 0 };
 
-	Pack.StructInfo.nSize = 0;											// Size³õÊ¼»¯Îª0
-	Pack.Header.PackType = um_FilterMessageDataType_GetStructSize;		// ÉèÖÃ°üÀàĞÍ
-	Pack.Header.PackSize = sizeof(CFilterUserGetMessageStructSize);		// ÉèÖÃ°ü´óĞ¡
+	Pack.StructInfo.nSize = 0;											// Sizeåˆå§‹åŒ–ä¸º0
+	Pack.Header.PackType = um_FilterMessageDataType_GetStructSize;		// è®¾ç½®åŒ…ç±»å‹
+	Pack.Header.PackSize = sizeof(CFilterUserGetMessageStructSize);		// è®¾ç½®åŒ…å¤§å°
 
 	wcscpy(Pack.StructInfo.szClassName, pClassName);
 	wcscpy(Pack.StructInfo.szModuleName, pModule);
@@ -296,11 +304,11 @@ ULONG64 ToUserSendGetStructSizeMessgae(const WCHAR* pModule, const WCHAR* pClass
 	UCHAR ReplyBuffer[0x1000] = { 0 };
 	ULONG ReplyLength = sizeof(ReplyBuffer);
 
-	//ÉèÖÃ³¬Ê±Ê±¼äÎª1Ãë
+	//è®¾ç½®è¶…æ—¶æ—¶é—´ä¸º1ç§’
 	LARGE_INTEGER timeout;
-	timeout.QuadPart = -20 * 1000 * 1000; // 2Ãë³¬Ê±£¨µ¥Î»Îª100ÄÉÃë£¬¸ºÖµ±íÊ¾Ïà¶ÔÊ±¼ä£©
+	timeout.QuadPart = -20 * 1000 * 1000; // 2ç§’è¶…æ—¶ï¼ˆå•ä½ä¸º100çº³ç§’ï¼Œè´Ÿå€¼è¡¨ç¤ºç›¸å¯¹æ—¶é—´ï¼‰
 
-	// ·¢ËÍÏûÏ¢µ½¹ıÂËÆ÷
+	// å‘é€æ¶ˆæ¯åˆ°è¿‡æ»¤å™¨
 	NTSTATUS status = FltSendMessage(g_pFilter, &g_AppPort, &Pack.Header.PackType, Pack.Header.PackSize - sizeof(FILTER_MESSAGE_HEADER), ReplyBuffer, &ReplyLength, &timeout);
 	if (NT_SUCCESS(status))
 	{
@@ -309,16 +317,16 @@ ULONG64 ToUserSendGetStructSizeMessgae(const WCHAR* pModule, const WCHAR* pClass
 			PCStructSize pReply = (PCStructSize)((ULONG64)ReplyBuffer + (sizeof(CFilterGetMessageHeadInfo) - sizeof(FILTER_REPLY_HEADER)));
 
 			if (MmIsAddressValid(pReply))
-				return pReply->nSize; // ·µ»ØÆ«ÒÆÁ¿
+				return pReply->nSize; // è¿”å›åç§»é‡
 		}
 		else
 		{
-			MyDbgPrintfEx("[%ws] ·µ»ØÊı¾İ³¤¶È´íÎó! ReplyLength:%016I64X\n", __FUNCTIONW__, ReplyLength);
+			MyDbgPrintfEx("[%ws] è¿”å›æ•°æ®é•¿åº¦é”™è¯¯! ReplyLength:%016I64X\n", __FUNCTIONW__, ReplyLength);
 		}
 	}
-	else if (STATUS_TIMEOUT != status/*³¬Ê±*/)
+	else if (STATUS_TIMEOUT != status/*è¶…æ—¶*/)
 	{
-		MyDbgPrintfEx("[%ws] °ü³¬Ê±! ReplyLength:%016I64X\n", __FUNCTIONW__, ReplyLength);
+		MyDbgPrintfEx("[%ws] åŒ…è¶…æ—¶! ReplyLength:%016I64X\n", __FUNCTIONW__, ReplyLength);
 	}
 	return -1;
 }
@@ -327,15 +335,15 @@ ULONG64 ToUserSendGetGlobalVariablesMessgae(const WCHAR* pModule, const WCHAR* V
 {
 	if (!pModule || !VarName)
 	{
-		MyDbgPrintfEx("[%ws] ²ÎÊı´íÎó!\n", __FUNCTIONW__);
+		MyDbgPrintfEx("[%ws] å‚æ•°é”™è¯¯!\n", __FUNCTIONW__);
 		return 0;
 	}
 
 	CFilterUserGetMessageGlobalVariables Pack = { 0 };
 
-	Pack.VarInfo.nOffset = 0; // Æ«ÒÆÁ¿³õÊ¼»¯Îª0
-	Pack.Header.PackType = um_FilterMessageDataType_GetGlobalVariables; // ÉèÖÃ°üÀàĞÍ
-	Pack.Header.PackSize = sizeof(CFilterUserGetMessageGlobalVariables); // ÉèÖÃ°ü´óĞ¡
+	Pack.VarInfo.nOffset = 0; // åç§»é‡åˆå§‹åŒ–ä¸º0
+	Pack.Header.PackType = um_FilterMessageDataType_GetGlobalVariables; // è®¾ç½®åŒ…ç±»å‹
+	Pack.Header.PackSize = sizeof(CFilterUserGetMessageGlobalVariables); // è®¾ç½®åŒ…å¤§å°
 
 	wcscpy(Pack.VarInfo.szModuleName, pModule);
 	wcscpy(Pack.VarInfo.szVarName, VarName);
@@ -345,12 +353,12 @@ ULONG64 ToUserSendGetGlobalVariablesMessgae(const WCHAR* pModule, const WCHAR* V
 	ULONG ReplyLength = sizeof(ReplyBuffer);
 
 
-	//ÉèÖÃ³¬Ê±Ê±¼äÎª1Ãë
+	//è®¾ç½®è¶…æ—¶æ—¶é—´ä¸º1ç§’
 	LARGE_INTEGER timeout;
-	timeout.QuadPart = -20 * 1000 * 1000; // 2Ãë³¬Ê±£¨µ¥Î»Îª100ÄÉÃë£¬¸ºÖµ±íÊ¾Ïà¶ÔÊ±¼ä£©
+	timeout.QuadPart = -20 * 1000 * 1000; // 2ç§’è¶…æ—¶ï¼ˆå•ä½ä¸º100çº³ç§’ï¼Œè´Ÿå€¼è¡¨ç¤ºç›¸å¯¹æ—¶é—´ï¼‰
 
 
-	// ·¢ËÍÏûÏ¢µ½¹ıÂËÆ÷
+	// å‘é€æ¶ˆæ¯åˆ°è¿‡æ»¤å™¨
 	NTSTATUS status = FltSendMessage(g_pFilter, &g_AppPort, &Pack.Header.PackType, Pack.Header.PackSize - sizeof(FILTER_MESSAGE_HEADER), ReplyBuffer, &ReplyLength, &timeout);
 	if (NT_SUCCESS(status))
 	{
@@ -359,22 +367,22 @@ ULONG64 ToUserSendGetGlobalVariablesMessgae(const WCHAR* pModule, const WCHAR* V
 			PCGlobalVariables pReply = (PCGlobalVariables)((ULONG64)ReplyBuffer + (sizeof(CFilterGetMessageHeadInfo) - sizeof(FILTER_REPLY_HEADER)));
 
 			if (MmIsAddressValid(pReply))
-				return pReply->nOffset; // ·µ»ØÆ«ÒÆÁ¿
+				return pReply->nOffset; // è¿”å›åç§»é‡
 		}
 		else
 		{
-			MyDbgPrintfEx("[%ws] ·µ»ØÊı¾İ³¤¶È´íÎó! ReplyLength:%016I64X\n", __FUNCTIONW__, ReplyLength);
+			MyDbgPrintfEx("[%ws] è¿”å›æ•°æ®é•¿åº¦é”™è¯¯! ReplyLength:%016I64X\n", __FUNCTIONW__, ReplyLength);
 		}
 	}
-	else if (STATUS_TIMEOUT != status/*³¬Ê±*/)
+	else if (STATUS_TIMEOUT != status/*è¶…æ—¶*/)
 	{
-		MyDbgPrintfEx("[%ws] °ü³¬Ê±! ReplyLength:%016I64X\n", __FUNCTIONW__, ReplyLength);
+		MyDbgPrintfEx("[%ws] åŒ…è¶…æ—¶! ReplyLength:%016I64X\n", __FUNCTIONW__, ReplyLength);
 	}
 	return -1;
 }
 
 
-//	Í¨ĞÅÁ¬½Óº¯Êı
+//	é€šä¿¡è¿æ¥å‡½æ•°
 NTSTATUS MyMiniFltConnectNotify(
 	_In_ PFLT_PORT ClientPort,
 	_In_opt_ PVOID ServerPortCookie,
@@ -387,22 +395,22 @@ NTSTATUS MyMiniFltConnectNotify(
 	{
 
 		/*	{
-					//³õÊ¼»¯´æ´¢ÏûÏ¢µÄËø
+					//åˆå§‹åŒ–å­˜å‚¨æ¶ˆæ¯çš„é”
 					KeInitializeSpinLock(&g_KernelMessageList.Lock);
-					//³õÊ¼»¯Í¨Öª¶ÔÏó
+					//åˆå§‹åŒ–é€šçŸ¥å¯¹è±¡
 					KeInitializeEvent(&g_KernelMessageList.Event, NotificationEvent, FALSE);
-					//³õÊ¼»¯Á´±í
+					//åˆå§‹åŒ–é“¾è¡¨
 					//InitDoubleLoopList(&g_KernelMessageList.PackList->List);
 				}
 		*/
 		/*
 				{
 					HANDLE hThread = NULL;
-					//´´½¨Ò»¸öÓÃÓÚHOOKµÄ·¢ËÍÏûÏ¢ÏµÍ³Ïß³Ì
+					//åˆ›å»ºä¸€ä¸ªç”¨äºHOOKçš„å‘é€æ¶ˆæ¯ç³»ç»Ÿçº¿ç¨‹
 					OBJECT_ATTRIBUTES ThreadObjectAttributes = { 0 };
 					InitializeObjectAttributes(&ThreadObjectAttributes, NULL, OBJ_KERNEL_HANDLE, 0, NULL);
 
-					//ÉèÖÃÏß³ÌÔËĞĞ±êÖ¾
+					//è®¾ç½®çº¿ç¨‹è¿è¡Œæ ‡å¿—
 					g_ToUserSendHookSystemServiceTableInfoThreadRunFlags = TRUE;
 
 					NTSTATUS nStatus = PsCreateSystemThread(&hThread, THREAD_ALL_ACCESS,
@@ -412,13 +420,13 @@ NTSTATUS MyMiniFltConnectNotify(
 						ToUserSendHookSystemServiceTableInfo,
 						&g_KernelMessageList);
 
-					//µ±´´´´½¨Ïß³ÌÊ§°ÜÊ±,
+					//å½“åˆ›åˆ›å»ºçº¿ç¨‹å¤±è´¥æ—¶,
 					if (!NT_SUCCESS(nStatus))
 					{
 						return nStatus;
 					}
 
-					//¹Ø±ÕÏß³Ì¾ä±ú
+					//å…³é—­çº¿ç¨‹å¥æŸ„
 					ZwClose(hThread);
 				}
 		*/
@@ -429,7 +437,7 @@ NTSTATUS MyMiniFltConnectNotify(
 	return STATUS_SUCCESS;
 }
 
-//	Í¨ĞÅÏú»ÙÁ¬½Óº¯Êı
+//	é€šä¿¡é”€æ¯è¿æ¥å‡½æ•°
 VOID MyMiniFltDisconnectNotify(_In_opt_ PVOID ConnectionCookie)
 {
 	if (g_AppPort == NULL)
@@ -439,18 +447,18 @@ VOID MyMiniFltDisconnectNotify(_In_opt_ PVOID ConnectionCookie)
 
 	/*
 		{
-			//µ±Ïß³ÌÔËĞĞµÄÊ±ºòÍ¨Öª¹Ø±ÕÏß³ÌÇåÀí×ÊÔ´
+			//å½“çº¿ç¨‹è¿è¡Œçš„æ—¶å€™é€šçŸ¥å…³é—­çº¿ç¨‹æ¸…ç†èµ„æº
 			if (g_ToUserSendHookSystemServiceTableInfoThreadRunFlags)
 			{
-				//·¢ËÍĞÅºÅ
+				//å‘é€ä¿¡å·
 				KeSetEvent(&g_KernelMessageList.Event, EVENT_INCREMENT, TRUE);
 				NTSTATUS status = KeWaitForSingleObject(&g_KernelMessageList.Event, Executive, KernelMode, FALSE, NULL);
 
 				if (status != STATUS_SUCCESS)
 				{
-					MyDbgPrintfEx("Î´µÈµ½Ïß³Ì½áÊø status: %08X\n", status);
+					MyDbgPrintfEx("æœªç­‰åˆ°çº¿ç¨‹ç»“æŸ status: %08X\n", status);
 				}
-				MyDbgPrintfEx("Ïß³Ì½áÊø status: %08X\n", status);
+				MyDbgPrintfEx("çº¿ç¨‹ç»“æŸ status: %08X\n", status);
 			}
 		}
 	*/
@@ -458,15 +466,15 @@ VOID MyMiniFltDisconnectNotify(_In_opt_ PVOID ConnectionCookie)
 
 	//LARGE_INTEGER waitTime = { 0 };
 
-	//¹Ø±Õ3»·Á´½Ó
+	//å…³é—­3ç¯é“¾æ¥
 	FltCloseClientPort(g_pFilter, &g_AppPort);
-	MyDbgPrintfEx("g_pFilter ¹Ø±ÕÁ¬½Ó\n");
+	MyDbgPrintfEx("g_pFilter å…³é—­è¿æ¥\n");
 
 	g_AppPort = NULL;
 	return STATUS_SUCCESS;
 }
 
-// Í¨ĞÅÊÕÏûÏ¢º¯Êı
+// é€šä¿¡æ”¶æ¶ˆæ¯å‡½æ•°
 NTSTATUS MyMiniFltMessageNotify(
 	_In_opt_ PVOID PortCookie,
 	_In_reads_bytes_opt_(InputBufferLength) PVOID InputBuffer,
@@ -476,47 +484,79 @@ NTSTATUS MyMiniFltMessageNotify(
 	_Out_ PULONG ReturnOutputBufferLength
 )
 {
-	//ÅĞ¶ÏÊÇ·ñÊÇÓĞĞ§¶Ë¿Ú
-	PCCommunicationInfo pMsg = InputBuffer;
-	//__debugbreak();
-	if (MmIsAddressValid(pMsg))
+	UNREFERENCED_PARAMETER(PortCookie);
+	UNREFERENCED_PARAMETER(OutputBuffer);
+	UNREFERENCED_PARAMETER(OutputBufferLength);
+
+	if (ReturnOutputBufferLength != NULL)
 	{
-		//ÑéÖ¤²ÎÊıÊÇ·ñ×¼È·
-		if (MmIsAddressValid(&g_CmdFun[pMsg->m_Cmd]) && MmIsAddressValid(g_CmdFun[pMsg->m_Cmd].m_pfn))
-		{
-			g_CmdFun[pMsg->m_Cmd].m_pfn(pMsg->m_Cmd, pMsg->m_pIndata, pMsg->m_pOutData, pMsg->m_nRet, pMsg->m_pParam);
-		}
+		*ReturnOutputBufferLength = 0;
 	}
+
+	// 1. é•¿åº¦æ ¡éªŒï¼šInputBuffer ç”± FltMgr æ•è·åˆ°å†…æ ¸ä¾§ï¼Œä½†è¦ä¿è¯è‡³å°‘èƒ½è£…ä¸‹å‘½ä»¤å¤´
+	if (InputBuffer == NULL || InputBufferLength < sizeof(CCommunicationInfo))
+	{
+		return STATUS_INVALID_PARAMETER;
+	}
+
+	PCCommunicationInfo pMsg = (PCCommunicationInfo)InputBuffer;
+
+	// 2. å‘½ä»¤è¾¹ç•Œï¼šé˜²æ­¢ g_CmdFun ä¸‹æ ‡è¶Šç•Œ
+	if (pMsg->m_Cmd >= MAX_FUNCALL_INDEX)
+	{
+		return STATUS_INVALID_PARAMETER;
+	}
+
+	// 3. æ§½ä½å®Œæ•´æ€§ï¼šé˜²æ­¢ g_CmdFun è¡¨æ‰‹å†™é”™ä½æ—¶è°ƒç”¨é”™å‡½æ•°
+	PCMDFUN pfn = g_CmdFun[pMsg->m_Cmd].m_pfn;
+	if (pfn == NULL || g_CmdFun[pMsg->m_Cmd].m_Cmd != pMsg->m_Cmd)
+	{
+		return STATUS_NOT_IMPLEMENTED;
+	}
+
+	// 4. m_pIndata / m_pOutData / m_nRet / m_pParam æŒ‡å‘ R3 ç”¨æˆ·å†…å­˜ï¼Œ
+	//    handler å†…éƒ¨ä¼šç›´æ¥è§£å¼•ç”¨ï¼Œè¿™é‡Œç”¨ SEH å…œåº•ï¼Œé¿å… R3 ä¼ å…¥éæ³•åœ°å€æ—¶è“å±
+	__try
+	{
+		pfn(pMsg->m_Cmd, pMsg->m_pIndata, pMsg->m_pOutData, pMsg->m_nRet, pMsg->m_pParam);
+	}
+	__except (EXCEPTION_EXECUTE_HANDLER)
+	{
+		MyDbgPrintfEx("[%s] handler cmd=%llu raised %08X\n",
+			__FUNCTION__, pMsg->m_Cmd, GetExceptionCode());
+		return GetExceptionCode();
+	}
+
 	return STATUS_SUCCESS;
 }
 
-// ×¢²áÍ¨ĞÅ·şÎñº¯Êı
+// æ³¨å†Œé€šä¿¡æœåŠ¡å‡½æ•°
 ULONG64 RegisteredCominterface(PUNICODE_STRING pPortName)
 {
 	PSECURITY_DESCRIPTOR security = { 0 };
 	OBJECT_ATTRIBUTES Attributes = { 0 };
 	NTSTATUS ntstatus = { 0 };
 
-	// Éú³ÉFltCreateCommunicationPortµÄ°²È«ÃèÊö·û
+	// ç”ŸæˆFltCreateCommunicationPortçš„å®‰å…¨æè¿°ç¬¦
 	ntstatus = FltBuildDefaultSecurityDescriptor(&security, FLT_PORT_ALL_ACCESS);
 	if (!NT_SUCCESS(ntstatus))
 	{
 		return ntstatus;
 	}
-	// ³õÊ¼»¯°²È«ÃèÊö·û
+	// åˆå§‹åŒ–å®‰å…¨æè¿°ç¬¦
 	InitializeObjectAttributes(&Attributes, pPortName, OBJ_CASE_INSENSITIVE | OBJ_KERNEL_HANDLE, NULL, security);
 
-	//	´´½¨Ò»¸öÍ¨ĞÅ·şÎñÆ÷¶Ë¿Ú,×¢²á»Øµ÷
+	//	åˆ›å»ºä¸€ä¸ªé€šä¿¡æœåŠ¡å™¨ç«¯å£,æ³¨å†Œå›è°ƒ
 	ntstatus = FltCreateCommunicationPort(g_pFilter,
 		&g_pServerPort,
 		&Attributes,
 		NULL,
-		MyMiniFltConnectNotify,			/*Á¬½Ó»Øµ÷*/
-		MyMiniFltDisconnectNotify,		/*Á¬½ÓÏú»Ù»Øµ÷*/
-		MyMiniFltMessageNotify,			/*ÏûÏ¢½ÓÊÕ»Øµ÷*/
-		1/*×î´óÁ¬½ÓÊı*/);
+		MyMiniFltConnectNotify,			/*è¿æ¥å›è°ƒ*/
+		MyMiniFltDisconnectNotify,		/*è¿æ¥é”€æ¯å›è°ƒ*/
+		MyMiniFltMessageNotify,			/*æ¶ˆæ¯æ¥æ”¶å›è°ƒ*/
+		1/*æœ€å¤§è¿æ¥æ•°*/);
 
-	//ÊÍ·Å°²È«ÃèÊö·û
+	//é‡Šæ”¾å®‰å…¨æè¿°ç¬¦
 	FltFreeSecurityDescriptor(security);
 
 	if (!NT_SUCCESS(ntstatus))

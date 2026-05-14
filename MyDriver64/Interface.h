@@ -1,29 +1,29 @@
-#pragma once
+ï»¿#pragma once
 #include "DefineArea.h"
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//×î´ó½Ó¿ÚÏŞÖÆ																												
+//æœ€å¤§æ¥å£é™åˆ¶																												
 #define MAX_FUNCALL_INDEX 0xFF
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//Í¨ĞÅ½Ó¿Úº¯ÊıÖ¸Õë																											
+//é€šä¿¡æ¥å£å‡½æ•°æŒ‡é’ˆ																											
 typedef VOID(__vectorcall* PCMDFUN)(ULONG64 nCmd, ULONG64 pIndata, ULONG64 pOutData, ULONG64 pRet, ULONG64 pParam);
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//Í¨ĞÅ½Ó¿Ú½á¹¹Ìå																												
+//é€šä¿¡æ¥å£ç»“æ„ä½“																												
 typedef struct _Cmd
 {
-	IN ULONG64 m_Cmd;			//ÃüÁî
-	PCMDFUN m_pfn;				//º¯ÊıÖ¸Õë
+	IN ULONG64 m_Cmd;			//å‘½ä»¤
+	PCMDFUN m_pfn;				//å‡½æ•°æŒ‡é’ˆ
 }CCmd, * PCCmd;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//È«¾Ö±äÁ¿´æ´¢ ½Ó¿Úº¯ÊıÖ¸Õë,ºÍË÷Òı (m_Cmd Ë÷Òı¿ÉÓĞ¿ÉÎŞ,²»Ê¹ÓÃ,·½±ãÔÄ¶Á)															
+//å…¨å±€å˜é‡å­˜å‚¨ æ¥å£å‡½æ•°æŒ‡é’ˆ,å’Œç´¢å¼• (m_Cmd ç´¢å¼•å¯æœ‰å¯æ— ,ä¸ä½¿ç”¨,æ–¹ä¾¿é˜…è¯»)															
 EXTERN_C CCmd g_CmdFun[MAX_FUNCALL_INDEX];
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -33,7 +33,7 @@ VOID MyThreadRoutine(PVOID Context);
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-//	½Ó¿Ú ÓÃÓÚÓëÓ¦ÓÃ²ãÍ¨ĞÅÊ±µ÷ÓÃ
+//	æ¥å£ ç”¨äºä¸åº”ç”¨å±‚é€šä¿¡æ—¶è°ƒç”¨
 // 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 VOID __vectorcall InitData(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam);
@@ -69,3 +69,6 @@ VOID __vectorcall GetProcessPortection(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT 
 VOID __vectorcall EnumFilterDriverInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam);
 VOID __vectorcall DebugFlagsInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam);
 VOID __vectorcall MyTest(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam);
+VOID __vectorcall EnumWorkerThreadInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam);
+VOID __vectorcall EnumWdfFunctionInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam);
+VOID __vectorcall EnumWdf01000Info(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam);

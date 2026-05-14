@@ -1,4 +1,4 @@
-#include "Filter.h"
+ï»¿#include "Filter.h"
 #include <ntimage.h>
 
 FLT_POSTOP_CALLBACK_STATUS
@@ -11,23 +11,23 @@ MyFltCreatePostOperationCallBack(
 {
 	FLT_PREOP_CALLBACK_STATUS RetStatus = FLT_PREOP_SUCCESS_WITH_CALLBACK;
 
-	//»ñÈ¡ÎÄ¼şĞÅÏ¢
+	//è·å–æ–‡ä»¶ä¿¡æ¯
 	PFLT_FILE_NAME_INFORMATION pFileInfo = NULL;
 	NTSTATUS st = FltGetFileNameInformation(Data, FLT_FILE_NAME_QUERY_DEFAULT | FLT_FILE_NAME_NORMALIZED, &pFileInfo);
 	if (!NT_SUCCESS(st))
 	{
 		return RetStatus;
 	}
-	//·ÖÎöÄÚÈİ
+	//åˆ†æå†…å®¹
 	st = FltParseFileNameInformation(pFileInfo);
 	if (!NT_SUCCESS(st))
 	{
 		return RetStatus;
 	}
 
-	//»ñÈ¡ÎÄ¼ş¶ÔÏó
+	//è·å–æ–‡ä»¶å¯¹è±¡
 	PFILE_OBJECT TargetFileObject = Data->Iopb->TargetFileObject;
-	if (TargetFileObject->Type != 5)//ÅĞ¶ÏÊÇ·ñÊÇÎÄ¼ş
+	if (TargetFileObject->Type != 5)//åˆ¤æ–­æ˜¯å¦æ˜¯æ–‡ä»¶
 	{
 		return RetStatus;
 	}
@@ -45,7 +45,7 @@ MyFltCreatePostOperationCallBack(
 	UNICODE_STRING pDstFilePath3 = { 0 };
 	RtlInitUnicodeString(&pDstFilePath3, EXE_FILE_INFO3);
 	
-	//±È½ÏÎÄ¼şºó×ºÊÇ·ñÊÇÒª¹ıÂËµÄÎÄ¼ş
+	//æ¯”è¾ƒæ–‡ä»¶åç¼€æ˜¯å¦æ˜¯è¦è¿‡æ»¤çš„æ–‡ä»¶
 	if (FsRtlIsNameInExpression(&pDstFilePath, &TargetFileObject->FileName, TRUE, NULL) == FALSE ||
 		FsRtlIsNameInExpression(&pDstFilePath1, &TargetFileObject->FileName, TRUE, NULL) == FALSE ||
 		FsRtlIsNameInExpression(&pDstFilePath2, &TargetFileObject->FileName, TRUE, NULL) == FALSE ||
@@ -53,21 +53,21 @@ MyFltCreatePostOperationCallBack(
 	{
 		ULONG64 safeToOpen = 0;
 
-		//²éÕÒÊÇ·ñÊÇPEÎÄ¼ş
+		//æŸ¥æ‰¾æ˜¯å¦æ˜¯PEæ–‡ä»¶
 		ScannerpScanFileInUserMode(FltObjects->Instance,
 			FltObjects->FileObject,
 			&safeToOpen);
 
 		if (!safeToOpen)
 		{
-			//ÊÇPEÎÄ¼ş
+			//æ˜¯PEæ–‡ä»¶
 
-			MyDbgPrintfEx("¼ì²âµ½¼ÓÔØÁËPEÎÄ¼ş!\n");
+			MyDbgPrintfEx("æ£€æµ‹åˆ°åŠ è½½äº†PEæ–‡ä»¶!\n");
 
 		}
 
 	}
-	//ÊÍ·ÅµôÎÄ¼şĞÅÏ¢
+	//é‡Šæ”¾æ‰æ–‡ä»¶ä¿¡æ¯
 	FltReleaseFileNameInformation(pFileInfo);
 	return RetStatus;
 }
@@ -94,13 +94,13 @@ ScannerpScanFileInUserMode(
 
 	try
 	{
-		//·µ»Ø¸½¼Óµ½¹ıÂËÆ÷¾íµÄĞÅÏ¢
+		//è¿”å›é™„åŠ åˆ°è¿‡æ»¤å™¨å·çš„ä¿¡æ¯
 		status = FltGetVolumeFromInstance(Instance, &volume);
 		if (!NT_SUCCESS(status)) {
 
 			leave;
 		}
-		//·µ»Ø¾íÊôĞÔ
+		//è¿”å›å·å±æ€§
 		FLT_VOLUME_PROPERTIES volumeProps = { 0 };
 		ULONG64 length = 0;
 		status = FltGetVolumeProperties(volume,
@@ -116,7 +116,7 @@ ScannerpScanFileInUserMode(
 		length = max(SCANNER_READ_BUFFER_SIZE, volumeProps.SectorSize);
 
 
-		//ÉêÇë¿Õ¼ä ´æ·Å¶ÁÈ¡µ½µÄÎÄ¼şĞÅÏ¢
+		//ç”³è¯·ç©ºé—´ å­˜æ”¾è¯»å–åˆ°çš„æ–‡ä»¶ä¿¡æ¯
 		buffer = FltAllocatePoolAlignedWithTag(Instance,
 			NonPagedPool,
 			length,
@@ -129,7 +129,7 @@ ScannerpScanFileInUserMode(
 		}
 		RtlZeroMemory(buffer, length);
 
-		//¶ÁÈ¡ÎÄ¼ş
+		//è¯»å–æ–‡ä»¶
 		LARGE_INTEGER offset = { 0 };
 		ULONG64 bytesRead = 0;
 		status = FltReadFile(Instance,
@@ -143,10 +143,10 @@ ScannerpScanFileInUserMode(
 			NULL,
 			NULL);
 
-		//ÅĞ¶ÏÊÇ·ñ¶ÁÈ¡³É¹¦
+		//åˆ¤æ–­æ˜¯å¦è¯»å–æˆåŠŸ
 		if (NT_SUCCESS(status) && (0 != bytesRead))
 		{
-			//ÅĞ¶ÏÎÄ¼şµÄ¿ªÍ·ÊÇ·ñÊÇMZ
+			//åˆ¤æ–­æ–‡ä»¶çš„å¼€å¤´æ˜¯å¦æ˜¯MZ
 			if (*(PUSHORT)buffer == 0x5A4D)
 			{
 				PULONG32 pNtHeader = ((ULONG64)buffer + ((PIMAGE_DOS_HEADER)buffer)->e_lfanew);
@@ -160,13 +160,13 @@ ScannerpScanFileInUserMode(
 	}
 	finally
 	{
-		//ÊÍ·ÅÎÄ¼şBuf
+		//é‡Šæ”¾æ–‡ä»¶Buf
 		if (buffer != NULL)
 		{
 			FltFreePoolAlignedWithTag(Instance, buffer, 'nacS');
 		}
 
-		//ÊÍ·Å¾íĞÅÏ¢
+		//é‡Šæ”¾å·ä¿¡æ¯
 		if (NULL != volume) {
 
 			FltObjectDereference(volume);

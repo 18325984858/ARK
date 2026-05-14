@@ -1,5 +1,8 @@
-#include "Thread.h"
+ï»¿#include "Thread.h"
 #include "CLoadDriver.h"
+#include "MyPCHunter64.h"
+#include <unordered_set>
+#include <mutex>
 #include "DlgEnumFile.h"
 #include "DlgEnumRegistry.h"
 #include "DlgGdt.h"
@@ -18,9 +21,9 @@
 #include "DlgHalTable.h"
 #include "DlgWdf.h"
 
-//È«¾Ö»¥³âÌå 
+//å…¨å±€äº’æ–¥ä½“ 
 //
-// ¹¦ÄÜ:ÓÃÓÚÍ¬²½Ó¦ÓÃ²ã½øÄÚºËµÄ²Ù×÷
+// åŠŸèƒ½:ç”¨äºåŒæ­¥åº”ç”¨å±‚è¿›å†…æ ¸çš„æ“ä½œ
 // 
 HANDLE g_hThreadMutex = CreateMutex(NULL, FALSE, NULL);
 
@@ -28,15 +31,15 @@ HANDLE g_hThreadMutex = CreateMutex(NULL, FALSE, NULL);
 
 DWORD WINAPI UniversalThreadFunction(PVOID lpThreadParameter)
 {
-	//ÏÈÑéÖ¤²ÎÊı
+	//å…ˆéªŒè¯å‚æ•°
 	CThreadInfo* pThreadInfo = (CThreadInfo*)lpThreadParameter;
-	//ÅĞ¶ÏÊı¾İ ²ÎÊı µ÷ÓÃºÅÊÇ·ñÓĞĞ§
+	//åˆ¤æ–­æ•°æ® å‚æ•° è°ƒç”¨å·æ˜¯å¦æœ‰æ•ˆ
 	if (pThreadInfo == NULL || pThreadInfo->Paragma == NULL || pThreadInfo->CallNumber >= MAX_USER_CALL_BACK_COUNT)
 	{
 		return FALSE;
 	}
 
-	//Í¬²½Ïß³Ì
+	//åŒæ­¥çº¿ç¨‹
 	WaitForSingleObject(g_hThreadMutex, MUTEX_WAIT_TIME);
 
 	//__debugbreak();
@@ -44,21 +47,21 @@ DWORD WINAPI UniversalThreadFunction(PVOID lpThreadParameter)
 	_MyCBaseDataObject* pInfo = (_MyCBaseDataObject*)pThreadInfo->Paragma;
 	pInfo->m_ThreadFlags = TRUE;
 
-	//µ÷ÓÃ½Ó¿Ú
+	//è°ƒç”¨æ¥å£
 	g_LoadDriver.BaseInterfaceFun(pThreadInfo->CallNumber, pInfo);
 
 	pInfo->m_ThreadFlags = FALSE;
 
-	//ÊÍ·Åµ÷´«½øÀ´µÄ²ÎÊı
+	//é‡Šæ”¾è°ƒä¼ è¿›æ¥çš„å‚æ•°
 	delete lpThreadParameter;
 
-	return ReleaseMutex(g_hThreadMutex) /*ÖØÖÃĞÅºÅ*/;
+	return ReleaseMutex(g_hThreadMutex) /*é‡ç½®ä¿¡å·*/;
 }
 
 
 LPVOID _CThreadPack::DoTask()
 {
-	//ÅĞ¶ÏÊı¾İ ²ÎÊı µ÷ÓÃºÅÊÇ·ñÓĞĞ§
+	//åˆ¤æ–­æ•°æ® å‚æ•° è°ƒç”¨å·æ˜¯å¦æœ‰æ•ˆ
 	if (Paragma == NULL ||
 		CallNumber >= MAX_USER_CALL_BACK_COUNT ||
 		CallNumber == _LoadDriver::UserCallBackType::Um_UserCallBackType_NULL)
@@ -66,24 +69,46 @@ LPVOID _CThreadPack::DoTask()
 		return NULL;
 	}
 
-	_MyCBaseDataObject* pInfo = (_MyCBaseDataObject*)Paragma;
-	pInfo->m_ThreadFlags = TRUE;
+	// é˜²é‡å…¥ï¼šç”¨æˆ·å¿«é€Ÿé‡å¤ç‚¹å‡»åˆ·æ–°æ—¶ï¼Œå¤šä¸ª worker çº¿ç¨‹ä¼šå¹¶å‘å¯¹åŒä¸€ä¸ª dialog
+	// è°ƒç”¨ CListCtrl æ¥å£ï¼ˆè·¨çº¿ç¨‹ SendMessageï¼‰ï¼ŒUI çº¿ç¨‹æ¶ˆæ¯æ³µè¢«æ·¹æ²¡çœ‹èµ·æ¥å°±æ˜¯"å¡æ­»"ã€‚
+	// æ³¨æ„ï¼šdialog å¤§å¤šæ˜¯ `public CDialogEx, public CFunction` å¤šé‡ç»§æ‰¿ï¼Œ
+	// `(_MyCBaseDataObject*)Paragma` C é£æ ¼å¼ºè½¬ä¸ä¼šåšåŸºç±»åç§»è°ƒæ•´ï¼Œ
+	// ç›´æ¥è¯»å†™ pInfo->m_ThreadFlags ä¼šè½åˆ° CDialogEx å†…éƒ¨å­—æ®µä¸Š â†’ å¼•å‘æ­»é”/å´©æºƒã€‚
+	// æ‰€ä»¥è¿™é‡Œç”¨å…¨å±€é›†åˆæŒ‰ Paragma æŒ‡é’ˆçœ‹é—¨ï¼Œå®Œå…¨ä¸å»è§£å¼•ç”¨å®ƒã€‚
+	static std::unordered_set<void*> s_busy;
+	static std::mutex s_busyMtx;
 
-	//µ÷ÓÃ½Ó¿Ú
-	g_LoadDriver.BaseInterfaceFun(CallNumber, pInfo);
+	{
+		std::lock_guard<std::mutex> lk(s_busyMtx);
+		if (s_busy.count(Paragma))
+		{
+			return this;
+		}
+		s_busy.insert(Paragma);
+	}
 
-	pInfo->m_ThreadFlags = FALSE;
+	struct Guard {
+		void* p;
+		std::mutex& m;
+		std::unordered_set<void*>& s;
+		~Guard() { std::lock_guard<std::mutex> lk(m); s.erase(p); }
+	} guard{ Paragma, s_busyMtx, s_busy };
 
-	//ÊÍ·Åµ÷´«½øÀ´µÄ²ÎÊı
+	DWORD t0 = GetTickCount();
+	LOGI("[task] cb=%llu this=%p start", (unsigned long long)CallNumber, Paragma);
+	g_LoadDriver.BaseInterfaceFun(CallNumber, (_MyCBaseDataObject*)Paragma);
+	LOGI("[task] cb=%llu this=%p done in %lums",
+		(unsigned long long)CallNumber, Paragma, GetTickCount() - t0);
+
 	return this;
 }
 
 /*
 LPVOID _CThreadPack::DoTask()
 {
-	//ÏÈÑéÖ¤²ÎÊı
+	//å…ˆéªŒè¯å‚æ•°
 	CThreadInfo* pThreadInfo = (CThreadInfo*)Paragma;
-	//ÅĞ¶ÏÊı¾İ ²ÎÊı µ÷ÓÃºÅÊÇ·ñÓĞĞ§
+	//åˆ¤æ–­æ•°æ® å‚æ•° è°ƒç”¨å·æ˜¯å¦æœ‰æ•ˆ
 	if (pThreadInfo == NULL ||
 		pThreadInfo->Paragma == NULL ||
 		pThreadInfo->CallNumber >= MAX_USER_CALL_BACK_COUNT ||
@@ -92,7 +117,7 @@ LPVOID _CThreadPack::DoTask()
 		return NULL;
 	}
 
-	//Í¬²½Ïß³Ì
+	//åŒæ­¥çº¿ç¨‹
 	WaitForSingleObject(g_hThreadMutex, MUTEX_WAIT_TIME);
 
 	//__debugbreak();
@@ -100,12 +125,12 @@ LPVOID _CThreadPack::DoTask()
 	_MyCBaseDataObject* pInfo = (_MyCBaseDataObject*)pThreadInfo->Paragma;
 	pInfo->m_ThreadFlags = TRUE;
 
-	//µ÷ÓÃ½Ó¿Ú
+	//è°ƒç”¨æ¥å£
 	g_LoadDriver.BaseInterfaceFun(pThreadInfo->CallNumber, pInfo);
 
 	pInfo->m_ThreadFlags = FALSE;
 
-	//ÊÍ·Åµ÷´«½øÀ´µÄ²ÎÊı
+	//é‡Šæ”¾è°ƒä¼ è¿›æ¥çš„å‚æ•°
 	//delete lpThreadParameter;
 	ReleaseMutex(g_hThreadMutex);
 	return this;

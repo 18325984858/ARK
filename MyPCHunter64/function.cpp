@@ -1,16 +1,16 @@
-#define  _CRT_NON_CONFORMING_SWPRINTFS
+ï»¿#define  _CRT_NON_CONFORMING_SWPRINTFS
 #include "framework.h"
 
 
-void ErrorMessage(ULONG unErrorCode, CString Msg)/*½«ÏµÍ³´íÎóÂë×ª»»³ÉÖĞÎÄÒÔĞÅÏ¢¿ò·½Ê½´òÓ¡*/
+void ErrorMessage(ULONG unErrorCode, CString Msg)/*å°†ç³»ç»Ÿé”™è¯¯ç è½¬æ¢æˆä¸­æ–‡ä»¥ä¿¡æ¯æ¡†æ–¹å¼æ‰“å°*/
 {
 	LPVOID lpBuffer = nullptr;
 	DWORD dwSize = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
 		NULL,
-		unErrorCode,															/*Òª²éÕÒµÄ´íÎóÂë*/
-		MAKELANGID(LANG_SYSTEM_DEFAULT, LANG_USER_DEFAULT),						/*ÓïÑÔ*/
-		(LPTSTR)&lpBuffer,														/*»º³åÇø*/
-		0,																		/*»º³åÇø´óĞ¡*/
+		unErrorCode,															/*è¦æŸ¥æ‰¾çš„é”™è¯¯ç */
+		MAKELANGID(LANG_SYSTEM_DEFAULT, LANG_USER_DEFAULT),						/*è¯­è¨€*/
+		(LPTSTR)&lpBuffer,														/*ç¼“å†²åŒº*/
+		0,																		/*ç¼“å†²åŒºå¤§å°*/
 		NULL);
 
 	if (dwSize == NULL)
@@ -33,13 +33,13 @@ void ErrorMessage(ULONG unErrorCode, CString Msg)/*½«ÏµÍ³´íÎóÂë×ª»»³ÉÖĞÎÄÒÔĞÅÏ¢¿
 	return;
 }
 
-VOID::UniCodeToAsciiString(WCHAR* szwchar, CHAR* szchar)//×Ö·û×ª»»º¯Êı
+VOID::UniCodeToAsciiString(WCHAR* szwchar, CHAR* szchar)//å­—ç¬¦è½¬æ¢å‡½æ•°
 {
 	DWORD num = WideCharToMultiByte(CP_ACP, 0, szwchar, -1, NULL, 0, NULL, 0);
 	WideCharToMultiByte(CP_ACP, 0, szwchar, -1, szchar, num, NULL, 0);
 }
 
-VOID::AsciitoUniCodeString(CHAR* szchar, WCHAR* szwchar)//×Ö·û×ª»»º¯Êı
+VOID::AsciitoUniCodeString(CHAR* szchar, WCHAR* szwchar)//å­—ç¬¦è½¬æ¢å‡½æ•°
 {
 	DWORD num = MultiByteToWideChar(CP_ACP, 0, szchar, -1, 0, 0);
 	MultiByteToWideChar(CP_ACP, 0, szchar, -1, szwchar, num);
@@ -53,11 +53,11 @@ BOOL _CFunction::DeviceDosPathToNtPath(wchar_t* pszDosPath, wchar_t* pszNtPath)
 	INT             cchDevName;
 	INT             i;
 
-	//¼ì²é²ÎÊı  
+	//æ£€æŸ¥å‚æ•°  
 	if (IsBadReadPtr(pszDosPath, 1) != 0)return FALSE;
 	if (IsBadWritePtr(pszNtPath, 1) != 0)return FALSE;
 
-	//»ñÈ¡±¾µØ´ÅÅÌ×Ö·û´®  
+	//è·å–æœ¬åœ°ç£ç›˜å­—ç¬¦ä¸²  
 	ZeroMemory(szDriveStr, ARRAYSIZE(szDriveStr));
 	ZeroMemory(szDevName, ARRAYSIZE(szDevName));
 	if (GetLogicalDriveStrings(sizeof(szDriveStr), szDriveStr))
@@ -70,14 +70,14 @@ BOOL _CFunction::DeviceDosPathToNtPath(wchar_t* pszDosPath, wchar_t* pszNtPath)
 			szDrive[0] = szDriveStr[i];
 			szDrive[1] = szDriveStr[i + 1];
 			szDrive[2] = '\0';
-			if (!QueryDosDevice(szDrive, szDevName, MAX_PATH))//²éÑ¯ Dos Éè±¸Ãû  
+			if (!QueryDosDevice(szDrive, szDevName, MAX_PATH))//æŸ¥è¯¢ Dos è®¾å¤‡å  
 				return FALSE;
 
 			cchDevName = lstrlen(szDevName);
-			if (_tcsnicmp(pszDosPath, szDevName, cchDevName) == 0)//ÃüÖĞ  
+			if (_tcsnicmp(pszDosPath, szDevName, cchDevName) == 0)//å‘½ä¸­  
 			{
-				lstrcpy(pszNtPath, szDrive);//¸´ÖÆÇı¶¯Æ÷  
-				lstrcat(pszNtPath, pszDosPath + cchDevName);//¸´ÖÆÂ·¾¶  
+				lstrcpy(pszNtPath, szDrive);//å¤åˆ¶é©±åŠ¨å™¨  
+				lstrcat(pszNtPath, pszDosPath + cchDevName);//å¤åˆ¶è·¯å¾„  
 
 				return TRUE;
 			}
@@ -101,7 +101,7 @@ CString _CFunction::PathTransForm(WCHAR* Path)
 	const WCHAR* pDststr2 = { L"\\??\\" };
 
 	WCHAR SystemRootName[MAX_PATH] = { 0 };
-	GetSystemDirectoryW(SystemRootName, sizeof(SystemRootName));		//»ñÈ¡ÏµÍ³SystemRoootÄ¿Â¼
+	GetSystemDirectoryW(SystemRootName, sizeof(SystemRootName));		//è·å–ç³»ç»ŸSystemRoootç›®å½•
 
 	for (int i = 0; i < wcslen(Path) - wcslen(pDststr1); i++)
 	{
@@ -173,22 +173,22 @@ bool _CFunction::FsQueryValue(const CString& wsValueName, const CString& wsModul
 			break;
 
 		DWORD dwHandle;
-		// ÅĞ¶ÏÏµÍ³ÄÜ·ñ¼ìË÷µ½Ö¸¶¨ÎÄ¼şµÄ°æ±¾ĞÅÏ¢
+		// åˆ¤æ–­ç³»ç»Ÿèƒ½å¦æ£€ç´¢åˆ°æŒ‡å®šæ–‡ä»¶çš„ç‰ˆæœ¬ä¿¡æ¯
 		DWORD dwDataSize = ::GetFileVersionInfoSize((LPCWSTR)wsModuleName.GetString(), &dwHandle);
 		if (dwDataSize == 0)
 			break;
 
-		lpVersionData = new (std::nothrow) BYTE[dwDataSize];// ·ÖÅä»º³åÇø
+		lpVersionData = new (std::nothrow) BYTE[dwDataSize];// åˆ†é…ç¼“å†²åŒº
 		if (NULL == lpVersionData)
 			break;
 
-		// ¼ìË÷ĞÅÏ¢
+		// æ£€ç´¢ä¿¡æ¯
 		if (!::GetFileVersionInfo((LPCWSTR)wsModuleName.GetString(), dwHandle, dwDataSize, (void*)lpVersionData))
 			break;
 
 		UINT nQuerySize;
 		DWORD* pTransTable;
-		// ÉèÖÃÓïÑÔ
+		// è®¾ç½®è¯­è¨€
 		if (!::VerQueryValue(lpVersionData, L"\\VarFileInfo\\Translation", (void**)&pTransTable, &nQuerySize))
 			break;
 
@@ -196,7 +196,7 @@ bool _CFunction::FsQueryValue(const CString& wsValueName, const CString& wsModul
 		if (lpVersionData == NULL)
 			break;
 
-		pStr = new (std::nothrow) TCHAR[128];// ·ÖÅä»º³åÇø
+		pStr = new (std::nothrow) TCHAR[128];// åˆ†é…ç¼“å†²åŒº
 		if (NULL == pStr)
 			break;
 
@@ -204,7 +204,7 @@ bool _CFunction::FsQueryValue(const CString& wsValueName, const CString& wsModul
 
 		LPVOID lpData;
 
-		// µ÷ÓÃ´Ëº¯Êı²éÑ¯Ç°ĞèÒªÏÈÒÀ´Îµ÷ÓÃº¯ÊıGetFileVersionInfoSizeºÍGetFileVersionInfo
+		// è°ƒç”¨æ­¤å‡½æ•°æŸ¥è¯¢å‰éœ€è¦å…ˆä¾æ¬¡è°ƒç”¨å‡½æ•°GetFileVersionInfoSizeå’ŒGetFileVersionInfo
 		if (::VerQueryValue((void*)lpVersionData, pStr, &lpData, &nQuerySize))
 			wsRetStr = (TCHAR*)lpData;
 
@@ -212,7 +212,7 @@ bool _CFunction::FsQueryValue(const CString& wsValueName, const CString& wsModul
 
 	} while (FALSE);
 
-	// Ïú»Ù»º³åÇø
+	// é”€æ¯ç¼“å†²åŒº
 	if (lpVersionData)
 	{
 		delete[] lpVersionData;
@@ -229,35 +229,35 @@ bool _CFunction::FsQueryValue(const CString& wsValueName, const CString& wsModul
 
 CHAR _CFunction::CopyBufferToClipboard(CListCtrl* m_CListCtrl, SIZE_T ItemTextIndex)
 {
-	POSITION pos = m_CListCtrl->GetFirstSelectedItemPosition() - 1;//»ñÈ¡Ñ¡ÖĞĞĞµÄĞĞÊı  pos = ĞĞÊı - 1
-	CString Data = m_CListCtrl->GetItemText((int)pos, ItemTextIndex);//»ñÈ¡ĞÅÏ¢ ²ÎÊıÒ» : ĞĞÊı ²ÎÊı¶ş :ÁĞÊı
+	POSITION pos = m_CListCtrl->GetFirstSelectedItemPosition() - 1;//è·å–é€‰ä¸­è¡Œçš„è¡Œæ•°  pos = è¡Œæ•° - 1
+	CString Data = m_CListCtrl->GetItemText((int)pos, ItemTextIndex);//è·å–ä¿¡æ¯ å‚æ•°ä¸€ : è¡Œæ•° å‚æ•°äºŒ :åˆ—æ•°
 
-	if (!::OpenClipboard(NULL))//´ò¿ªÕ³Ìù°å
+	if (!::OpenClipboard(NULL))//æ‰“å¼€ç²˜è´´æ¿
 	{
 		return FALSE;
 	}
 
-	::EmptyClipboard();//»ñÈ¡Õ³Ìù°åÊ¹ÓÃÈ¨ÏŞ
-	int len = Data.GetLength();//»ñÈ¡Êı¾İ³¤¶È
-	int size = (len + 1) * 2;//+'\0' ¿í×Ö½Ú*2
-	HGLOBAL clipbuffer = GlobalAlloc(GMEM_DDESHARE, size);//´Ó¶Ñ·ÖÅäÈ«¾ÖÄÚ´æ
+	::EmptyClipboard();//è·å–ç²˜è´´æ¿ä½¿ç”¨æƒé™
+	int len = Data.GetLength();//è·å–æ•°æ®é•¿åº¦
+	int size = (len + 1) * 2;//+'\0' å®½å­—èŠ‚*2
+	HGLOBAL clipbuffer = GlobalAlloc(GMEM_DDESHARE, size);//ä»å †åˆ†é…å…¨å±€å†…å­˜
 	if (!clipbuffer)
 	{
 		::CloseClipboard();
 		return FALSE;
 	}
-	char* buffer = (char*)::GlobalLock(clipbuffer);//Ëø¶¨¶ÑÄÚ´æ (»º³åÇø)
-	memcpy_s(buffer, size, Data.GetBuffer(), size);//¿½±´Êı¾İµ½Ö¸¶¨»º³åÇøÖĞ
-	Data.ReleaseBuffer();//ÊÍ·ÅÄÚ´æ
-	::GlobalUnlock(clipbuffer);//½âËø¶ÑÄÚ´æ (»º³åÇø)
-	::SetClipboardData(CF_UNICODETEXT, clipbuffer);//Ö¸¶¨µÄÊı¾İ¸ñÊ½(UNICODE_TEXT)´æ·Åµ½Õ³Ìù°åÉÏ
-	::CloseClipboard();//¹Ø±ÕÕ³Ìù°å
+	char* buffer = (char*)::GlobalLock(clipbuffer);//é”å®šå †å†…å­˜ (ç¼“å†²åŒº)
+	memcpy_s(buffer, size, Data.GetBuffer(), size);//æ‹·è´æ•°æ®åˆ°æŒ‡å®šç¼“å†²åŒºä¸­
+	Data.ReleaseBuffer();//é‡Šæ”¾å†…å­˜
+	::GlobalUnlock(clipbuffer);//è§£é”å †å†…å­˜ (ç¼“å†²åŒº)
+	::SetClipboardData(CF_UNICODETEXT, clipbuffer);//æŒ‡å®šçš„æ•°æ®æ ¼å¼(UNICODE_TEXT)å­˜æ”¾åˆ°ç²˜è´´æ¿ä¸Š
+	::CloseClipboard();//å…³é—­ç²˜è´´æ¿
 	return TRUE;
 }
 
 LONG _CFunction::GetSoftSign(TCHAR* v_pszFilePath, TCHAR* v_pszSign, int v_iBufSize)
 {
-	//Ê×ÏÈÅĞ¶Ï²ÎÊıÊÇ·ñÕıÈ·
+	//é¦–å…ˆåˆ¤æ–­å‚æ•°æ˜¯å¦æ­£ç¡®
 	if (v_pszFilePath == NULL) return -1;
 
 	HCERTSTORE		  hStore = NULL;
@@ -277,7 +277,7 @@ LONG _CFunction::GetSoftSign(TCHAR* v_pszFilePath, TCHAR* v_pszSign, int v_iBufS
 
 	do
 	{
-		//´ÓÇ©ÃûÎÄ¼şÖĞ»ñÈ¡´æ´¢¾ä±ú
+		//ä»ç­¾åæ–‡ä»¶ä¸­è·å–å­˜å‚¨å¥æŸ„
 		bResult = CryptQueryObject(
 			CERT_QUERY_OBJECT_FILE,
 			v_pszFilePath,
@@ -303,7 +303,7 @@ LONG _CFunction::GetSoftSign(TCHAR* v_pszFilePath, TCHAR* v_pszSign, int v_iBufS
 		}
 
 
-		//»ñÈ¡Ç©ÃûĞÅÏ¢ËùĞèµÄ»º³åÇø´óĞ¡
+		//è·å–ç­¾åä¿¡æ¯æ‰€éœ€çš„ç¼“å†²åŒºå¤§å°
 		bResult = CryptMsgGetParam(
 			hMsg,
 			CMSG_SIGNER_INFO_PARAM,
@@ -317,7 +317,7 @@ LONG _CFunction::GetSoftSign(TCHAR* v_pszFilePath, TCHAR* v_pszSign, int v_iBufS
 			break;
 		}
 
-		//·ÖÅä»º³åÇø
+		//åˆ†é…ç¼“å†²åŒº
 		pSignerInfo = (PCMSG_SIGNER_INFO)LocalAlloc(LPTR, dwSignerInfo);
 		if (pSignerInfo == NULL)
 		{
@@ -326,7 +326,7 @@ LONG _CFunction::GetSoftSign(TCHAR* v_pszFilePath, TCHAR* v_pszSign, int v_iBufS
 		}
 
 
-		//»ñÈ¡Ç©ÃûĞÅÏ¢
+		//è·å–ç­¾åä¿¡æ¯
 		bResult = CryptMsgGetParam(
 			hMsg,
 			CMSG_SIGNER_INFO_PARAM,
@@ -358,8 +358,8 @@ LONG _CFunction::GetSoftSign(TCHAR* v_pszFilePath, TCHAR* v_pszSign, int v_iBufS
 		}
 
 
-		//»ñÈ¡Êı×Ö¼üÃû
-		//Ã»ÓĞ¸ø¶¨»º³åÇø£¬ÄÇÃ´ËµÃ÷Ö»Òª»ñÈ¡ÏÂĞèÒªµÄ³¤¶È
+		//è·å–æ•°å­—é”®å
+		//æ²¡æœ‰ç»™å®šç¼“å†²åŒºï¼Œé‚£ä¹ˆè¯´æ˜åªè¦è·å–ä¸‹éœ€è¦çš„é•¿åº¦
 		if (v_pszSign == NULL)
 		{
 			dwDataSize = CertGetNameString(

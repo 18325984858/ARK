@@ -1,30 +1,30 @@
-#pragma once
+ï»¿#pragma once
 
 #include "framework.h"
 #include "BaseClass.h"
 
-//¹¦ÄÜº¯ÊıÀà
+//åŠŸèƒ½å‡½æ•°ç±»
 class _CFunction :public _MyCBaseDataObject
 {
 public:
-	BOOL _CFunction::DeviceDosPathToNtPath(wchar_t* pszDosPath, wchar_t* pszNtPath);							//½«DeviceDoSÂ·¾¶×ª»»NTÂ·¾¶
+	BOOL _CFunction::DeviceDosPathToNtPath(wchar_t* pszDosPath, wchar_t* pszNtPath);							//å°†DeviceDoSè·¯å¾„è½¬æ¢NTè·¯å¾„
 
-	//DriverÂ·¾¶×ª»»
+	//Driverè·¯å¾„è½¬æ¢
 	CString _CFunction::PathTransForm(WCHAR* Path);
 
-	//»ñÈ¡ÎÄ¼şĞÅÏ¢
-	bool _CFunction::GetFileDescription(const CString& szModuleName, CString& RetStr);							//»ñÈ¡ÎÄ¼şÃèÊö
-	bool _CFunction::GetFileVersion(const CString& szModuleName, CString& RetStr);								//»ñÈ¡ÎÄ¼ş°æ±¾
-	bool _CFunction::GetInternalName(const CString& szModuleName, CString& RetStr);								//»ñÈ¡ÎÄ¼şÄÚ²¿Ãû×Ö
-	bool _CFunction::GetCompanyName(const CString& szModuleName, CString& RetStr);								//»ñÈ¡ÎÄ¼ş¹«Ë¾Ãû³Æ
-	bool _CFunction::GetLegalCopyright(const CString& szModuleName, CString& RetStr);							//»ñÈ¡ÎÄ¼ş°æÈ¨ĞÅÏ¢
-	bool _CFunction::GetOriginalFilename(const CString& szModuleName, CString& RetStr);							//»ñÈ¡Ô´ÎÄ¼şÃû
-	bool _CFunction::GetProductName(const CString& szModuleName, CString& RetStr);								//»ñÈ¡²úÆ·Ãû³Æ
-	bool _CFunction::GetProductVersion(const CString& szModuleName, CString& RetStr);							//»ñÈ¡²úÆ·°æ±¾
-	bool _CFunction::FsQueryValue(const CString& wsValueName, const CString& wsModuleName, CString& wsRetStr);	//²éÑ¯ÎÄ¼şĞÅÏ¢º¯Êı
-	LONG _CFunction::GetSoftSign(TCHAR* v_pszFilePath, TCHAR* v_pszSign, int v_iBufSize);						//»ñÈ¡Ç©ÃûĞÅÏ¢
+	//è·å–æ–‡ä»¶ä¿¡æ¯
+	bool _CFunction::GetFileDescription(const CString& szModuleName, CString& RetStr);							//è·å–æ–‡ä»¶æè¿°
+	bool _CFunction::GetFileVersion(const CString& szModuleName, CString& RetStr);								//è·å–æ–‡ä»¶ç‰ˆæœ¬
+	bool _CFunction::GetInternalName(const CString& szModuleName, CString& RetStr);								//è·å–æ–‡ä»¶å†…éƒ¨åå­—
+	bool _CFunction::GetCompanyName(const CString& szModuleName, CString& RetStr);								//è·å–æ–‡ä»¶å…¬å¸åç§°
+	bool _CFunction::GetLegalCopyright(const CString& szModuleName, CString& RetStr);							//è·å–æ–‡ä»¶ç‰ˆæƒä¿¡æ¯
+	bool _CFunction::GetOriginalFilename(const CString& szModuleName, CString& RetStr);							//è·å–æºæ–‡ä»¶å
+	bool _CFunction::GetProductName(const CString& szModuleName, CString& RetStr);								//è·å–äº§å“åç§°
+	bool _CFunction::GetProductVersion(const CString& szModuleName, CString& RetStr);							//è·å–äº§å“ç‰ˆæœ¬
+	bool _CFunction::FsQueryValue(const CString& wsValueName, const CString& wsModuleName, CString& wsRetStr);	//æŸ¥è¯¢æ–‡ä»¶ä¿¡æ¯å‡½æ•°
+	LONG _CFunction::GetSoftSign(TCHAR* v_pszFilePath, TCHAR* v_pszSign, int v_iBufSize);						//è·å–ç­¾åä¿¡æ¯
 
-	CHAR _CFunction::CopyBufferToClipboard(CListCtrl* m_CListCtrl, SIZE_T ItemTextIndex);						//¿½±´Ö¸¶¨CListCtrlµÄÊı¾İ
+	CHAR _CFunction::CopyBufferToClipboard(CListCtrl* m_CListCtrl, SIZE_T ItemTextIndex);						//æ‹·è´æŒ‡å®šCListCtrlçš„æ•°æ®
 };
 
 using CFunction = _CFunction;

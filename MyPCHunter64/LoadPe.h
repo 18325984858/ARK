@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "framework.h"
 
@@ -11,71 +11,71 @@ typedef struct _IMAGE_BUFFER
 
 typedef struct _IMAGE_PE
 {
-	HMODULE hDllBaseAddr;//´æ´¢Ä£¿éµÄ»ùµØÖ·
-	IMAGE_BUFFER buffer;//´æ´¢¶ÁÈ¡µ½µÄÎÄ¼şBuffer
+	HMODULE hDllBaseAddr;//å­˜å‚¨æ¨¡å—çš„åŸºåœ°å€
+	IMAGE_BUFFER buffer;//å­˜å‚¨è¯»å–åˆ°çš„æ–‡ä»¶Buffer
 
-	union //±êÖ¾Î»
+	union //æ ‡å¿—ä½
 	{
 		ULONG64 Flags;
 		struct
 		{
-			ULONG64 IsX64 : 1;			//1:64Î» 0:32Î»
-			ULONG64 IsMemoryMode : 1;	//1:ÄÚ´æÄ£Ê½ 0:ÎÄ¼şÄ£Ê½
+			ULONG64 IsX64 : 1;			//1:64ä½ 0:32ä½
+			ULONG64 IsMemoryMode : 1;	//1:å†…å­˜æ¨¡å¼ 0:æ–‡ä»¶æ¨¡å¼
 		};
 	};
 
-	PIMAGE_DOS_HEADER PeDos;//DosÍ· [MZ]
+	PIMAGE_DOS_HEADER PeDos;//Doså¤´ [MZ]
 
-	union //NtÍ· [PE]
+	union //Ntå¤´ [PE]
 	{
 		ULONG64 NtHeader;
 		PIMAGE_NT_HEADERS32 PeNt32;
 		PIMAGE_NT_HEADERS64 PeNt64;
 	};
 
-	PIMAGE_FILE_HEADER PeFile;//ÎÄ¼şÍ·
+	PIMAGE_FILE_HEADER PeFile;//æ–‡ä»¶å¤´
 
-	union //¿ÉÑ¡PEÍ·
+	union //å¯é€‰PEå¤´
 	{
 		ULONG64 OptionalHeader;
 		PIMAGE_OPTIONAL_HEADER32 PeOption32;
 		PIMAGE_OPTIONAL_HEADER64 PeOption64;
 	};
 
-	PIMAGE_DATA_DIRECTORY PeDataDir;//Ä¿Â¼±í
+	PIMAGE_DATA_DIRECTORY PeDataDir;//ç›®å½•è¡¨
 	struct
 	{
-		PIMAGE_EXPORT_DIRECTORY PeExportDir;//»ñÈ¡µ¼³öÄ¿Â¼±í
-		PIMAGE_IMPORT_DESCRIPTOR PeImportDir;//»ñÈ¡µ¼ÈëÄ¿Â¼±í
-		PIMAGE_RESOURCE_DIRECTORY PeResourceDir;//»ñÈ¡×ÊÔ´Ä¿Â¼±í
+		PIMAGE_EXPORT_DIRECTORY PeExportDir;//è·å–å¯¼å‡ºç›®å½•è¡¨
+		PIMAGE_IMPORT_DESCRIPTOR PeImportDir;//è·å–å¯¼å…¥ç›®å½•è¡¨
+		PIMAGE_RESOURCE_DIRECTORY PeResourceDir;//è·å–èµ„æºç›®å½•è¡¨
 
 	};
 
-	PIMAGE_SECTION_HEADER PeSection;//½ÚÄ¿Â¼
+	PIMAGE_SECTION_HEADER PeSection;//èŠ‚ç›®å½•
 
-}IMAGE_PE, * PIMAGE_PE;//X32PEÎÄ¼ş½á¹¹Ìå
+}IMAGE_PE, * PIMAGE_PE;//X32PEæ–‡ä»¶ç»“æ„ä½“
 
 typedef class _LoadPEFile
 {
 public:
-	_LoadPEFile();//³õÊ¼»¯
+	_LoadPEFile();//åˆå§‹åŒ–
 public:
 
-	BOOL _LoadPEFile::LoadSystemDll(PWCHAR FilePath);						//¼ÓÔØÄÚ´æÖĞµÄDLL
-	BOOL _LoadPEFile::FreeSystemDll();										//ÊÍ·ÅÄÚ´æÖĞµÄDLL
-	BOOL _LoadPEFile::ReadUserDefineDllToBuffer(LPCWSTR FilePath);//¼ÓÔØÎÄ¼şÖĞDLL
-	BOOL _LoadPEFile::FreeUserDefineDll();					//ÊÍ·ÅÎÄ¼şÖĞDLL
+	BOOL _LoadPEFile::LoadSystemDll(PWCHAR FilePath);						//åŠ è½½å†…å­˜ä¸­çš„DLL
+	BOOL _LoadPEFile::FreeSystemDll();										//é‡Šæ”¾å†…å­˜ä¸­çš„DLL
+	BOOL _LoadPEFile::ReadUserDefineDllToBuffer(LPCWSTR FilePath);//åŠ è½½æ–‡ä»¶ä¸­DLL
+	BOOL _LoadPEFile::FreeUserDefineDll();					//é‡Šæ”¾æ–‡ä»¶ä¸­DLL
 private:
-	BOOL _LoadPEFile::VerifyIsPESigna()						;//ÑéÖ¤ÊÇ·ñÊÇPEÎÄ¼ş
-	ULONG64 _LoadPEFile::IsX64PeFile();//ÑéÖ¤ÊÇ·ñÊÇX64Æ½Ì¨³ÌĞò
-	BOOL _LoadPEFile::InitPeDataStruct();//³õÊ¼»¯ PE½á¹¹Ìå
+	BOOL _LoadPEFile::VerifyIsPESigna()						;//éªŒè¯æ˜¯å¦æ˜¯PEæ–‡ä»¶
+	ULONG64 _LoadPEFile::IsX64PeFile();//éªŒè¯æ˜¯å¦æ˜¯X64å¹³å°ç¨‹åº
+	BOOL _LoadPEFile::InitPeDataStruct();//åˆå§‹åŒ– PEç»“æ„ä½“
 public:
-	VOID _LoadPEFile::EnumNtdllPeExportTable(PLONG64 Psssdt, ULONG64 Size);//±éÀúµ¼³ö±í
-	VOID _LoadPEFile::EnumWin32kPeExportTable(PLONG64 Psssdt, ULONG64 Size);//±éÀúµ¼³ö±í
+	VOID _LoadPEFile::EnumNtdllPeExportTable(PLONG64 Psssdt, ULONG64 Size);//éå†å¯¼å‡ºè¡¨
+	VOID _LoadPEFile::EnumWin32kPeExportTable(PLONG64 Psssdt, ULONG64 Size);//éå†å¯¼å‡ºè¡¨
 private:
-	ULONG64 _LoadPEFile::Align(IN DWORD dwSectionAlignment, IN DWORD dwVirtualSize);//ÇóÄÚ´æ½ÚÕæÊµ´óĞ¡
-	ULONG64 _LoadPEFile::RvaToFoa(ULONG64 Rva);//ÄÚ´æÆ«ÒÆ×ª»»ÎÄ¼şÆ«ÒÆ
-	ULONG64 _LoadPEFile::FoaToRva(ULONG64 Foa);//ÎÄ¼şÆ«ÒÆ×ª»»ÄÚ´æÆ«ÒÆ
+	ULONG64 _LoadPEFile::Align(IN DWORD dwSectionAlignment, IN DWORD dwVirtualSize);//æ±‚å†…å­˜èŠ‚çœŸå®å¤§å°
+	ULONG64 _LoadPEFile::RvaToFoa(ULONG64 Rva);//å†…å­˜åç§»è½¬æ¢æ–‡ä»¶åç§»
+	ULONG64 _LoadPEFile::FoaToRva(ULONG64 Foa);//æ–‡ä»¶åç§»è½¬æ¢å†…å­˜åç§»
 private:
 	IMAGE_PE Pe;
 };
