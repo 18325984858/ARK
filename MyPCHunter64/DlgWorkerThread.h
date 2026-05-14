@@ -20,6 +20,7 @@ public:
 		um_Worker_Tid,
 		um_Worker_Priority,
 		um_Worker_StartAddress,
+		um_Worker_FunctionName,
 		um_Worker_Module,
 	};
 
@@ -43,5 +44,7 @@ public:
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	virtual BOOL OnInitDialog();
 	afx_msg void OnWorkerThreadRefresh();
+	afx_msg void OnNMRClickList(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
 	CListCtrl m_CListCtrl;
 };

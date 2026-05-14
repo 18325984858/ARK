@@ -6,6 +6,8 @@
 #include "afxdialogex.h"
 #include "DlgWdf.h"
 #include "Thread.h"
+#include "MyPCHunter64Dlg.h"
+#include "PdbResolver.h"
 #include <unordered_map>
 #include <string>
 
@@ -33,7 +35,9 @@ void DlgWdf::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(DlgWdf, CDialogEx)
 	ON_WM_SIZE()
+	ON_WM_CONTEXTMENU()
 	ON_NOTIFY(NM_DBLCLK, ID_DLG_KERNEL_WDF_TREE, &DlgWdf::OnNMDblclkDlgKernelWdfTree)
+	ON_NOTIFY(NM_RCLICK, ID_DLG_KERNEL_WDF_LIST, &DlgWdf::OnNMRClickDlgKernelWdfList)
 END_MESSAGE_MAP()
 
 
@@ -181,9 +185,19 @@ void DlgWdf::InsertCtrlListControl(PCWdfInfo pWdfInfo)
 		StrBuf.Format(L"%04X", (USHORT)pInfo->pFunOrder);
 		m_CListCtrl.InsertItem(i, StrBuf);
 
-		// 函数名称：尚未引入 WDK wdffuncenum.h 的名字表，先用 WdfFunctions[idx] 占位。
-		// 后续可生成 g_WdfFunctionName[] 数组替换。
-		StrBuf.Format(L"WdfFunctions[%u]", (UINT)pInfo->pFunOrder);
+		// 函数名称：统一走 PdbResolver；PDB 未就绪/无 PDB 时返回 "Module+0xRVA"
+		StrBuf.Empty();
+		if (pInfo->pFunAddr != 0 && pInfo->ModuleBase != 0 && pInfo->ModulePath[0] != 0)
+		{
+			WCHAR sym[256] = { 0 };
+			PdbResolver_Resolve(pInfo->pFunAddr, pInfo->ModuleBase,
+				pInfo->ModulePath, sym, _countof(sym));
+			StrBuf = sym;
+		}
+		else
+		{
+			StrBuf.Format(L"WdfFunctions[%u]", (UINT)pInfo->pFunOrder);
+		}
 		m_CListCtrl.SetItemText(i, um_WdfDlgInfo_FunctionName, StrBuf);
 
 		StrBuf.Format(L"%016I64X", pInfo->pFunAddr);
@@ -235,4 +249,79 @@ void DlgWdf::InsertCtrlListControl(PCWdfInfo pWdfInfo)
 
 	m_CListCtrl.SetRedraw(TRUE);
 	m_CListCtrl.Invalidate();
+}
+
+// 右键菜单：刷新 + 复制各列。动态构建，无需 .rc 资源。
+void DlgWdf::OnNMRClickDlgKernelWdfList(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	*pResult = 0;
+	LPNMITEMACTIVATE pIA = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+	LOGI("[DlgWdf] NM_RCLICK fired idFrom=%u iItem=%d", (unsigned)pNMHDR->idFrom, pIA ? pIA->iItem : -1);
+
+	static const struct { UINT id; LPCWSTR text; int col; } kCopyItems[] = {
+		{ 2001, L"序号",         um_WdfDlgInfo_Order },
+		{ 2002, L"函数名称",     um_WdfDlgInfo_FunctionName },
+		{ 2003, L"当前函数地址", um_WdfDlgInfo_FunctionAddr },
+		{ 2004, L"HOOK",         um_WdfDlgInfo_Hook },
+		{ 2005, L"原始函数地址", um_WdfDlgInfo_SourceFunctionAddr },
+		{ 2006, L"模块路径",     um_WdfDlgInfo_Module },
+		{ 2007, L"文件厂商",     um_WdfDlgInfo_FileVender },
+	};
+	const UINT kRefreshId = 2000;
+
+	BOOL hasSel = (m_CListCtrl.GetFirstSelectedItemPosition() != NULL);
+
+	CMenu copySub;
+	copySub.CreatePopupMenu();
+	for (auto& it : kCopyItems)
+	{
+		copySub.AppendMenuW(MF_STRING | (hasSel ? 0 : MF_GRAYED), it.id, it.text);
+	}
+
+	CMenu menu;
+	menu.CreatePopupMenu();
+	menu.AppendMenuW(MF_POPUP | (hasSel ? 0 : MF_GRAYED), (UINT_PTR)copySub.GetSafeHmenu(), L"复制");
+	menu.AppendMenuW(MF_STRING, kRefreshId, L"刷新");
+	copySub.Detach(); // 所有权已交给 menu，避免双重销毁
+
+	POINT pt = { 0 };
+	GetCursorPos(&pt);
+	UINT cmd = menu.TrackPopupMenu(TPM_LEFTBUTTON | TPM_RETURNCMD | TPM_NONOTIFY, pt.x, pt.y, this);
+	LOGI("[DlgWdf] TrackPopupMenu returned cmd=%u pt=(%ld,%ld) hasSel=%d", cmd, pt.x, pt.y, (int)hasSel);
+	if (cmd == kRefreshId)
+	{
+		LOGI("[DlgWdf] -> Refresh");
+		OnHaltableRefresh();
+		return;
+	}
+	for (auto& it : kCopyItems)
+	{
+		if (cmd == it.id)
+		{
+			LOGI("[DlgWdf] -> Copy col=%d", it.col);
+			CopyBufferToClipboard(&m_CListCtrl, it.col);
+			return;
+		}
+	}
+}
+
+// 后备路径：WM_CONTEXTMENU。某些键盘菜单键或父窗口吞掉 NM_RCLICK 时使用。
+void DlgWdf::OnContextMenu(CWnd* pWnd, CPoint point)
+{
+	LOGI("[DlgWdf] WM_CONTEXTMENU pWnd=%p (m_CListCtrl=%p m_CTreeCtrl=%p) pt=(%ld,%ld)",
+		pWnd ? pWnd->GetSafeHwnd() : nullptr,
+		m_CListCtrl.GetSafeHwnd(), m_CTreeCtrl.GetSafeHwnd(), point.x, point.y);
+	if (pWnd && pWnd->GetSafeHwnd() == m_CListCtrl.GetSafeHwnd())
+	{
+		// 复用 NM_RCLICK 处理：构造一个空的 NMITEMACTIVATE
+		NMITEMACTIVATE nm = { 0 };
+		nm.hdr.hwndFrom = m_CListCtrl.GetSafeHwnd();
+		nm.hdr.idFrom = ID_DLG_KERNEL_WDF_LIST;
+		nm.hdr.code = NM_RCLICK;
+		nm.iItem = -1;
+		LRESULT r = 0;
+		OnNMRClickDlgKernelWdfList((NMHDR*)&nm, &r);
+		return;
+	}
+	CDialogEx::OnContextMenu(pWnd, point);
 }

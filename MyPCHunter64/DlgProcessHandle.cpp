@@ -74,27 +74,11 @@ BOOL DlgProcessHandle::OnInitDialog()
 
 void DlgProcessHandle::OnRclickProcessHandleList(NMHDR* pNMHDR, LRESULT* pResult)
 {
-	LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	// TODO: 在此添加控件通知处理程序代码
 	*pResult = 0;
-
-	if (m_CListCtrl.GetItemCount() < 0)
-	{
-		return;
-	}
-
-	CMenu menu;
-	menu.LoadMenu(ID_MENU_PROCESS_HANDLE);
-	CPoint point;
-	GetCursorPos(&point);//获取当前的游标
-
-
-	if (this->m_ThreadFlags == TRUE)
-	{
-		menu.EnableMenuItem(ID_PROCESSHANDLE_REFRESH, MF_GRAYED | MF_BYCOMMAND);
-	}
-
-	(menu.GetSubMenu(0))->TrackPopupMenu(TPM_LEFTBUTTON, point.x, point.y, this);
+	if (m_CListCtrl.GetItemCount() < 0) return;
+	int r = ShowListContextMenu(&m_CListCtrl, this);
+	if (r == 0) { if (this->m_ThreadFlags != TRUE) OnProcesshandleRefresh(); }
+	else if (r > 0) CopyBufferToClipboard(&m_CListCtrl, r - 1);
 }
 
 

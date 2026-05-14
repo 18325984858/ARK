@@ -8,6 +8,9 @@
 #include <ntstrsafe.h>
 #include <ntimage.h>    /*PE头文件 — 给 EnumWdfFunction 用*/
 
+// 这个导出未在 wdm.h 中声明（在 ntddk.h / ntifs.h 里），手动 extern
+NTKERNELAPI UCHAR* NTAPI PsGetProcessImageFileName(__in PEPROCESS Process);
+
 BOOLEAN ExtractDriverName(PUNICODE_STRING FullPath, PUNICODE_STRING OutputBuffer)
 {
 	USHORT i;
@@ -2012,6 +2015,72 @@ VOID WriteBufferToProcessHandleStruct(PCProcessHandleInfo OutProcessTable, ULONG
 				}
 				ExFreePoolWithTag(nameInfo, 'namT');
 			}
+
+			// ObQueryNameString 拿不到名字的常见类型，按类型 peek 内部字段提供语义化名称
+			if (OutProcessTable->HandleName[0] == L'\0' && ObjectType->Name.Buffer != NULL)
+			{
+				const PVOID Object = (PVOID)OutProcessTable->HandleObject;
+				const WCHAR* tn = ObjectType->Name.Buffer;
+				WCHAR* dst = OutProcessTable->HandleName;
+				SIZE_T cap = MY_MAX_PATH;
+
+				if (_wcsicmp(tn, L"Process") == 0)
+				{
+					HANDLE pid = PsGetProcessId((PEPROCESS)Object);
+					UCHAR* img = PsGetProcessImageFileName((PEPROCESS)Object);
+					if (img)
+					{
+						RtlStringCbPrintfW(dst, cap * sizeof(WCHAR),
+							L"%hs (PID:%llu)", (char*)img, (ULONG64)pid);
+					}
+					else
+					{
+						RtlStringCbPrintfW(dst, cap * sizeof(WCHAR), L"PID:%llu", (ULONG64)pid);
+					}
+				}
+				else if (_wcsicmp(tn, L"Thread") == 0)
+				{
+					HANDLE tid = PsGetThreadId((PETHREAD)Object);
+					HANDLE pid = PsGetThreadProcessId((PETHREAD)Object);
+					PEPROCESS owner = NULL;
+					UCHAR* img = NULL;
+					if (NT_SUCCESS(PsLookupProcessByProcessId(pid, &owner)) && owner)
+					{
+						img = PsGetProcessImageFileName(owner);
+					}
+					if (img)
+					{
+						RtlStringCbPrintfW(dst, cap * sizeof(WCHAR),
+							L"TID:%llu  %hs(PID:%llu)", (ULONG64)tid, (char*)img, (ULONG64)pid);
+					}
+					else
+					{
+						RtlStringCbPrintfW(dst, cap * sizeof(WCHAR),
+							L"TID:%llu PID:%llu", (ULONG64)tid, (ULONG64)pid);
+					}
+					if (owner) ObDereferenceObject(owner);
+				}
+				else if (_wcsicmp(tn, L"Event") == 0)
+				{
+					wcsncpy_s(dst, cap, L"<unnamed Event>", _TRUNCATE);
+				}
+				else if (_wcsicmp(tn, L"IoCompletion") == 0)
+				{
+					wcsncpy_s(dst, cap, L"<unnamed IoCompletion>", _TRUNCATE);
+				}
+				else if (_wcsicmp(tn, L"Mutant") == 0)
+				{
+					wcsncpy_s(dst, cap, L"<unnamed Mutant>", _TRUNCATE);
+				}
+				else if (_wcsicmp(tn, L"Semaphore") == 0)
+				{
+					wcsncpy_s(dst, cap, L"<unnamed Semaphore>", _TRUNCATE);
+				}
+				else if (_wcsicmp(tn, L"Section") == 0)
+				{
+					wcsncpy_s(dst, cap, L"<anonymous Section>", _TRUNCATE);
+				}
+			}
 		}
 	}
 }
@@ -2977,6 +3046,203 @@ ULONG64 LookUpDriverObjectByName(PUNICODE_STRING pDriverName, PCDriverInfo pDriv
 	} while (pCurList != &pDriverInfo->List.List);
 
 	return dqRet;
+}
+
+// 在一个已加载内核模块的导出表里按名字找符号地址。
+static PVOID FindKernelExport(ULONG64 ModuleBase, const char* Name)
+{
+	if (!MmIsAddressValid((PVOID)ModuleBase) || Name == NULL) return NULL;
+
+	PIMAGE_DOS_HEADER dos = (PIMAGE_DOS_HEADER)ModuleBase;
+	if (dos->e_magic != IMAGE_DOS_SIGNATURE) return NULL;
+	PIMAGE_NT_HEADERS64 nt = (PIMAGE_NT_HEADERS64)(ModuleBase + dos->e_lfanew);
+	if (nt->Signature != IMAGE_NT_SIGNATURE) return NULL;
+
+	IMAGE_DATA_DIRECTORY ed = nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
+	if (ed.Size == 0 || ed.VirtualAddress == 0) return NULL;
+
+	PIMAGE_EXPORT_DIRECTORY exp = (PIMAGE_EXPORT_DIRECTORY)(ModuleBase + ed.VirtualAddress);
+	PULONG names = (PULONG)(ModuleBase + exp->AddressOfNames);
+	PUSHORT ords = (PUSHORT)(ModuleBase + exp->AddressOfNameOrdinals);
+	PULONG funcs = (PULONG)(ModuleBase + exp->AddressOfFunctions);
+
+	for (ULONG i = 0; i < exp->NumberOfNames; i++)
+	{
+		const char* fname = (const char*)(ModuleBase + names[i]);
+		if (strcmp(fname, Name) == 0)
+		{
+			USHORT ord = ords[i];
+			return (PVOID)(ModuleBase + funcs[ord]);
+		}
+	}
+	return NULL;
+}
+
+// 枚举 classpnp.sys 客户驱动注册的 CLASS_INIT_DATA 回调表。
+// 算法：
+//  1) classpnp.sys 模块基址；导出表里取 ClassInitialize 地址 (= 客户扩展 ID)
+//  2) 遍历所有已加载驱动；对每个 DRIVER_OBJECT 调 IoGetDriverObjectExtension(drvObj, ClassInitialize)
+//  3) 非 NULL 表示该驱动是 classpnp 客户。CLASS_DRIVER_EXTENSION 公开 ABI:
+//       +0x00 UNICODE_STRING  RegistryPath   (16 字节)
+//       +0x10 CLASS_INIT_DATA InitData       (16 字节头 + 12 个 8 字节函数指针)
+// CallBackType 存 slot 索引，R3 端按数组查名字。
+ULONG64 EnumClassInitDataCallback(PCKernelCallBackInfo* OutData)
+{
+	if (!MmIsAddressValid(OutData)) return 0;
+
+	ULONG_PTR classpnpSize = 0;
+	ULONG64 classpnpBase = QuerySysModule((PUCHAR)"CLASSPNP.SYS", &classpnpSize);
+	if (classpnpBase == 0)
+		classpnpBase = QuerySysModule((PUCHAR)"classpnp.sys", &classpnpSize);
+	if (classpnpBase == 0) return 0;
+
+	PVOID classInitId = FindKernelExport(classpnpBase, "ClassInitialize");
+	if (classInitId == NULL) return 0;
+
+	// CLASS_INIT_DATA 内 12 个函数指针的偏移（从 CLASS_DRIVER_EXTENSION 起点算）
+	// = 0x10（跳 RegistryPath UNICODE_STRING）+ 0x10（跳 InitData 4个 ULONG 头）+ N*8
+	static const ULONG slotOffs[] = {
+		0x20, 0x28, 0x30, 0x38, 0x40, 0x48, 0x50, 0x58, 0x60, 0x68, 0x70, 0x78
+	};
+	const ULONG slotCount = sizeof(slotOffs) / sizeof(slotOffs[0]);
+
+	ULONG64 IsInit = MmIsAddressValid(*OutData) && ((PCKernelCallBackInfo)(*OutData))->List.IsInitialize;
+	ULONG64 Count = 0;
+
+	PCDriverInfo pDriverInfo = NULL;
+	EnumDriverInfo(NULL, NULL, &pDriverInfo, NULL, NULL);
+	if (pDriverInfo == NULL) return 0;
+
+	PCLIST_ENTRY pCur = &pDriverInfo->List.List;
+	do
+	{
+		if (!MmIsAddressValid(pCur)) break;
+		PCDriverInfo pDi = (PCDriverInfo)pCur;
+
+		ULONG64 drvObj = pDi->DriverObject;
+		if (MmIsAddressValid((PVOID)drvObj))
+		{
+			PVOID ext = IoGetDriverObjectExtension((PDRIVER_OBJECT)drvObj, classInitId);
+			if (MmIsAddressValid(ext))
+			{
+				for (ULONG s = 0; s < slotCount; s++)
+				{
+					ULONG64 slotAddr = (ULONG64)ext + slotOffs[s];
+					if (!MmIsAddressValid((PVOID)slotAddr)) break;
+
+					ULONG64 fn = *(volatile ULONG64*)slotAddr;
+					if (fn == 0 || !MmIsAddressValid((PVOID)fn)) continue;
+
+					PCKernelCallBackInfo n = MyExAllocMemOry(sizeof(CKernelCallBackInfo), PAGE_READWRITE, UserMode);
+					if (!n) break;
+
+					n->CallBackType = (ULONG64)s;
+					n->CallBackAddr = fn;
+					n->Descr        = drvObj;
+					n->ModuleOffset = 0;
+
+					CDriverInfo di = { 0 };
+					if (IsSysModuleEx(fn, &di))
+					{
+						n->ModuleOffset = (di.ImageBaseAddr != 0) ? (fn - di.ImageBaseAddr) : 0;
+						memcpy_s(n->ModulePath, sizeof(n->ModulePath),
+							di.ImageFullBaseName, sizeof(n->ModulePath));
+					}
+
+					if (IsInit && ((PCKernelCallBackInfo)(*OutData))->List.IsInitialize)
+					{
+						InsertHeadList(&((PCKernelCallBackInfo)(*OutData))->List.List, &n->List.List);
+					}
+					else
+					{
+						n->List.IsInitialize = TRUE;
+						InitializeListHead(&n->List.List);
+						*OutData = n;
+						IsInit = TRUE;
+					}
+					Count++;
+				}
+			}
+		}
+
+		pCur = pCur->Flink;
+		SIZE_T freeSize = 0;
+		ZwFreeVirtualMemory(NtCurrentProcess(), &pDi, &freeSize, MEM_RELEASE);
+	} while (pCur != &pDriverInfo->List.List);
+
+	return Count;
+}
+
+// 枚举传统文件系统过滤驱动 (Sfilter) 回调。
+// 这些回调通过 nt!IoRegisterFsRegistrationChange / IoRegisterFsRegistrationChangeMountAware
+// 注册到 nt!IopFsNotifyChangeQueueHead / IopFsNotifyChangeQueueHeadMountAware 链表里。
+// 每个表项是 (LIST_ENTRY + DriverObject + NotificationRoutine)。
+// CallBackType:  0 = 常规, 1 = MountAware；R3 端据此显示。
+ULONG64 EnumSfilterCallback(PCKernelCallBackInfo* OutData)
+{
+	if (!MmIsAddressValid(OutData)) return 0;
+
+	typedef struct _NOTIFICATION_PACKET {
+		LIST_ENTRY     ListEntry;
+		PDRIVER_OBJECT DriverObject;
+		PVOID          NotificationRoutine;
+	} NOTIFICATION_PACKET, *PNOTIFICATION_PACKET;
+
+	ULONG64 Heads[2] = {
+		(ULONG64)IopFsNotifyChangeQueueHead,
+		(ULONG64)IopFsNotifyChangeQueueHeadMountAware
+	};
+
+	ULONG64 IsInit = MmIsAddressValid(*OutData) && ((PCKernelCallBackInfo)(*OutData))->List.IsInitialize;
+	ULONG64 Count = 0;
+
+	for (int hi = 0; hi < 2; hi++)
+	{
+		PLIST_ENTRY head = (PLIST_ENTRY)Heads[hi];
+		if (!MmIsAddressValid(head)) continue;
+		if (!MmIsAddressValid(head->Flink)) continue;
+
+		for (PLIST_ENTRY cur = head->Flink;
+			MmIsAddressValid(cur) && cur != head;
+			cur = cur->Flink)
+		{
+			PNOTIFICATION_PACKET np = (PNOTIFICATION_PACKET)cur;
+			if (!MmIsAddressValid(np)) break;
+
+			ULONG64 fn = (ULONG64)np->NotificationRoutine;
+			if (fn == 0 || !MmIsAddressValid((PVOID)fn)) continue;
+
+			PCKernelCallBackInfo p = MyExAllocMemOry(sizeof(CKernelCallBackInfo), PAGE_READWRITE, UserMode);
+			if (!p) break;
+
+			p->CallBackType = (ULONG64)hi;
+			p->CallBackAddr = fn;
+			p->Descr        = (ULONG64)np->DriverObject;
+			p->ModuleOffset = 0;
+
+			CDriverInfo di = { 0 };
+			if (IsSysModuleEx(fn, &di))
+			{
+				p->ModuleOffset = (di.ImageBaseAddr != 0) ? (fn - di.ImageBaseAddr) : 0;
+				memcpy_s(p->ModulePath, sizeof(p->ModulePath),
+					di.ImageFullBaseName, sizeof(p->ModulePath));
+			}
+
+			if (IsInit && ((PCKernelCallBackInfo)(*OutData))->List.IsInitialize)
+			{
+				InsertHeadList(&((PCKernelCallBackInfo)(*OutData))->List.List, &p->List.List);
+			}
+			else
+			{
+				p->List.IsInitialize = TRUE;
+				InitializeListHead(&p->List.List);
+				*OutData = p;
+				IsInit = TRUE;
+			}
+			Count++;
+		}
+	}
+	return Count;
 }
 
 ULONG64 EnumShutdownCallBack(PCKernelCallBackInfo* OutData)
@@ -4262,12 +4528,14 @@ ULONG64 EnumSysObjectMajorFunction(ULONG64 DriverObject, PCSysMajorFunctionInfo*
 		pNewInfo->Ord = i;
 		//类型
 		pNewInfo->Type = i;
+		pNewInfo->ModuleBase = 0;
 
 		//拷贝路径
 		CDriverInfo DriverInfo = { 0 };
 		if (IsSysModuleEx(pNewInfo->FunAddr, &DriverInfo))
 		{
 			memcpy_s(pNewInfo->ModulePath, MY_MAX_PATH, DriverInfo.ImageFullBaseName, MY_MAX_PATH);
+			pNewInfo->ModuleBase = DriverInfo.ImageBaseAddr;
 		}
 
 		//插入链表
@@ -4309,12 +4577,14 @@ ULONG64 EnumSysObjectMajorFunction(ULONG64 DriverObject, PCSysMajorFunctionInfo*
 			pNewInfo->Ord = i;
 			//类型
 			pNewInfo->Type = i + IRP_MJ_MAXIMUM_FUNCTION;
+			pNewInfo->ModuleBase = 0;
 
 			//拷贝路径
 			CDriverInfo DriverInfo = { 0 };
 			if (IsSysModuleEx(pNewInfo->FunAddr, &DriverInfo))
 			{
 				memcpy_s(pNewInfo->ModulePath, MY_MAX_PATH, DriverInfo.ImageFullBaseName, MY_MAX_PATH);
+				pNewInfo->ModuleBase = DriverInfo.ImageBaseAddr;
 			}
 
 			//插入链表
@@ -4661,6 +4931,171 @@ static VOID WdfPushDiag(PCWdfInfo* OutData, const char* AsciiMsg)
 	}
 }
 
+// 在 Wdf01000.sys 的 .data 节里特征码定位 FxLibraryGlobals。
+// 失败返回 0；若 OutDataForDiag != NULL 会顺手往链表里塞一条 DIAG。
+//
+// 流程（版本无关）：
+//   1) 在 .data 找一对相邻的 nt!IoConnectInterruptEx / nt!IoDisconnectInterruptEx 指针。
+//   2) 若 PDB 提供了 IoConnectInterruptEx 在 FxLibraryGlobals 内的偏移 → 直接 cur - off 拿基址。
+//   3) 否则从命中点向前 8 字节步进 (≤0x80) 找一个指向有效 _DRIVER_OBJECT (Type==4)
+//      的 qword —— 即 FxLibraryGlobals.+0x000 (DriverObject)。
+static ULONG64 LocateFxLibraryGlobals(ULONG64 Wdf01000Base, ULONG_PTR Wdf01000Size, PCWdfInfo* OutDataForDiag)
+{
+	UNREFERENCED_PARAMETER(Wdf01000Size);
+	UNICODE_STRING UsIoConnect    = RTL_CONSTANT_STRING(L"IoConnectInterruptEx");
+	UNICODE_STRING UsIoDisconnect = RTL_CONSTANT_STRING(L"IoDisconnectInterruptEx");
+	ULONG64 Sig1 = (ULONG64)MmGetSystemRoutineAddress(&UsIoConnect);
+	ULONG64 Sig2 = (ULONG64)MmGetSystemRoutineAddress(&UsIoDisconnect);
+	if (Sig1 == 0 || Sig2 == 0)
+	{
+		if (OutDataForDiag) WdfPushDiag(OutDataForDiag, "DIAG: MmGetSystemRoutineAddress failed");
+		return 0;
+	}
+
+	PIMAGE_DOS_HEADER pDos = (PIMAGE_DOS_HEADER)Wdf01000Base;
+	if (!MmIsAddressValid(pDos) || pDos->e_magic != IMAGE_DOS_SIGNATURE)
+	{
+		if (OutDataForDiag) WdfPushDiag(OutDataForDiag, "DIAG: bad DOS header");
+		return 0;
+	}
+	PIMAGE_NT_HEADERS64 pNt = (PIMAGE_NT_HEADERS64)(Wdf01000Base + pDos->e_lfanew);
+	if (!MmIsAddressValid(pNt) || pNt->Signature != IMAGE_NT_SIGNATURE)
+	{
+		if (OutDataForDiag) WdfPushDiag(OutDataForDiag, "DIAG: bad NT header");
+		return 0;
+	}
+
+	ULONG64 DataStart = 0;
+	ULONG   DataSize  = 0;
+	PIMAGE_SECTION_HEADER pSec = IMAGE_FIRST_SECTION(pNt);
+	for (USHORT i = 0; i < pNt->FileHeader.NumberOfSections; i++)
+	{
+		if (memcmp(pSec[i].Name, ".data", 6) == 0)
+		{
+			DataStart = Wdf01000Base + pSec[i].VirtualAddress;
+			DataSize  = pSec[i].Misc.VirtualSize;
+			break;
+		}
+	}
+	if (DataStart == 0 || DataSize < 0x200)
+	{
+		if (OutDataForDiag) WdfPushDiag(OutDataForDiag, "DIAG: .data section not found");
+		return 0;
+	}
+
+	// 步骤 1：在 .data 里找 (IoConnectInterruptEx, IoDisconnectInterruptEx) 相邻对
+	ULONG64 HitAddr = 0;
+	ULONG64 ScanEnd = DataStart + DataSize;
+	for (ULONG64 cur = DataStart; cur + 0x10 <= ScanEnd; cur += sizeof(ULONG64))
+	{
+		if (*(volatile ULONG64*)cur != Sig1) continue;
+		if (*(volatile ULONG64*)(cur + 8) != Sig2) continue;
+		HitAddr = cur;
+		break;
+	}
+	if (HitAddr == 0)
+	{
+		if (OutDataForDiag)
+		{
+			char buf[160];
+			RtlStringCbPrintfA(buf, sizeof(buf),
+				"DIAG: IoConnectInterruptEx signature not found in .data (%I64X size=%X)",
+				DataStart, DataSize);
+			WdfPushDiag(OutDataForDiag, buf);
+		}
+		return 0;
+	}
+
+	// 步骤 2/3：用 PDB 偏移直接回推；没有就反向找 DriverObject (Type==4) 自动发现
+	ULONG64 FxLibraryGlobals = 0;
+	if (g_Offset_FxLibraryGlobalsType_IoConnectInterruptEx > 0 &&
+		HitAddr >= DataStart + (ULONG)g_Offset_FxLibraryGlobalsType_IoConnectInterruptEx)
+	{
+		FxLibraryGlobals = HitAddr - (ULONG)g_Offset_FxLibraryGlobalsType_IoConnectInterruptEx;
+	}
+	else
+	{
+		// 向前最多 0x80 字节，找 qword == 指向 _DRIVER_OBJECT 的指针
+		ULONG64 Lo = (HitAddr >= DataStart + 0x80) ? (HitAddr - 0x80) : DataStart;
+		for (ULONG64 p = HitAddr - sizeof(ULONG64); p >= Lo; p -= sizeof(ULONG64))
+		{
+			ULONG64 q = *(volatile ULONG64*)p;
+			if ((q >> 48) != 0xFFFF) { if (p == Lo) break; continue; }
+			if (!MmIsAddressValid((PVOID)q)) { if (p == Lo) break; continue; }
+			CSHORT Type = *(volatile CSHORT*)q;
+			if (Type == 4 /* IO_TYPE_DRIVER */)
+			{
+				FxLibraryGlobals = p;
+				break;
+			}
+			if (p == Lo) break;
+		}
+	}
+
+	MyDbgPrintfEx("[LocateFxLibraryGlobals] Wdf01000=%I64X .data=%I64X size=%X Hit=%I64X FxLibraryGlobals=%I64X\n",
+		Wdf01000Base, DataStart, DataSize, HitAddr, FxLibraryGlobals);
+
+	if (FxLibraryGlobals == 0 && OutDataForDiag)
+	{
+		char buf[160];
+		RtlStringCbPrintfA(buf, sizeof(buf),
+			"DIAG: FxLibraryGlobals base not derivable (Hit=%I64X)", HitAddr);
+		WdfPushDiag(OutDataForDiag, buf);
+	}
+	return FxLibraryGlobals;
+}
+
+// 在 FxLibraryGlobals 结构体内**特征发现** FxDriverGlobalsList (LIST_ENTRY) 的偏移。
+// 自洽 LIST_ENTRY 判据：
+//   (a) 空表：Flink == Blink == &head；或
+//   (b) 非空：Flink/Blink 都是内核指针，且 Flink->Blink == &head。
+// 搜索窗口 [base+0x10, base+0x800)；返回偏移 0 表示失败。
+static ULONG DiscoverFxDriverGlobalsListOff(ULONG64 FxLibraryGlobals)
+{
+	for (ULONG off = 0x10; off + 0x10 <= 0x800; off += sizeof(ULONG64))
+	{
+		ULONG64 head = FxLibraryGlobals + off;
+		ULONG64 flink = *(volatile ULONG64*)head;
+		ULONG64 blink = *(volatile ULONG64*)(head + 8);
+		// 空表
+		if (flink == head && blink == head)
+		{
+			return off;
+		}
+		// 非空表
+		if ((flink >> 48) != 0xFFFF) continue;
+		if ((blink >> 48) != 0xFFFF) continue;
+		if (!MmIsAddressValid((PVOID)flink)) continue;
+		ULONG64 fl_bk = *(volatile ULONG64*)(flink + 8);
+		if (fl_bk == head)
+		{
+			return off;
+		}
+	}
+	return 0;
+}
+
+// 在一个 FX_DRIVER_GLOBALS 节点内**特征发现** WdfBindInfo 字段的偏移。
+// _WDF_BIND_INFO 的判据：[+0]=0x30 (Size)，[+8]=Component 指针，目标宽字符串前 4 个 wchar 为 L"Kmdf"。
+// 搜索窗口 [+0x10, +0x300)；返回偏移 0 表示失败。
+static ULONG DiscoverWdfBindInfoOff(ULONG64 NodeAddr)
+{
+	for (ULONG off = 0x10; off < 0x300; off += sizeof(ULONG64))
+	{
+		ULONG64 candidate = *(volatile ULONG64*)(NodeAddr + off);
+		if ((candidate >> 48) != 0xFFFF) continue;
+		if (!MmIsAddressValid((PVOID)candidate)) continue;
+		ULONG size = *(volatile ULONG*)candidate;
+		if (size != 0x30) continue;
+		ULONG64 comp = *(volatile ULONG64*)(candidate + 8);
+		if (!MmIsAddressValid((PVOID)comp)) continue;
+		const WCHAR* s = (const WCHAR*)comp;
+		if (s[0] != L'K' || s[1] != L'm' || s[2] != L'd' || s[3] != L'f') continue;
+		return off;
+	}
+	return 0;
+}
+
 ULONG64 EnumWdfFunction(PCWdfInfo* OutData)
 {
 	if (!MmIsAddressValid(OutData))
@@ -4703,20 +5138,256 @@ ULONG64 EnumWdfFunction(PCWdfInfo* OutData)
 		}
 	}
 
-	// 3. 启发式扫描 PAGEWdfV / .data 找 FuncTable 在某些 Windows 构建上 race / guard page
-	//    会导致 bugcheck（MmIsAddressValid 不足以保护任意内核指针解引用）。
-	//    在改用更稳的方式（走 WdfLdr.sys WdfVersionBind / 客户驱动 .data）前，
-	//    先把这条路关掉，避免再蓝屏。
+	// 3. 用 nt!IoConnectInterruptEx / nt!IoDisconnectInterruptEx 作为特征码，
+	//    在 Wdf01000.sys 的 .data 节里定位 FxLibraryGlobals。
+	//    FxLibraryGlobals 结构 (WinDbg 实测):
+	//      +0x000 DriverObject              (PDRIVER_OBJECT of Wdf01000)
+	//      +0x008 LibraryDeviceObject
+	//      +0x010 IoConnectInterruptEx      <— 特征 1
+	//      +0x018 IoDisconnectInterruptEx   <— 特征 2
+	//      +0x020 KeQueryActiveProcessors
+	//      ...
+	//      +0x1E0 FxDriverGlobalsList       (LIST_ENTRY 链表头, 串起所有 KMDF 客户驱动)
+	ULONG64 FxLibraryGlobals = LocateFxLibraryGlobals(Wdf01000Base, Wdf01000Size, OutData);
+	if (FxLibraryGlobals == 0)
+	{
+		return 1;
+	}
+
+	// 4. 走 FxDriverGlobalsList 链表，找第一个有 WdfBindInfo 的客户驱动
+	//    偏移优先级：PDB > 内存特征发现 > 失败
+	//    FuncCount/FuncTable 是 WDF_BIND_INFO 公开 ABI（wdf.h），所有版本固定 0x1C/0x20。
+	ULONG OffList = (g_Offset_FxLibraryGlobalsType_FxDriverGlobalsList > 0)
+		? (ULONG)g_Offset_FxLibraryGlobalsType_FxDriverGlobalsList
+		: DiscoverFxDriverGlobalsListOff(FxLibraryGlobals);
+	if (OffList == 0)
+	{
+		WdfPushDiag(OutData, "DIAG: FxDriverGlobalsList offset not discoverable");
+		return 1;
+	}
+	ULONG OffBind = (g_Offset_FX_DRIVER_GLOBALS_WdfBindInfo > 0)
+		? (ULONG)g_Offset_FX_DRIVER_GLOBALS_WdfBindInfo : 0; // 0 = 待发现
+	const ULONG OffFnCount = (g_Offset_WDF_BIND_INFO_FuncCount > 0)
+		? (ULONG)g_Offset_WDF_BIND_INFO_FuncCount : 0x1C;
+	const ULONG OffFnTable = (g_Offset_WDF_BIND_INFO_FuncTable > 0)
+		? (ULONG)g_Offset_WDF_BIND_INFO_FuncTable : 0x20;
+
+	MyDbgPrintfEx("[EnumWdfFunction] offsets: List=%X Bind=%X FnCount=%X FnTable=%X\n",
+		OffList, OffBind, OffFnCount, OffFnTable);
+
+	PLIST_ENTRY ListHead = (PLIST_ENTRY)(FxLibraryGlobals + OffList);
+	if (!MmIsAddressValid(ListHead) || !MmIsAddressValid(ListHead->Flink))
+	{
+		WdfPushDiag(OutData, "DIAG: FxDriverGlobalsList head invalid");
+		return 1;
+	}
+
+	ULONG64 FuncTableBase = 0;
+	ULONG   FuncCount     = 0;
+	ULONG   Clients       = 0;
+	for (PLIST_ENTRY Cur = ListHead->Flink;
+		MmIsAddressValid(Cur) && Cur != ListHead && Clients < 256;
+		Cur = Cur->Flink, Clients++)
+	{
+		// FX_DRIVER_GLOBALS
+		ULONG64 FxGlobals = (ULONG64)Cur;
+		// 第一个客户驱动时按需特征发现 WdfBindInfo 偏移并缓存
+		if (OffBind == 0)
+		{
+			OffBind = DiscoverWdfBindInfoOff(FxGlobals);
+			MyDbgPrintfEx("[EnumWdfFunction] discovered OffBind=%X via node=%I64X\n",
+				OffBind, FxGlobals);
+			if (OffBind == 0) continue;
+		}
+		ULONG64 BindInfo  = *(volatile ULONG64*)(FxGlobals + OffBind);
+		if (!MmIsAddressValid((PVOID)BindInfo)) continue;
+
+		// _WDF_BIND_INFO
+		ULONG   Cnt   = *(volatile ULONG*)(BindInfo + OffFnCount);
+		ULONG64 PTbl  = *(volatile ULONG64*)(BindInfo + OffFnTable);
+		if (Cnt == 0 || Cnt > 2048) continue;
+		if (!MmIsAddressValid((PVOID)PTbl)) continue;
+		ULONG64 TblBase = *(volatile ULONG64*)PTbl;
+		if (!MmIsAddressValid((PVOID)TblBase)) continue;
+		if (TblBase < Wdf01000Base || TblBase >= Wdf01000End) continue;
+
+		FuncTableBase = TblBase;
+		FuncCount     = Cnt;
+		break;
+	}
+
+	MyDbgPrintfEx("[EnumWdfFunction] clients=%u FuncTable=%I64X FuncCount=%u\n",
+		Clients, FuncTableBase, FuncCount);
+
+	if (FuncTableBase == 0 || FuncCount == 0)
 	{
 		char buf[160];
 		RtlStringCbPrintfA(buf, sizeof(buf),
-			"DIAG: WDF enum disabled (Wdf01000 base=%I64X size=%I64X) - safer impl pending",
-			Wdf01000Base, (ULONG64)Wdf01000Size);
+			"DIAG: no KMDF client (clients walked=%u)", Clients);
 		WdfPushDiag(OutData, buf);
 		return 1;
 	}
 
-	// ---- 下面这段启发式实现暂时禁用 ----
+	// 5. 输出函数表的每一项
+	ULONG64* WdfFunctions = (ULONG64*)FuncTableBase;
+	ULONG64  IsInit = MmIsAddressValid(*OutData) && ((PCWdfInfo)(*OutData))->List.IsInitialize;
+	ULONG64  Count = 0;
+	for (ULONG i = 0; i < FuncCount; i++)
+	{
+		if (((ULONG64)&WdfFunctions[i] & 0xFFF) == 0 && !MmIsAddressValid(&WdfFunctions[i]))
+		{
+			break;
+		}
+		ULONG64 FunAddr = WdfFunctions[i];
+
+		PCWdfInfo pNewInfo = MyExAllocMemOry(sizeof(CWdfInfo), PAGE_READWRITE, UserMode);
+		if (pNewInfo == NULL) break;
+
+		pNewInfo->pFunOrder   = i;
+		pNewInfo->pFunAddr    = FunAddr;
+		pNewInfo->pSrcFunAddr = 0; // 暂无原始基线
+		pNewInfo->HookType    = (FunAddr >= Wdf01000Base && FunAddr < Wdf01000End) ? 0 : 1;
+		pNewInfo->ModuleBase  = 0;
+
+		// 反查实际模块（被 hook 时显示 hook 模块）
+		CDriverInfo DI = { 0 };
+		if (IsSysModuleEx(FunAddr, &DI))
+		{
+			memcpy_s(pNewInfo->ModulePath, sizeof(pNewInfo->ModulePath),
+				DI.ImageFullBaseName, sizeof(pNewInfo->ModulePath));
+			pNewInfo->ModuleBase = DI.ImageBaseAddr;
+		}
+		else if (GotPath)
+		{
+			memcpy_s(pNewInfo->ModulePath, sizeof(pNewInfo->ModulePath),
+				Wdf01000Path, sizeof(pNewInfo->ModulePath));
+			pNewInfo->ModuleBase = Wdf01000Base;
+		}
+
+		if (IsInit != 0 && ((PCWdfInfo)(*OutData))->List.IsInitialize)
+		{
+			InsertHeadList(&((PCWdfInfo)(*OutData))->List.List, &pNewInfo->List.List);
+		}
+		else
+		{
+			pNewInfo->List.IsInitialize = TRUE;
+			InitializeListHead(&pNewInfo->List.List);
+			*OutData = pNewInfo;
+			IsInit = TRUE;
+		}
+		Count++;
+	}
+
+	return Count;
+}
+
+// 枚举 Wdf01000.sys 的 DRIVER_OBJECT.MajorFunction[28]。
+// FxLibraryGlobals 首字段 (+0x000) 即 Wdf01000 自己的 PDRIVER_OBJECT。
+ULONG64 EnumWdf01000Maj(PCWdfInfo* OutData)
+{
+	if (!MmIsAddressValid(OutData))
+	{
+		return 0;
+	}
+
+	ULONG_PTR Wdf01000Size = 0;
+	ULONG64 Wdf01000Base = QuerySysModule((PUCHAR)"Wdf01000.sys", &Wdf01000Size);
+	if (Wdf01000Base == 0 || Wdf01000Size == 0)
+	{
+		WdfPushDiag(OutData, "DIAG: Wdf01000.sys NOT LOADED");
+		return 1;
+	}
+	ULONG64 Wdf01000End = Wdf01000Base + Wdf01000Size;
+
+	// 路径
+	WCHAR Wdf01000Path[MY_MAX_PATH] = { 0 };
+	BOOLEAN GotPath = FALSE;
+	if (MmIsAddressValid(PsLoadedModuleList))
+	{
+		PLIST_ENTRY Head = PsLoadedModuleList;
+		for (PLIST_ENTRY Cur = Head->Flink; MmIsAddressValid(Cur) && Cur != Head; Cur = Cur->Flink)
+		{
+			PLDR_DATA_TABLE_ENTRY Ldr = CONTAINING_RECORD(Cur, LDR_DATA_TABLE_ENTRY, InLoadOrderLinks);
+			if (!MmIsAddressValid(Ldr) || !MmIsAddressValid(Ldr->FullDllName.Buffer)) continue;
+			if ((ULONG64)Ldr->DllBase == Wdf01000Base)
+			{
+				USHORT cb = Ldr->FullDllName.Length;
+				if (cb > sizeof(Wdf01000Path) - sizeof(WCHAR)) cb = sizeof(Wdf01000Path) - sizeof(WCHAR);
+				memcpy(Wdf01000Path, Ldr->FullDllName.Buffer, cb);
+				GotPath = TRUE;
+				break;
+			}
+		}
+	}
+
+	ULONG64 FxLibraryGlobals = LocateFxLibraryGlobals(Wdf01000Base, Wdf01000Size, OutData);
+	if (FxLibraryGlobals == 0) return 1;
+
+	PDRIVER_OBJECT DrvObj = *(PDRIVER_OBJECT*)FxLibraryGlobals;
+	if (!MmIsAddressValid(DrvObj))
+	{
+		WdfPushDiag(OutData, "DIAG: Wdf01000 DRIVER_OBJECT invalid");
+		return 1;
+	}
+	// _DRIVER_OBJECT.Type == IO_TYPE_DRIVER == 4
+	if (DrvObj->Type != 4)
+	{
+		char buf[128];
+		RtlStringCbPrintfA(buf, sizeof(buf),
+			"DIAG: DRIVER_OBJECT type=%d (expected 4)", (int)DrvObj->Type);
+		WdfPushDiag(OutData, buf);
+		return 1;
+	}
+
+	MyDbgPrintfEx("[EnumWdf01000Maj] DRIVER_OBJECT=%p Size=%d\n", DrvObj, (int)DrvObj->Size);
+
+	ULONG64 IsInit = MmIsAddressValid(*OutData) && ((PCWdfInfo)(*OutData))->List.IsInitialize;
+	ULONG64 Count = 0;
+	for (ULONG i = 0; i <= IRP_MJ_MAXIMUM_FUNCTION; i++)
+	{
+		ULONG64 FunAddr = (ULONG64)DrvObj->MajorFunction[i];
+
+		PCWdfInfo pNewInfo = MyExAllocMemOry(sizeof(CWdfInfo), PAGE_READWRITE, UserMode);
+		if (pNewInfo == NULL) break;
+
+		pNewInfo->pFunOrder   = i;
+		pNewInfo->pFunAddr    = FunAddr;
+		pNewInfo->pSrcFunAddr = 0;
+		pNewInfo->HookType    = (FunAddr >= Wdf01000Base && FunAddr < Wdf01000End) ? 0 : 1;
+		pNewInfo->ModuleBase  = 0;
+
+		CDriverInfo DI = { 0 };
+		if (FunAddr != 0 && IsSysModuleEx(FunAddr, &DI))
+		{
+			memcpy_s(pNewInfo->ModulePath, sizeof(pNewInfo->ModulePath),
+				DI.ImageFullBaseName, sizeof(pNewInfo->ModulePath));
+			pNewInfo->ModuleBase = DI.ImageBaseAddr;
+		}
+		else if (GotPath)
+		{
+			memcpy_s(pNewInfo->ModulePath, sizeof(pNewInfo->ModulePath),
+				Wdf01000Path, sizeof(pNewInfo->ModulePath));
+			pNewInfo->ModuleBase = Wdf01000Base;
+		}
+
+		if (IsInit != 0 && ((PCWdfInfo)(*OutData))->List.IsInitialize)
+		{
+			InsertHeadList(&((PCWdfInfo)(*OutData))->List.List, &pNewInfo->List.List);
+		}
+		else
+		{
+			pNewInfo->List.IsInitialize = TRUE;
+			InitializeListHead(&pNewInfo->List.List);
+			*OutData = pNewInfo;
+			IsInit = TRUE;
+		}
+		Count++;
+	}
+
+	return Count;
+}
+
+// ---- 旧的启发式扫描（已废弃，保留供历史参考；不会被编译） ----
 #if 0
 	// 3. 定位 Wdf01000.sys 内的 "PAGEWdfV" 节 —— KMDF 把函数表和绑定信息(WDF_BIND_INFO)
 	//    都放在这个特定节里。新版本 Wdf01000.sys 已经没有导出表，但节名一直没变。
@@ -4894,7 +5565,6 @@ ULONG64 EnumWdfFunction(PCWdfInfo* OutData)
 
 	return Count;
 #endif
-}
 
 ULONG64 EnumHalDispatchTable(ULONG64 HalTable, ULONG64 TableSize, PCHalFunTableInfo* OutData)
 {

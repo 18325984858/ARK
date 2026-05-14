@@ -70,6 +70,18 @@ namespace Pdb
 
 } // namespace Pdb
 
+// === PDB 下载进度全局回调（PdbResolver 安装）。phase: 0=Start, 1=Receive, 2=Finish, 3=Error。
+typedef void (*PdbProgressCallback)(const wchar_t* fileName, int phase,
+	unsigned long long received, unsigned long long total, unsigned int httpCode);
+void SetPdbProgressSink(PdbProgressCallback cb);
+void EmitPdbProgress(const wchar_t* fileName, int phase,
+	unsigned long long received, unsigned long long total, unsigned int httpCode);
+
+// === PDB 诊断日志回调（PdbResolver 装钩；InitPDB 各阶段把详情写到这里）
+typedef void (*PdbDiagCallback)(const wchar_t* msg);
+void SetPdbDiagSink(PdbDiagCallback cb);
+void EmitPdbDiag(const wchar_t* fmt, ...);
+
 class SymDownloader : public Pdb::WinInetFileDownloader
 {
 private:
@@ -78,6 +90,11 @@ private:
 private:
 	size_t m_totalSize{ 0 };
 	size_t m_downloaded{ 0 };
+	std::wstring m_displayName;  // 用于进度回调的展示名（PDB 文件名）
+
+public:
+	void SetDisplayName(const wchar_t* name) { m_displayName = name ? name : L""; }
+	const wchar_t* GetDisplayName() const { return m_displayName.c_str(); }
 
 private:
 	static std::pair<float, const char*> formatSize(size_t size) noexcept
@@ -109,6 +126,7 @@ protected:
 	{
 		Super::onError(httpCode);
 		printf("HTTP Error: %u\n", httpCode);
+		EmitPdbProgress(m_displayName.c_str(), 3, m_downloaded, m_totalSize, httpCode);
 	}
 
 	virtual void onStart(const wchar_t* const url, const size_t fileSize) noexcept override
@@ -117,6 +135,8 @@ protected:
 
 		printf("Downloading:\n  * '%ws'\n  * %.2f %s\n", url, formattedSize.first, formattedSize.second);
 		m_totalSize = fileSize;
+		m_downloaded = 0;
+		EmitPdbProgress(m_displayName.c_str(), 0, 0, (unsigned long long)fileSize, 0);
 	}
 
 	virtual Super::Action onReceive(const void* buf, const size_t size) override
@@ -134,12 +154,21 @@ protected:
 		const auto formattedTotal = formatSize(m_totalSize);
 
 		printf("Downloaded %u%% (%.2f %s from %.2f %s)\n",
-			static_cast<unsigned int>(m_downloaded * 100 / m_totalSize),
+			static_cast<unsigned int>(m_downloaded * 100 / (m_totalSize ? m_totalSize : 1)),
 			formattedDownloaded.first, formattedDownloaded.second,
 			formattedTotal.first, formattedTotal.second
 		);
+		EmitPdbProgress(m_displayName.c_str(), 1,
+			(unsigned long long)m_downloaded, (unsigned long long)m_totalSize, 0);
 
 		return Super::Action::proceed;
+	}
+
+	virtual void onFinish() override
+	{
+		Super::onFinish();
+		EmitPdbProgress(m_displayName.c_str(), 2,
+			(unsigned long long)m_downloaded, (unsigned long long)m_totalSize, 0);
 	}
 
 public:
@@ -157,6 +186,9 @@ public:
 	ULONG64 GetMemberOffset(PWSTR structName, PWSTR memberName);
 	ULONG64 GetStructSize(PWSTR structName);
 	ULONG64 GetGlobalVariablesOffset(PWSTR VarName);
+	// 根据 PDB 加载后的虚拟地址查符号名；inAddr = m_mod.base() + RVA。
+	// 成功返回 true，outName 充填符号名（不含偏移），outDisp 为从符号起点的偏移。
+	bool GetSymbolByAddr(ULONG64 inAddr, PWSTR outName, ULONG outNameCch, PULONG64 outDisp);
 
 public:
 	std::wstring m_path;

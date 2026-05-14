@@ -4,6 +4,7 @@
 
 #include <string>
 #include <vector>
+#include <atomic>
 
 #pragma comment(lib, "wininet.lib")
 
@@ -287,6 +288,40 @@ namespace Pdb
 
 } // namespace Pdb
 
+// === PDB 下载进度全局回调 ===
+static PdbProgressCallback g_PdbProgressSink = nullptr;
+
+void SetPdbProgressSink(PdbProgressCallback cb)
+{
+	g_PdbProgressSink = cb;
+}
+
+void EmitPdbProgress(const wchar_t* fileName, int phase,
+	unsigned long long received, unsigned long long total, unsigned int httpCode)
+{
+	PdbProgressCallback cb = g_PdbProgressSink;
+	if (cb) cb(fileName ? fileName : L"", phase, received, total, httpCode);
+}
+
+static PdbDiagCallback g_PdbDiagSink = nullptr;
+
+void SetPdbDiagSink(PdbDiagCallback cb)
+{
+	g_PdbDiagSink = cb;
+}
+
+void EmitPdbDiag(const wchar_t* fmt, ...)
+{
+	PdbDiagCallback cb = g_PdbDiagSink;
+	if (!cb || !fmt) return;
+	wchar_t buf[1024];
+	va_list ap;
+	va_start(ap, fmt);
+	_vsnwprintf_s(buf, _countof(buf), _TRUNCATE, fmt, ap);
+	va_end(ap);
+	cb(buf);
+}
+
 bool MyPdb::InitPDB(PWSTR path)
 {
 	if (!path)
@@ -294,11 +329,47 @@ bool MyPdb::InitPDB(PWSTR path)
 
 	m_path = path;
 
-	const auto pdbInfo = m_prov.getPdbInfo(m_path.c_str());
+	EmitPdbDiag(L"[InitPDB] BEGIN path='%s'", path);
 
-	const auto url = std::wstring(Pdb::Prov::k_microsoftSymbolServerSecure) + L"/" + pdbInfo.pdbUrl();
-	const std::wstring symFolder = L"C:\\Symbols\\";
-	const std::wstring symFolderPath = symFolder + pdbInfo.pdbPath();
+	// 文件存在 + 大小？
+	{
+		WIN32_FILE_ATTRIBUTE_DATA fad{};
+		if (GetFileAttributesExW(path, GetFileExInfoStandard, &fad))
+		{
+			EmitPdbDiag(L"[InitPDB] target image size=%llu",
+				((ULONGLONG)fad.nFileSizeHigh << 32) | fad.nFileSizeLow);
+		}
+		else
+		{
+			EmitPdbDiag(L"[InitPDB] target image not found (GLE=%lu)", GetLastError());
+			return false;
+		}
+	}
+
+	std::wstring pdbPathRel;
+	std::wstring url;
+	std::wstring symFolder = L"C:\\Symbols\\";
+	std::wstring symFolderPath;
+	GUID    wantGuid{};
+	DWORD   wantAge = 0;
+	try
+	{
+		const auto pdbInfo = m_prov.getPdbInfo(m_path.c_str());
+		pdbPathRel = pdbInfo.pdbPath();
+		url = std::wstring(Pdb::Prov::k_microsoftSymbolServerSecure) + L"/" + pdbInfo.pdbUrl();
+		symFolderPath = symFolder + pdbPathRel;
+		wantGuid = pdbInfo.info().guid;
+		wantAge  = pdbInfo.info().age;
+	}
+	catch (...)
+	{
+		EmitPdbDiag(L"[InitPDB] getPdbInfo() threw -- image has no debug directory or invalid PDB record");
+		return false;
+	}
+
+	EmitPdbDiag(L"[InitPDB] pdbPath='%s'", pdbPathRel.c_str());
+	EmitPdbDiag(L"[InitPDB] url='%s'",     url.c_str());
+	EmitPdbDiag(L"[InitPDB] local='%s'",   symFolderPath.c_str());
 
 	// 命中缓存判断：MS 符号服务器的目录布局是 <PdbName>\<GUID><Age>\<PdbName>，
 	// 路径本身就唯一标识版本。再用 SymSrvGetFileIndexInfoW 复核本地 PDB 的
@@ -329,35 +400,44 @@ bool MyPdb::InitPDB(PWSTR path)
 			return false;
 		}
 
-		const auto& want = pdbInfo.info();
-		if (localInfo.age != want.age)
+		if (localInfo.age != wantAge)
 		{
 			return false;
 		}
 		// GUID 完全匹配才能确认是同一版本
-		return memcmp(&localInfo.guid, &want.guid, sizeof(GUID)) == 0;
+		return memcmp(&localInfo.guid, &wantGuid, sizeof(GUID)) == 0;
 	};
 
 	bool downloadStatus = true;
 	if (isLocalPdbUpToDate())
 	{
-		// 已有匹配的 PDB，跳过下载
+		EmitPdbDiag(L"[InitPDB] local cache HIT (skip download)");
 	}
 	else
 	{
+		EmitPdbDiag(L"[InitPDB] local cache MISS - downloading from %s", url.c_str());
 		m_loader.SetFilePath(symFolderPath.c_str());
+		const wchar_t* slash = wcsrchr(pdbPathRel.c_str(), L'\\');
+		m_loader.SetDisplayName(slash ? slash + 1 : pdbPathRel.c_str());
 		downloadStatus = Pdb::SymLoader::download(url.c_str(), m_loader);
+		EmitPdbDiag(L"[InitPDB] download finished status=%d GLE=%lu",
+			downloadStatus ? 1 : 0, GetLastError());
 	}
 
 	if (!downloadStatus)
 	{
+		EmitPdbDiag(L"[InitPDB] FAIL - download unsuccessful");
 		printf("Unable to download the symbols");
 		return false;
 	}
 
 	m_prov.setSymPath(symFolder.c_str());
+	EmitPdbDiag(L"[InitPDB] calling SymLoadModuleExW for image '%s'", m_path.c_str());
 
-	return m_mod.init(m_path.c_str());
+	bool initOk = m_mod.init(m_path.c_str());
+	EmitPdbDiag(L"[InitPDB] m_mod.init -> %s base=0x%I64X GLE=%lu",
+		initOk ? L"OK" : L"FAIL", (ULONG64)m_mod.base(), GetLastError());
+	return initOk;
 }
 
 Pdb::Sym MyPdb::Find(PWSTR Name)
@@ -423,4 +503,74 @@ ULONG64 MyPdb::GetGlobalVariablesOffset(PWSTR VarName)
 	}
 
 	return m_mod.findGlobalVariables(VarName);
+}
+
+bool MyPdb::GetSymbolByAddr(ULONG64 inAddr, PWSTR outName, ULONG outNameCch, PULONG64 outDisp)
+{
+	if (!outName || outNameCch == 0) return false;
+	outName[0] = 0;
+	if (m_mod.base() == 0) return false;
+
+	BYTE buf[sizeof(SYMBOL_INFOW) + (MAX_SYM_NAME + 1) * sizeof(WCHAR)] = { 0 };
+	PSYMBOL_INFOW info = (PSYMBOL_INFOW)buf;
+	info->SizeOfStruct = sizeof(SYMBOL_INFOW);
+	info->MaxNameLen   = MAX_SYM_NAME;
+
+	ULONG64 disp = 0;
+	if (!SymFromAddrW(Pdb::Prov::uid(), inAddr, &disp, info))
+	{
+		return false;
+	}
+
+	// dbghelp 的 SymFromAddrW 会返回"最近"符号，可能落在该地址之前的数据符号上
+	// (Disp 是 ULONG64，但实际是 Address - SymbolAddress，符号在 Address 之后时变成超大无符号)。
+	// 1) 拒绝非函数符号（数据/标签）：只接受 SymTagFunction(5) / SymTagPublicSymbol(10) 中的函数项
+	// 2) 拒绝太大的位移（> 1MB 视为无效命中）
+	if ((LONG64)disp < 0 || disp > 0x100000)
+	{
+		return false;
+	}
+	// SYMBOL_INFOW.Tag: 5=Function, 10=PublicSymbol
+	// 公共 PDB(微软符号服务器拉的)绝大部分 entry 是 Tag=10 PublicSymbol，
+	// 且常常 *没有* SYMFLAG_FUNCTION 标志（该标志只在含类型信息的私有 PDB 上稳定）。
+	// 之前严格要求 SYMFLAG_FUNCTION 导致 ntoskrnl 多数地址被错误丢弃。
+	// 现在的策略：
+	//   - Tag==5 (Function) 直接收
+	//   - Tag==10 (PublicSymbol) 收，但若同时设置了 SYMFLAG_PUBLIC_CODE=0 且明显是 data 则拒
+	//     dbghelp 没有显式 "PUBLIC_DATA" 标志；保守起见，全部收下，让上层用 disp 范围筛
+	//   - 其它 Tag (7=Data / 8=Annotation / 12=BaseType / ...): 拒
+	{
+		const auto tag = info->Tag;
+		const bool tagOk = (tag == 5 /*SymTagFunction*/) || (tag == 10 /*SymTagPublicSymbol*/);
+		const bool flagOk = (info->Flags & SYMFLAG_FUNCTION) != 0;
+		if (!tagOk && !flagOk)
+		{
+			static std::atomic<int> s_rejLog{ 0 };
+			if (s_rejLog.fetch_add(1) < 20)
+			{
+				EmitPdbDiag(L"[Resolve] reject sym tag=%u flags=0x%X disp=0x%I64X name='%s'",
+					(unsigned)tag, (unsigned)info->Flags, disp, info->Name);
+			}
+			return false;
+		}
+	}
+	// 去除 C++ 修饰，只保留裸函数名（例 ?Foo@@YAX... -> Foo）
+	if (info->Name[0] == L'?')
+	{
+		WCHAR undec[256] = { 0 };
+		if (UnDecorateSymbolNameW(info->Name, undec, _countof(undec), UNDNAME_NAME_ONLY) > 0)
+		{
+			wcsncpy_s(outName, outNameCch, undec, _TRUNCATE);
+		}
+		else
+		{
+			wcsncpy_s(outName, outNameCch, info->Name, _TRUNCATE);
+		}
+	}
+	else
+	{
+		wcsncpy_s(outName, outNameCch, info->Name, _TRUNCATE);
+	}
+	if (outDisp) *outDisp = disp;
+	return true;
 }

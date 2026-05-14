@@ -361,3 +361,11 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+# Deploy artifacts at repo root
+/MyPCHunter64.exe
+/MyDriver64.sys
+/MyDriver64.inf
+/MyDriver64.cer
+/mydriver64.cat
+/__rc_head.bin
+

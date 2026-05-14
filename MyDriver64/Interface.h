@@ -72,3 +72,5 @@ VOID __vectorcall MyTest(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutDa
 VOID __vectorcall EnumWorkerThreadInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam);
 VOID __vectorcall EnumWdfFunctionInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam);
 VOID __vectorcall EnumWdf01000Info(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam);
+VOID __vectorcall EnumSfilterCallbackInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam);
+VOID __vectorcall EnumClassInitDataCallbackInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam);

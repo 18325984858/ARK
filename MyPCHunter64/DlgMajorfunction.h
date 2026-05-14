@@ -13,6 +13,7 @@ public:
 		um_MajorFuction_Ord,
 		um_MajorFuction_FunName,
 		um_MajorFuction_FunAddr,
+		um_MajorFuction_Pos,
 		um_MajorFuction_MoudlePath,
 	};
 

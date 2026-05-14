@@ -6,6 +6,7 @@
 #include "afxdialogex.h"
 #include "DlgDpc.h"
 #include "Thread.h"
+#include "PdbResolver.h"
 #include <unordered_map>
 #include <string>
 
@@ -40,26 +41,21 @@ END_MESSAGE_MAP()
 // DlgDpc 消息处理程序
 void DlgDpc::OnNMRClickDpcList(NMHDR* pNMHDR, LRESULT* pResult)
 {
-	LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	// TODO: 在此添加控件通知处理程序代码
 	*pResult = 0;
 
-	CMenu menu;
-	POINT point = { 0 };
+	static const int cols[] = {
+		um_Dpc_DpcObject, um_Dpc_TimeObject, um_Dpc_TriggerCycle,
+		um_Dpc_FunctionStartAddr, um_Dpc_FunctionName, um_Dpc_ModulePath, um_Dpc_CompanyName
+	};
+	static const wchar_t* const names[] = {
+		L"Dpc对象", L"Time对象", L"触发周期", L"函数入口地址", L"函数名称", L"函数所在模块路径", L"文件厂商"
+	};
+	const int n = (int)_countof(cols);
 
-	GetCursorPos(&point);//获取当前的游标
-	menu.LoadMenuW(ID_MENU_DPC);//加载菜单资源
-	CMenu* pPopup = menu.GetSubMenu(0);//
-
-	POSITION FristIndex = m_CListCtrl.GetFirstSelectedItemPosition();//获取选中行的行数  pos = 行数 - 1
-	int TempIndex = (int)FristIndex - 1;//存储第一次的索引位置
-
-	if (this->m_ThreadFlags == 1)
-	{
-		menu.EnableMenuItem(ID_DPC_REFRESH, MF_GRAYED | MF_BYCOMMAND);
-	}
-
-	pPopup->TrackPopupMenu(TPM_LEFTBUTTON, point.x, point.y, this);//设置菜单栏出现的位置
+	bool hasSel = (m_CListCtrl.GetFirstSelectedItemPosition() != NULL);
+	int r = ShowListCopyRefreshMenu(cols, names, n, hasSel, this);
+	if (r == 0) { if (this->m_ThreadFlags != 1) OnDpcRefresh(); }
+	else if (r > 0) CopyBufferToClipboard(&m_CListCtrl, cols[r - 1]);
 }
 
 void DlgDpc::OnSize(UINT nType, int cx, int cy)
@@ -80,6 +76,7 @@ BOOL DlgDpc::OnInitDialog()
 	m_CListCtrl.InsertColumn(um_Dpc_TimeObject, _T("Time对象"), LVCFMT_LEFT, 130);
 	m_CListCtrl.InsertColumn(um_Dpc_TriggerCycle, _T("触发周期"), LVCFMT_LEFT, 130);
 	m_CListCtrl.InsertColumn(um_Dpc_FunctionStartAddr, _T("函数入口地址"), LVCFMT_LEFT, 130);
+	m_CListCtrl.InsertColumn(um_Dpc_FunctionName, _T("函数名称"), LVCFMT_LEFT, 250);
 	m_CListCtrl.InsertColumn(um_Dpc_ModulePath, _T("函数所在模块路径"), LVCFMT_LEFT, 250);
 	m_CListCtrl.InsertColumn(um_Dpc_CompanyName, _T("文件厂商"), LVCFMT_LEFT, 130);
 
@@ -135,6 +132,14 @@ void DlgDpc::InsertCtrlListControl(PCDPcInfo pInfo)
 
 		StrBuf.Format(L"%016I64X", Info->FunCtionStartAddr);
 		m_CListCtrl.SetItemText(i, um_Dpc_FunctionStartAddr, StrBuf);
+
+		// 函数名称：走 PdbResolver（kModuleBase=0 让 resolver 从内核模块缓存里查）
+		{
+			WCHAR resolved[256] = { 0 };
+			PdbResolver_Resolve(Info->FunCtionStartAddr, 0,
+				Info->ModulePath, resolved, _countof(resolved));
+			m_CListCtrl.SetItemText(i, um_Dpc_FunctionName, resolved);
+		}
 
 		CString FilePath = PathTransForm(Info->ModulePath);
 		m_CListCtrl.SetItemText(i, um_Dpc_ModulePath, FilePath.GetBuffer());

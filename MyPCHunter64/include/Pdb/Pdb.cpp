@@ -8,6 +8,7 @@
 #include <sstream>
 #include <iomanip>
 #include <vector>
+#include <atomic>
 
 namespace Pdb
 {
@@ -812,11 +813,23 @@ namespace Pdb
 		}
 
 		SymSetOptions(SYMOPT_DEFERRED_LOADS | SYMOPT_INCLUDE_32BIT_MODULES);
+
+		// 第一次尝试 base=0（让 dbghelp 自己定）。
 		m_base = SymLoadModuleExW(Prov::uid(), nullptr, path, nullptr, 0, 0, nullptr, 0);
+
+		// 失败常见原因：内核驱动 image 的 PE preferred base 是高位内核地址，
+		// dbghelp 在用户态进程里映射会拒绝（ERROR_INVALID_ADDRESS=487）。
+		// 重试一次：用合成基址，避开 PE 头里的偏好。每个模块给一段独立用户态地址区间。
 		if (!m_base)
 		{
-			//const auto lastError = GetLastError();
-			//throw DbgHelpFailure(__FUNCTIONW__ L": Unable to load module: 'SymLoadModuleExW' failure.", lastError);
+			static std::atomic<ULONG64> s_synthBase{ 0x10000000ULL };
+			const ULONG64 synth = s_synthBase.fetch_add(0x1000000ULL); // 每个模块 16MB
+			m_base = SymLoadModuleExW(Prov::uid(), nullptr, path, nullptr,
+				synth, 0x1000000UL, nullptr, 0);
+		}
+
+		if (!m_base)
+		{
 			return 0;
 		}
 

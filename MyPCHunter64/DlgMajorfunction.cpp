@@ -7,6 +7,7 @@
 #include "DlgMajorfunction.h"
 #include "resource.h"
 #include "Thread.h"
+#include "PdbResolver.h"
 
 // DlgAcpi 对话框
 
@@ -65,6 +66,7 @@ BOOL DlgMajorfunction::OnInitDialog()
 	m_CListCtrl.InsertColumn(um_MajorFuction_Ord, _T("序号"), LVCFMT_LEFT, 50);
 	m_CListCtrl.InsertColumn(um_MajorFuction_FunName, _T("函数名称"), LVCFMT_LEFT, 300);
 	m_CListCtrl.InsertColumn(um_MajorFuction_FunAddr, _T("函数地址"), LVCFMT_LEFT, 120);
+	m_CListCtrl.InsertColumn(um_MajorFuction_Pos, _T("位置"), LVCFMT_LEFT, 250);
 	m_CListCtrl.InsertColumn(um_MajorFuction_MoudlePath, _T("所在模块路径"), LVCFMT_LEFT, 250);
 	m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 
@@ -120,6 +122,14 @@ void DlgMajorfunction::InsertCtrlListControl(PCSysMajorFunctionInfo pCSysMajorFu
 		StrBuf.Format(L"%016I64X", pInfo->FunAddr);
 		m_CListCtrl.SetItemText(i, um_MajorFuction_FunAddr, StrBuf);
 
+		// 位置列：PdbResolver 解析符号。优先用驱动传回的 ModuleBase，没则 resolver 查内核模块表
+		{
+			WCHAR resolved[256] = { 0 };
+			PdbResolver_Resolve(pInfo->FunAddr, pInfo->ModuleBase,
+				pInfo->ModulePath, resolved, _countof(resolved));
+			m_CListCtrl.SetItemText(i, um_MajorFuction_Pos, resolved);
+		}
+
 
 		m_CListCtrl.SetItemText(i, um_MajorFuction_MoudlePath, pInfo->ModulePath);
 
@@ -140,25 +150,8 @@ void DlgMajorfunction::InsertCtrlListControl(PCSysMajorFunctionInfo pCSysMajorFu
 
 void DlgMajorfunction::OnNMRClickMajorfunctionList(NMHDR* pNMHDR, LRESULT* pResult)
 {
-	LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	// TODO: 在此添加控件通知处理程序代码
 	*pResult = 0;
-
-
-	CMenu menu;
-	POINT point = { 0 };
-
-	GetCursorPos(&point);//获取当前的游标
-	menu.LoadMenuW(ID_MENU_DRIVER_MAJORFUNCTION);//加载菜单资源
-	CMenu* pPopup = menu.GetSubMenu(0);//
-
-	POSITION FristIndex = m_CListCtrl.GetFirstSelectedItemPosition();//获取选中行的行数  pos = 行数 - 1
-	int TempIndex = (int)FristIndex - 1;//存储第一次的索引位置
-
-	if (m_DriverMajorFunctionInfo.m_ThreadFlags == TRUE)
-	{
-		menu.EnableMenuItem(ID_DRIVER_MAJORFUNCTION_REFRESH, MF_GRAYED | MF_BYCOMMAND);
-	}
-
-	pPopup->TrackPopupMenu(TPM_LEFTBUTTON, point.x, point.y, this);//设置菜单栏出现的位置
+	int r = ShowListContextMenu(&m_CListCtrl, this);
+	if (r == 0) { if (m_DriverMajorFunctionInfo.m_ThreadFlags != TRUE) OnDriverMajorFunctionRefresh(); }
+	else if (r > 0) CopyBufferToClipboard(&m_CListCtrl, r - 1);
 }

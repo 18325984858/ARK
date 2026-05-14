@@ -32,6 +32,8 @@ EXTERN_C DlgProcessMonitor g_DlgProcessMonitor;
 EXTERN_C UCHAR g_CreateFlagsDlgProcessMonitor;
 EXTERN_C UCHAR g_HookStateFlags[SSDT_MAX_NUMBER];
 EXTERN_C MyPdb g_NtPdb;
+EXTERN_C MyPdb g_fltmgrPDB;
+EXTERN_C MyPdb g_WdfPdb;
 
 
 typedef struct MyModuleCall
@@ -91,4 +93,8 @@ public:
 	afx_msg void OnClose();
 	afx_msg void OnMenuMainDlgMonitordlg();
 	afx_msg void OnHotKey(UINT nHotKeyId, UINT nKey1, UINT nKey2);
+	afx_msg LRESULT OnPdbProgress(WPARAM wParam, LPARAM lParam);
+
+private:
+	CStatusBar m_StatusBar;
 };

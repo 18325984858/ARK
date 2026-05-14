@@ -68,6 +68,8 @@ EXTERN_C PULONG32					PspCreateThreadNotifyRoutineNonSystemCount;
 EXTERN_C PULONG32					PspCreateThreadNotifyRoutineCount;
 EXTERN_C PULONG64					PspCreateThreadNotifyRoutine;
 EXTERN_C PULONG64					IopNotifyShutdownQueueHead;
+EXTERN_C PULONG64					IopFsNotifyChangeQueueHead;				// 传统文件系统过滤驱动注册回调链 (Sfilter)
+EXTERN_C PULONG64					IopFsNotifyChangeQueueHeadMountAware;	// MountAware 变种
 EXTERN_C PULONG64					KeBugCheckCallbackListHead;
 EXTERN_C PULONG64					PnpDeviceClassNotifyList;
 EXTERN_C PULONG64					PnpDeferredRegistrationList;
@@ -342,6 +344,7 @@ ULONG64 GetPspCreateThreadNotifyRoutine();
 //功能:获取nt模块中的IopNotifyShutdownQueueHead变量						2024年5月23日12:54:34
 //返回值:成功返回地址,失败返回NULL
 ULONG64 GetIopNotifyShutdownQueueHead();
+ULONG64 GetIopFsNotifyChangeQueueHead();
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -758,6 +761,8 @@ ULONG64 IsSysModuleEx(ULONG64 pAddr, PCDriverInfo OutData);
 //参数一:接收要传出的数据指针
 //返回值:成功返回数量,失败返回NULL
 ULONG64 EnumShutdownCallBack(PCKernelCallBackInfo* OutData);
+ULONG64 EnumSfilterCallback(PCKernelCallBackInfo* OutData);
+ULONG64 EnumClassInitDataCallback(PCKernelCallBackInfo* OutData);
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -869,6 +874,7 @@ ULONG64 EnumDpcTimer(PCDPcInfo* OutData);
 //返回值:线程数量
 ULONG64 EnumWorkerThread(PCProcessThreadInfo* OutData);
 ULONG64 EnumWdfFunction(PCWdfInfo* OutData);
+ULONG64 EnumWdf01000Maj(PCWdfInfo* OutData);
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////////////////////

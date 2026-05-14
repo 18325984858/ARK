@@ -218,6 +218,11 @@ VOID ToUserSendMessgae(PULONG64 Paragma, PCFilterUserGetMessageHeadInfo Pack, PU
 	WriteBufferToProcessStructEx(&pSSdtInfo->ProcessInfo, PsLookUpProcessByProcessId(pSSdtInfo->PID));
 
 	ULONG64 SendSize = 0;
+	if (g_pFilter == NULL || g_AppPort == NULL)
+	{
+		MyDbgPrintfEx("[%ws] g_pFilter=%p g_AppPort=%p not ready\n", __FUNCTIONW__, g_pFilter, g_AppPort);
+		return;
+	}
 	NTSTATUS status = FltSendMessage(g_pFilter, &g_AppPort, &Pack->PackType, Pack->PackSize - sizeof(FILTER_MESSAGE_HEADER), NULL, &SendSize, 0);
 	if (NT_SUCCESS(status))
 	{
@@ -262,6 +267,12 @@ ULONG64 ToUserSendGetStructInfoMessgae(const WCHAR* pModule, const WCHAR* pClass
 
 
 	// 发送消息到过滤器
+	// minifilter 还未注册 / R3 未连接时直接快失败，避免 FltMgr 在 NULL g_pFilter 上解锁 (BSOD 0x7E)
+	if (g_pFilter == NULL || g_AppPort == NULL)
+	{
+		MyDbgPrintfEx("[%ws] g_pFilter=%p g_AppPort=%p not ready\n", __FUNCTIONW__, g_pFilter, g_AppPort);
+		return -1;
+	}
 	NTSTATUS status = FltSendMessage(g_pFilter, &g_AppPort, &Pack.Header.PackType, Pack.Header.PackSize - sizeof(FILTER_MESSAGE_HEADER), ReplyBuffer, &ReplyLength, &timeout);
 	if (NT_SUCCESS(status))
 	{
@@ -309,6 +320,11 @@ ULONG64 ToUserSendGetStructSizeMessgae(const WCHAR* pModule, const WCHAR* pClass
 	timeout.QuadPart = -20 * 1000 * 1000; // 2秒超时（单位为100纳秒，负值表示相对时间）
 
 	// 发送消息到过滤器
+	if (g_pFilter == NULL || g_AppPort == NULL)
+	{
+		MyDbgPrintfEx("[%ws] g_pFilter=%p g_AppPort=%p not ready\n", __FUNCTIONW__, g_pFilter, g_AppPort);
+		return -1;
+	}
 	NTSTATUS status = FltSendMessage(g_pFilter, &g_AppPort, &Pack.Header.PackType, Pack.Header.PackSize - sizeof(FILTER_MESSAGE_HEADER), ReplyBuffer, &ReplyLength, &timeout);
 	if (NT_SUCCESS(status))
 	{
@@ -359,6 +375,11 @@ ULONG64 ToUserSendGetGlobalVariablesMessgae(const WCHAR* pModule, const WCHAR* V
 
 
 	// 发送消息到过滤器
+	if (g_pFilter == NULL || g_AppPort == NULL)
+	{
+		MyDbgPrintfEx("[%ws] g_pFilter=%p g_AppPort=%p not ready\n", __FUNCTIONW__, g_pFilter, g_AppPort);
+		return -1;
+	}
 	NTSTATUS status = FltSendMessage(g_pFilter, &g_AppPort, &Pack.Header.PackType, Pack.Header.PackSize - sizeof(FILTER_MESSAGE_HEADER), ReplyBuffer, &ReplyLength, &timeout);
 	if (NT_SUCCESS(status))
 	{

@@ -45,6 +45,8 @@ CCmd g_CmdFun[MAX_FUNCALL_INDEX] = {
 	// WDF 枚举同样需要 designated initializer，避免跳号造成表错位。
 	[um_Cmd_Enum_Wdf01000_info]								= {um_Cmd_Enum_Wdf01000_info,     EnumWdf01000Info},
 	[um_Cmd_Enum_WdfFunction_info]							= {um_Cmd_Enum_WdfFunction_info,  EnumWdfFunctionInfo},
+	[um_Cmd_Enum_SfilterCallBack_info]						= {um_Cmd_Enum_SfilterCallBack_info, EnumSfilterCallbackInfo},
+	[um_Cmd_Enum_ClassInitDataCallBack_info]				= {um_Cmd_Enum_ClassInitDataCallBack_info, EnumClassInitDataCallbackInfo},
 };
 
 VOID MyThreadRoutine(PVOID Context)
@@ -624,17 +626,57 @@ VOID __vectorcall EnumWdfFunctionInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT U
 	}
 }
 
-// Wdf01000 主要函数枚举：本版本未实现，返回空列表避免 R3 报 "发送消息失败"
+// Wdf01000 主要函数枚举：DRIVER_OBJECT.MajorFunction[28]
 VOID __vectorcall EnumWdf01000Info(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam)
 {
 	UNREFERENCED_PARAMETER(nCmd);
 	UNREFERENCED_PARAMETER(pIndata);
-	UNREFERENCED_PARAMETER(pOutData);
 	UNREFERENCED_PARAMETER(pParam);
+
+	if (!MmIsAddressValid(pOutData))
+	{
+		return;
+	}
+
+	ULONG64 dqRet = EnumWdf01000Maj(pOutData);
 
 	if (MmIsAddressValid(pRet))
 	{
-		*(PULONG64)pRet = 0;
+		*(PULONG64)pRet = dqRet;
+	}
+}
+
+// Sfilter 回调枚举：IopFsNotifyChangeQueueHead / MountAware
+VOID __vectorcall EnumSfilterCallbackInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam)
+{
+	UNREFERENCED_PARAMETER(nCmd);
+	UNREFERENCED_PARAMETER(pIndata);
+	UNREFERENCED_PARAMETER(pParam);
+
+	if (!MmIsAddressValid(pOutData)) return;
+
+	ULONG64 dqRet = EnumSfilterCallback(pOutData);
+
+	if (MmIsAddressValid(pRet))
+	{
+		*(PULONG64)pRet = dqRet;
+	}
+}
+
+// ClassInitData 回调枚举
+VOID __vectorcall EnumClassInitDataCallbackInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam)
+{
+	UNREFERENCED_PARAMETER(nCmd);
+	UNREFERENCED_PARAMETER(pIndata);
+	UNREFERENCED_PARAMETER(pParam);
+
+	if (!MmIsAddressValid(pOutData)) return;
+
+	ULONG64 dqRet = EnumClassInitDataCallback(pOutData);
+
+	if (MmIsAddressValid(pRet))
+	{
+		*(PULONG64)pRet = dqRet;
 	}
 }
 

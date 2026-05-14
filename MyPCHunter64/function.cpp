@@ -1,5 +1,6 @@
 ﻿#define  _CRT_NON_CONFORMING_SWPRINTFS
 #include "framework.h"
+#include <vector>
 
 
 void ErrorMessage(ULONG unErrorCode, CString Msg)/*将系统错误码转换成中文以信息框方式打印*/
@@ -253,6 +254,70 @@ CHAR _CFunction::CopyBufferToClipboard(CListCtrl* m_CListCtrl, SIZE_T ItemTextIn
 	::SetClipboardData(CF_UNICODETEXT, clipbuffer);//指定的数据格式(UNICODE_TEXT)存放到粘贴板上
 	::CloseClipboard();//关闭粘贴板
 	return TRUE;
+}
+
+// 右键菜单 helper：两级 "复制 ▸ 各列 / 刷新"
+int _CFunction::ShowListCopyRefreshMenu(const int* cols, const wchar_t* const* colNames, int n, bool hasSelection, CWnd* owner)
+{
+	if (n < 0) n = 0;
+	const UINT kRefresh = 9000;
+	const UINT kCopyBase = 9001; // 9001..9000+n
+
+	CMenu copySub;
+	copySub.CreatePopupMenu();
+	for (int i = 0; i < n; ++i)
+	{
+		copySub.AppendMenuW(MF_STRING | (hasSelection ? 0 : MF_GRAYED), kCopyBase + i, colNames[i] ? colNames[i] : L"");
+	}
+
+	CMenu menu;
+	menu.CreatePopupMenu();
+	if (n > 0)
+	{
+		menu.AppendMenuW(MF_POPUP | (hasSelection ? 0 : MF_GRAYED), (UINT_PTR)copySub.GetSafeHmenu(), L"复制");
+	}
+	menu.AppendMenuW(MF_STRING, kRefresh, L"刷新");
+
+	POINT pt = { 0 };
+	GetCursorPos(&pt);
+	UINT cmd = menu.TrackPopupMenu(TPM_LEFTBUTTON | TPM_RETURNCMD | TPM_NONOTIFY, pt.x, pt.y, owner);
+	copySub.Detach(); // 所有权已交给 menu，避免析构时双重销毁
+
+	if (cmd == 0) return -1;
+	if (cmd == kRefresh) return 0;
+	if (cmd >= kCopyBase && cmd < kCopyBase + (UINT)n)
+	{
+		(void)cols; // 调用方拿到 1..n 后自己映射列；保留 cols 形参以便将来需要
+		return (int)(cmd - kCopyBase + 1);
+	}
+	return -1;
+}
+
+// 右键菜单 helper（自适应版）：自动从 list 的 header 读列标题，
+// 弹出 "复制 ▸ <列1>/<列2>/... / 刷新" 菜单。
+// 返回值: -1=未点击, 0=刷新, 否则 = 选中要复制的列号(0-based)+1。
+int _CFunction::ShowListContextMenu(CListCtrl* list, CWnd* owner)
+{
+	if (!list || !list->GetSafeHwnd()) return -1;
+	CHeaderCtrl* hdr = list->GetHeaderCtrl();
+	int nCols = hdr ? hdr->GetItemCount() : 0;
+	std::vector<CString> titles;
+	titles.reserve(nCols);
+	std::vector<const wchar_t*> ptrs;
+	ptrs.reserve(nCols);
+	for (int i = 0; i < nCols; ++i)
+	{
+		wchar_t buf[128] = { 0 };
+		HDITEMW hi = { 0 };
+		hi.mask = HDI_TEXT;
+		hi.pszText = buf;
+		hi.cchTextMax = _countof(buf);
+		Header_GetItem(hdr->GetSafeHwnd(), i, &hi);
+		titles.emplace_back(buf);
+	}
+	for (auto& s : titles) ptrs.push_back(s.GetString());
+	bool hasSel = (list->GetFirstSelectedItemPosition() != NULL);
+	return ShowListCopyRefreshMenu(nullptr, ptrs.data(), nCols, hasSel, owner);
 }
 
 LONG _CFunction::GetSoftSign(TCHAR* v_pszFilePath, TCHAR* v_pszSign, int v_iBufSize)

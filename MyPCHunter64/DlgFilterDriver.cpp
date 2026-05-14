@@ -123,25 +123,8 @@ void DlgFilterDriver::OnFilterdriverRefresh()
 
 void DlgFilterDriver::OnRclickListFilterdriver(NMHDR* pNMHDR, LRESULT* pResult)
 {
-	LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	// TODO: 在此添加控件通知处理程序代码
 	*pResult = 0;
-
-	CMenu menu;
-	POINT point = { 0 };
-
-	GetCursorPos(&point);//获取当前的游标
-	menu.LoadMenuW(ID_MENU_FILTERDRIVER);//加载菜单资源
-	CMenu* pPopup = menu.GetSubMenu(0);//
-
-	POSITION FristIndex = m_CListCtrl.GetFirstSelectedItemPosition();//获取选中行的行数  pos = 行数 - 1
-	int TempIndex = (int)FristIndex - 1;//存储第一次的索引位置
-
-	if (this->m_ThreadFlags == 1)
-	{
-		menu.EnableMenuItem(ID_FILTERDRIVER_REFRESH, MF_GRAYED | MF_BYCOMMAND);
-	}
-
-	pPopup->TrackPopupMenu(TPM_LEFTBUTTON, point.x, point.y, this);//设置菜单栏出现的位置
-
+	int r = ShowListContextMenu(&m_CListCtrl, this);
+	if (r == 0) { if (this->m_ThreadFlags != 1) OnFilterdriverRefresh(); }
+	else if (r > 0) CopyBufferToClipboard(&m_CListCtrl, r - 1);
 }

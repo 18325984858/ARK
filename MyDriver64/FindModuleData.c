@@ -41,6 +41,8 @@ PULONG64					PspCreateThreadNotifyRoutine = NULL;
 PULONG32					PspCreateThreadNotifyRoutineNonSystemCount = NULL;
 PULONG32					PspCreateThreadNotifyRoutineCount = NULL;
 PULONG64					IopNotifyShutdownQueueHead = NULL;
+PULONG64					IopFsNotifyChangeQueueHead = NULL;
+PULONG64					IopFsNotifyChangeQueueHeadMountAware = NULL;
 PULONG64					KeBugCheckCallbackListHead = NULL;
 PULONG64					PnpDeviceClassNotifyList = NULL;
 PULONG64					PnpDeferredRegistrationList = NULL;
@@ -93,6 +95,13 @@ int g_Offset_EPROCESS_VadCount = -1;                          // _EPROCESS_VadCo
 int g_Offset_EPROCESS_Protection = -1;                        // _EPROCESS_Protection 的偏移
 int g_Offset_EPROCESS_AddressPolicyFrozen = -1;               // _EPROCESS_AddressPolicyFrozen 的偏移
 int g_Offset_EPROCESS_SystemProcess = -1;
+
+// Wdf01000.sys 结构体偏移（-1 表示 R3 PDB 未能解析，使用硬编码兼底）
+int g_Offset_FxLibraryGlobalsType_IoConnectInterruptEx = -1;
+int g_Offset_FxLibraryGlobalsType_FxDriverGlobalsList = -1;
+int g_Offset_FX_DRIVER_GLOBALS_WdfBindInfo = -1;
+int g_Offset_WDF_BIND_INFO_FuncCount = -1;
+int g_Offset_WDF_BIND_INFO_FuncTable = -1;
 int g_Offset_KPRCB_CurrentThread = -1;      // _KPRCB_CurrentThread 的偏移
 int g_Offset_KPRCB_RspBase = -1;            // _KPRCB_RspBase 的偏移
 int g_Offset_KPCR_GdtBase = -1;            // _KPRCB_GdtBase 的偏移
@@ -1019,6 +1028,24 @@ UCHAR GetOffset()
 			nRet = FALSE;
 		}
 		*/
+
+		// Wdf01000.sys 结构体偏移：PDB 取不到不视为致命错误，调用方有硬编码兼底
+		g_Offset_FxLibraryGlobalsType_IoConnectInterruptEx =
+			ToUserSendGetStructInfoMessgae(L"Wdf01000.sys", L"FxLibraryGlobalsType", L"IoConnectInterruptEx");
+		g_Offset_FxLibraryGlobalsType_FxDriverGlobalsList =
+			ToUserSendGetStructInfoMessgae(L"Wdf01000.sys", L"FxLibraryGlobalsType", L"FxDriverGlobalsList");
+		g_Offset_FX_DRIVER_GLOBALS_WdfBindInfo =
+			ToUserSendGetStructInfoMessgae(L"Wdf01000.sys", L"FX_DRIVER_GLOBALS", L"WdfBindInfo");
+		g_Offset_WDF_BIND_INFO_FuncCount =
+			ToUserSendGetStructInfoMessgae(L"Wdf01000.sys", L"_WDF_BIND_INFO", L"FuncCount");
+		g_Offset_WDF_BIND_INFO_FuncTable =
+			ToUserSendGetStructInfoMessgae(L"Wdf01000.sys", L"_WDF_BIND_INFO", L"FuncTable");
+		MyDbgPrintfEx("[GetOffset] WDF: IoConn=%d List=%d BindInfo=%d FuncCount=%d FuncTable=%d\n",
+			g_Offset_FxLibraryGlobalsType_IoConnectInterruptEx,
+			g_Offset_FxLibraryGlobalsType_FxDriverGlobalsList,
+			g_Offset_FX_DRIVER_GLOBALS_WdfBindInfo,
+			g_Offset_WDF_BIND_INFO_FuncCount,
+			g_Offset_WDF_BIND_INFO_FuncTable);
 	} while (FALSE);
 
 	return nRet;
@@ -1179,6 +1206,11 @@ UCHAR InitGlobalVariable(PDRIVER_OBJECT pDriverObject)
 			MyDbgPrintfEx("[%s] 获取IopNotifyShutdownQueueHead变量失败 Data[%I64X]!\n", __FUNCTION__, IopNotifyShutdownQueueHead);
 			Ret = FALSE;
 		}
+
+		// IopFsNotifyChangeQueueHead：用 HDE 签名定位（不依赖 R3 PDB，DriverEntry 早期就能用）
+		// MountAware 在 Win10/11 上合并到了同一全局，所以另一个保持 NULL，遍历时跳过即可。
+		IopFsNotifyChangeQueueHead = (PULONG64)GetIopFsNotifyChangeQueueHead();
+		MyDbgPrintfEx("[InitGlobalVariable] IopFsNotifyChangeQueueHead=%p\n", IopFsNotifyChangeQueueHead);
 
 		KeBugCheckCallbackListHead = GetKeBugCheckCallbackListHead();
 		if (!MmIsAddressValid(KeBugCheckCallbackListHead))
@@ -1765,6 +1797,36 @@ ULONG64 GetIopNotifyShutdownQueueHead()
 			pFunAddr = &pFunAddr[i] + sizeof(szBuf);
 			ULONG32 Offset = *(PULONG32)pFunAddr;
 			return pFunAddr + 4 + Offset;
+		}
+	}
+	return FALSE;
+}
+
+// 用反汇编签名定位 nt!IopFsNotifyChangeQueueHead。
+// 在 nt!IoRegisterFsRegistrationChangeMountAware 函数体内 ~+0x7a 处:
+//   lea r12, [nt!IopFsNotifyChangeQueueHead]   字节序列: 4C 8D 25 ?? ?? ?? ??
+// 旧系统回退到 IoRegisterFsRegistrationChange 内部同样模式。
+ULONG64 GetIopFsNotifyChangeQueueHead()
+{
+	PUCHAR pFunAddr = NULL;
+	UNICODE_STRING StrFunName = { 0 };
+	RtlInitUnicodeString(&StrFunName, L"IoRegisterFsRegistrationChangeMountAware");
+	pFunAddr = MmGetSystemRoutineAddress(&StrFunName);
+	if (!MmIsAddressValid(pFunAddr))
+	{
+		RtlInitUnicodeString(&StrFunName, L"IoRegisterFsRegistrationChange");
+		pFunAddr = MmGetSystemRoutineAddress(&StrFunName);
+		if (!MmIsAddressValid(pFunAddr)) return FALSE;
+	}
+
+	UCHAR szBuf[] = { 0x4C, 0x8D, 0x25 };
+	for (int i = 0; i < 0x200; i++)
+	{
+		if (RtlCompareMemory(&pFunAddr[i], szBuf, sizeof(szBuf)) == sizeof(szBuf))
+		{
+			PUCHAR p = &pFunAddr[i] + sizeof(szBuf);
+			LONG32 Offset = *(PLONG32)p;
+			return (ULONG64)(p + 4 + Offset);
 		}
 	}
 	return FALSE;

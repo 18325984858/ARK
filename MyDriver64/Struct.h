@@ -89,6 +89,8 @@ enum _CommunicatOpCode
 	um_Cmd_Enum_Wdf01000_info,
 	um_Cmd_Enum_WdfFunction_info,
 	um_Cmd_Enum_WorkerThread_info,											//枚举内核工作线程队列
+	um_Cmd_Enum_SfilterCallBack_info,										//传统文件系统过滤驱动回调
+	um_Cmd_Enum_ClassInitDataCallBack_info,									//classpnp 客户 ClassInitData 回调
 
 };
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -521,6 +523,7 @@ typedef struct _SysMajorFunctionInfo
 	ULONG32 Ord;															//序号
 	ULONG32 Type;															//IRP类型
 	ULONG64 FunAddr;														//IRP函数地址
+	ULONG64 ModuleBase;														//所在模块内核基址（供 R3 计算 RVA + PDB 解析符号）
 	WCHAR ModulePath[MY_MAX_PATH];											//所在模块路径
 }CSysMajorFunctionInfo, * PCSysMajorFunctionInfo;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -743,6 +746,7 @@ typedef struct _WdfInfo
 	ULONG64 pFunAddr;														//存储当前函数地址
 	ULONG64 pSrcFunAddr;													//存储原函数地址
 	ULONG64 HookType;														//存储Hook类型
+	ULONG64 ModuleBase;														//当前函数所在模块的内核基址（供 R3 计算 RVA + 符号查表）
 	WCHAR ModulePath[MY_MAX_PATH];											//所在模块路径
 }CWdfInfo, * PCWdfInfo;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -14,6 +14,7 @@ public:
 		um_Dpc_TimeObject,
 		um_Dpc_TriggerCycle,
 		um_Dpc_FunctionStartAddr,
+		um_Dpc_FunctionName,
 		um_Dpc_ModulePath,
 		um_Dpc_CompanyName,
 	};

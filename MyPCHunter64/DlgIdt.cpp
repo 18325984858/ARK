@@ -7,6 +7,7 @@
 #include "DlgIdt.h"
 #include "resource.h"
 #include "Thread.h"
+#include "PdbResolver.h"
 // DlgIdt 对话框
 
 IMPLEMENT_DYNAMIC(DlgIdt, CDialogEx)
@@ -40,26 +41,10 @@ END_MESSAGE_MAP()
 
 void DlgIdt::OnNMRClickIdtList(NMHDR* pNMHDR, LRESULT* pResult)
 {
-	LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	// TODO: 在此添加控件通知处理程序代码
 	*pResult = 0;
-
-	CMenu menu;
-	POINT point = { 0 };
-
-	GetCursorPos(&point);//获取当前的游标
-	menu.LoadMenuW(ID_MENU_IDT);//加载菜单资源
-	CMenu* pPopup = menu.GetSubMenu(0);//
-
-	POSITION FristIndex = m_CListCtrl.GetFirstSelectedItemPosition();//获取选中行的行数  pos = 行数 - 1
-	int TempIndex = (int)FristIndex - 1;//存储第一次的索引位置
-
-	if (this->m_ThreadFlags == 1)
-	{
-		menu.EnableMenuItem(ID_IDT_REFRESH, MF_GRAYED | MF_BYCOMMAND);
-	}
-
-	pPopup->TrackPopupMenu(TPM_LEFTBUTTON, point.x, point.y, this);//设置菜单栏出现的位置
+	int r = ShowListContextMenu(&m_CListCtrl, this);
+	if (r == 0) { if (this->m_ThreadFlags != 1) OnIdtRefresh(); }
+	else if (r > 0) CopyBufferToClipboard(&m_CListCtrl, r - 1);
 }
 
 
@@ -72,6 +57,7 @@ BOOL DlgIdt::OnInitDialog()
 	m_CListCtrl.InsertColumn(um_Idt_IdtBase, _T("IDTBase"), LVCFMT_LEFT, 120);
 	m_CListCtrl.InsertColumn(um_Idt_Level, _T("特权级"), LVCFMT_LEFT, 50);
 	m_CListCtrl.InsertColumn(um_Idt_BaseAddr, _T("Offset"), LVCFMT_LEFT, 120);
+	m_CListCtrl.InsertColumn(um_Idt_FunctionName, _T("函数名称"), LVCFMT_LEFT, 250);
 	m_CListCtrl.InsertColumn(um_Idt_Path, _T("所在模块路径"), LVCFMT_LEFT, 250);
 	m_CListCtrl.InsertColumn(um_Idt_Company, _T("公司名"), LVCFMT_LEFT, 250);
 	m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
@@ -143,6 +129,13 @@ void DlgIdt::InsertCtrlListControl(PCIdtInfo pIdtInfo)
 		FunAddr = (((FunAddr << 16) | pCurIdtInfo->IdtData.Offset1) << 16) | pCurIdtInfo->IdtData.Offset0;
 		StrBuf.Format(L"%016I64X", FunAddr);
 		m_CListCtrl.SetItemText(i, um_Idt_BaseAddr, StrBuf);
+
+		// 函数名：PdbResolver 解析
+		{
+			WCHAR resolved[256] = { 0 };
+			PdbResolver_Resolve(FunAddr, 0, pCurIdtInfo->szPath, resolved, _countof(resolved));
+			m_CListCtrl.SetItemText(i, um_Idt_FunctionName, resolved);
+		}
 
 		CString Path = PathTransForm(pCurIdtInfo->szPath);
 		m_CListCtrl.SetItemText(i, um_Idt_Path, Path);

@@ -56,6 +56,17 @@ public:
 		um_FileSystemMajorFunction_MoudlePath,
 	};
 
+	// Sfilter 回调列表（IopFsNotifyChangeQueueHead）
+	enum UmSfilterCallBackInfo
+	{
+		um_Sfilter_Type,        // "Sfilter" / "Sfilter(MountAware)"
+		um_Sfilter_CallBackAddr,// 回调地址
+		um_Sfilter_Pos,         // module+0xRVA 或符号
+		um_Sfilter_DriverObject,// DRIVER_OBJECT 指针
+		um_Sfilter_ModulePath,  // 模块路径
+		um_Sfilter_Company,
+	};
+
 public:
 	DlgMiniFilterCallBack(CWnd* pParent = nullptr);   // 标准构造函数
 	virtual ~DlgMiniFilterCallBack();
@@ -73,6 +84,8 @@ public:
 	void DlgMiniFilterCallBack::InsertCtrlListControl(PCMiniFilterCallBackInfo pMiniFilterCallBackInfo);
 	void DlgMiniFilterCallBack::InsertCtrlListControl(PCFileSystemDeviceInfo pFileSystemDeviceInfo);
 	void DlgMiniFilterCallBack::InsertCtrlListControl(PCSysMajorFunctionInfo pCSysMajorFunctionInfo);
+	void DlgMiniFilterCallBack::InsertCtrlListControlSfilter(PCKernelCallBackInfo pSfilterInfo);
+	void DlgMiniFilterCallBack::InsertCtrlListControlClassInit(PCKernelCallBackInfo pClassInitInfo);
 public:
 	CListCtrl m_CListCtrl;
 	afx_msg void OnSize(UINT nType, int cx, int cy);

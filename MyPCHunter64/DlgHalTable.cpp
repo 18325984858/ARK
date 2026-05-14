@@ -6,6 +6,7 @@
 #include "afxdialogex.h"
 #include "DlgHalTable.h"
 #include "Thread.h"
+#include "PdbResolver.h"
 
 // DlgHalTable 对话框
 
@@ -144,6 +145,7 @@ BOOL DlgHalTable::OnInitDialog()
 	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_CurFunAddr, _T("当前函数地址"), LVCFMT_LEFT, 125);
 	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_Hook, _T("HOOK"), LVCFMT_LEFT, 125);
 	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_SrcFunAddr, _T("原始函数地址"), LVCFMT_LEFT, 125);
+	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_Pos, _T("位置"), LVCFMT_LEFT, 250);
 	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_CurModule, _T("当前函数所在模块路径"), LVCFMT_LEFT, 300);
 	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_FileVender, _T("文件厂商"), LVCFMT_LEFT, 125);
 	m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
@@ -171,26 +173,10 @@ void DlgHalTable::OnHaltableRefresh()
 
 void DlgHalTable::OnNMRClickDlgKernelMinifiltercallbackList(NMHDR* pNMHDR, LRESULT* pResult)
 {
-	LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	// TODO: 在此添加控件通知处理程序代码
 	*pResult = 0;
-
-	CMenu menu;
-	POINT point = { 0 };
-
-	GetCursorPos(&point);//获取当前的游标
-	menu.LoadMenuW(ID_MENU_HALTABLE);//加载菜单资源
-	CMenu* pPopup = menu.GetSubMenu(0);//
-
-	POSITION FristIndex = m_CListCtrl.GetFirstSelectedItemPosition();//获取选中行的行数  pos = 行数 - 1
-	int TempIndex = (int)FristIndex - 1;//存储第一次的索引位置
-
-	if (this->m_ThreadFlags == 1)
-	{
-		menu.EnableMenuItem(ID_HALTABLE_REFRESH, MF_GRAYED | MF_BYCOMMAND);
-	}
-
-	pPopup->TrackPopupMenu(TPM_LEFTBUTTON, point.x, point.y, this);//设置菜单栏出现的位置
+	int r = ShowListContextMenu(&m_CListCtrl, this);
+	if (r == 0) { if (this->m_ThreadFlags != 1) OnHaltableRefresh(); }
+	else if (r > 0) CopyBufferToClipboard(&m_CListCtrl, r - 1);
 }
 
 
@@ -410,6 +396,13 @@ void DlgHalTable::InsertCtrlListControl()
 
 		StrBuf.Format(L"%016I64X", pInfo->pFunAddr);
 		m_CListCtrl.SetItemText(i, um_HalTableDlgInfo_CurFunAddr, StrBuf);
+
+		// 位置：PdbResolver 解析符号名
+		{
+			WCHAR resolved[256] = { 0 };
+			PdbResolver_Resolve(pInfo->pFunAddr, 0, pInfo->ModulePath, resolved, _countof(resolved));
+			m_CListCtrl.SetItemText(i, um_HalTableDlgInfo_Pos, resolved);
+		}
 
 
 		CString FilePath = PathTransForm(pInfo->ModulePath);

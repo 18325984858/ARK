@@ -25,6 +25,7 @@ public:
 		um_ObjectCallBackEx_Type_ValidAccessMask,
 		um_ObjectCallBackEx_Type_FunCallBack,
 		um_ObjectCallBackEx_Type_FunName,
+		um_ObjectCallBackEx_Type_Pos,
 		um_ObjectCallBackEx_Type_Object,
 		um_ObjectCallBackEx_Type_ModulePath,
 		um_ObjectCallBackEx_Type_Firm,

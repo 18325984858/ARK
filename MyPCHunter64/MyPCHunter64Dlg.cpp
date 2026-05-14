@@ -10,6 +10,8 @@
 #include "CThreadPool.h"
 #include "../MyDriver64/Struct.h"
 #include "Thread.h"
+#include "PdbResolver.h"
+#include <thread>
 
 
 
@@ -23,6 +25,7 @@ DlgProcessMonitor g_DlgProcessMonitor = { 0 };
 UCHAR g_CreateFlagsDlgProcessMonitor = FALSE;
 MyPdb g_NtPdb;
 MyPdb g_fltmgrPDB;
+MyPdb g_WdfPdb;
 pfunNtFreeVirtualMemory MyNtFreeVirtualMemory = NULL;
 // CMyPCHunter64Dlg 对话框
 
@@ -48,12 +51,14 @@ BEGIN_MESSAGE_MAP(CMyPCHunter64Dlg, CDialogEx)
 	ON_WM_CLOSE()
 	ON_COMMAND(ID_MENU_MAIN_DLG_MONITORDLG, &CMyPCHunter64Dlg::OnMenuMainDlgMonitordlg)
 	ON_WM_HOTKEY()
+	ON_MESSAGE(WM_USER_PDB_PROGRESS, &CMyPCHunter64Dlg::OnPdbProgress)
 END_MESSAGE_MAP()
 
 
 CMyModuleCall g_ModuleCall[MAX_MODULE_NAME_NUMBER] = {
 	{L"ntoskrnel.exe",&g_NtPdb},
 	{L"fltmgr.sys",&g_fltmgrPDB},
+	{L"Wdf01000.sys",&g_WdfPdb},
 	0
 };
 
@@ -83,6 +88,8 @@ BOOL CMyPCHunter64Dlg::OnInitDialog()
 			AfxMessageBox(L"初始化fltmgr PDB失败!");
 			exit(1);
 		}
+
+		// Wdf01000 的 PDB 由 PdbResolver 统一异步下载（参见 OnInitDialog 下方 PdbResolver_Init 后的 Request）
 	}
 
 	{
@@ -139,6 +146,30 @@ BOOL CMyPCHunter64Dlg::OnInitDialog()
 	}
 
 	InitTableControl();
+
+	// 创建状态栏（左下角显示 PDB 下载进度等全局状态）
+	{
+		static UINT statusBarIndicators[] = { ID_SEPARATOR };
+		if (m_StatusBar.Create(this) &&
+			m_StatusBar.SetIndicators(statusBarIndicators, _countof(statusBarIndicators)))
+		{
+			m_StatusBar.SetPaneInfo(0, ID_SEPARATOR, SBPS_STRETCH, 0);
+			RepositionBars(AFX_IDW_CONTROLBAR_FIRST, AFX_IDW_CONTROLBAR_LAST, 0);
+			m_StatusBar.SetPaneText(0, L"Ready");
+		}
+	}
+
+	// 状态栏创建后强制重新布局，让 Tab 让出底部高度
+	{
+		CRect rcClient;
+		GetClientRect(&rcClient);
+		SendMessage(WM_SIZE, SIZE_RESTORED, MAKELPARAM(rcClient.Width(), rcClient.Height()));
+	}
+
+	// PDB 按需解析服务启动（后台线程）
+	PdbResolver_Init(GetSafeHwnd());
+	// 预先请求 Wdf01000.sys 的 PDB，UI 不阻塞，状态栏会显示进度
+	PdbResolver_Request(L"Wdf01000.sys", L"C:\\Windows\\System32\\drivers\\Wdf01000.sys");
 
 	RegHostKey();
 
@@ -275,9 +306,20 @@ void CMyPCHunter64Dlg::OnClickControlMainTab(NMHDR* pNMHDR, LRESULT* pResult)
 void CMyPCHunter64Dlg::OnSize(UINT nType, int cx, int cy)
 {
 	CDialogEx::OnSize(nType, cx, cy);
+
+	// 让状态栏自己重新落位（取出它的高度，预留给 Tab）
+	int statusBarH = 0;
+	if (::IsWindow(m_StatusBar.GetSafeHwnd()))
+	{
+		RepositionBars(AFX_IDW_CONTROLBAR_FIRST, AFX_IDW_CONTROLBAR_LAST, 0);
+		CRect rcStatus;
+		m_StatusBar.GetWindowRect(&rcStatus);
+		statusBarH = rcStatus.Height();
+	}
+
 	//跟随主窗口移动
 	RECT r_Tab = { 0 };
-	r_Tab.bottom = cy - 4;
+	r_Tab.bottom = cy - 4 - statusBarH;
 	r_Tab.right = cx - 4;
 	m_Control_Tab.MoveWindow(&r_Tab, TRUE); //设置Tab控件跟随主窗口缩放
 
@@ -366,12 +408,65 @@ DWORD ExitThread(PVOID pContext)
 	return GetLastError();
 }
 
+// PDB 下载/解析进度（来自后台线程 PostMessage）
+LRESULT CMyPCHunter64Dlg::OnPdbProgress(WPARAM wParam, LPARAM /*lParam*/)
+{
+	std::unique_ptr<PdbProgressMsg> m((PdbProgressMsg*)wParam);
+	if (!m) return 0;
+	if (!::IsWindow(m_StatusBar.GetSafeHwnd())) return 0;
+
+	CString text;
+	switch (m->phase)
+	{
+	case 0: // Start
+		if (m->total > 0)
+			text.Format(L"Downloading %s ... 0%% / %.2f MB", m->fileName, m->total / 1048576.0);
+		else
+			text.Format(L"Downloading %s ...", m->fileName);
+		break;
+	case 1: // Receive
+		if (m->total > 0)
+		{
+			text.Format(L"Downloading %s ... %llu%% (%.2f / %.2f MB)",
+				m->fileName,
+				m->received * 100ull / m->total,
+				m->received / 1048576.0, m->total / 1048576.0);
+		}
+		else
+		{
+			text.Format(L"Downloading %s ... %.2f MB", m->fileName, m->received / 1048576.0);
+		}
+		break;
+	case 2: // Finish HTTP
+		text.Format(L"%s downloaded, indexing...", m->fileName);
+		break;
+	case 3: // Error
+		if (m->httpCode != 0)
+			text.Format(L"%s failed (HTTP %u)", m->fileName, m->httpCode);
+		else
+			text.Format(L"%s load failed", m->fileName);
+		break;
+	case 4: // Loaded - PDB ready
+		text.Format(L"%s ready", m->fileName);
+		break;
+	case 5: // Queued
+		text.Format(L"%s queued...", m->fileName);
+		break;
+	default:
+		return 0;
+	}
+	m_StatusBar.SetPaneText(0, text);
+	return 0;
+}
+
 void CMyPCHunter64Dlg::OnClose()
 {
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
 
 	//卸载热键
 	UnHostKey();
+
+	PdbResolver_Shutdown();
 
 	HANDLE hExitThread = CreateThread(NULL, 0, ExitThread, NULL, 0, NULL);
 

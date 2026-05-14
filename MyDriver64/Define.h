@@ -109,6 +109,13 @@ int g_Offset_EPROCESS_Protection;                        // _EPROCESS_Protection
 int g_Offset_EPROCESS_AddressPolicyFrozen;               // _EPROCESS_AddressPolicyFrozen 的偏移
 int g_Offset_EPROCESS_SystemProcess;
 
+// ===== Wdf01000.sys 结构体偏移（由 R3 PDB 解析，失败时使用 EnumWdf* 内部硬编码兜底） =====
+int g_Offset_FxLibraryGlobalsType_IoConnectInterruptEx;   // 默认 0x10，用于 .data 节特征码扫描定位
+int g_Offset_FxLibraryGlobalsType_FxDriverGlobalsList;    // 默认 0x1E0
+int g_Offset_FX_DRIVER_GLOBALS_WdfBindInfo;               // 默认 0x128
+int g_Offset_WDF_BIND_INFO_FuncCount;                     // 默认 0x01C
+int g_Offset_WDF_BIND_INFO_FuncTable;                     // 默认 0x020
+
 #define _EPROCESS_AddressPolicy									g_Offset_KPROCESS_AddressPolicy
 #define _EPROCESS_UniqueProcessId								g_Offset_EPROCESS_UniqueProcessId
 #define _EPROCESS_ActiveProcessLinks_Flink						g_Offset_EPROCESS_ActiveProcessLinks_Flink

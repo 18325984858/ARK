@@ -6,6 +6,7 @@
 #include "afxdialogex.h"
 #include "DlgObjectCallBack.h"
 #include "Thread.h"
+#include "PdbResolver.h"
 #include "resource.h"
 
 // DlgObjectCallBack 对话框
@@ -76,32 +77,11 @@ BOOL DlgObjectCallBack::OnInitDialog()
 
 void DlgObjectCallBack::OnNMRClickDlgKernelObjectcallbackList(NMHDR* pNMHDR, LRESULT* pResult)
 {
-	LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	// TODO: 在此添加控件通知处理程序代码
 	*pResult = 0;
-
-	//未选择返回
-	if (!nPerSel)
-	{
-		return;
-	}
-
-	CMenu menu;
-	POINT point = { 0 };
-
-	GetCursorPos(&point);//获取当前的游标
-	menu.LoadMenuW(ID_MENU_OBJECTCALLBACK);//加载菜单资源
-	CMenu* pPopup = menu.GetSubMenu(0);//
-
-	POSITION FristIndex = m_CListCtrl.GetFirstSelectedItemPosition();//获取选中行的行数  pos = 行数 - 1
-	int TempIndex = (int)FristIndex - 1;//存储第一次的索引位置
-
-	if (this->m_ThreadFlags == 1)
-	{
-		menu.EnableMenuItem(ID_OBJECTCALLBACK_REFRESH, MF_GRAYED | MF_BYCOMMAND);
-	}
-
-	pPopup->TrackPopupMenu(TPM_LEFTBUTTON, point.x, point.y, this);//设置菜单栏出现的位置
+	if (!nPerSel) return;
+	int r = ShowListContextMenu(&m_CListCtrl, this);
+	if (r == 0) { if (this->m_ThreadFlags != 1) OnObjectcallbackRefresh(); }
+	else if (r > 0) CopyBufferToClipboard(&m_CListCtrl, r - 1);
 }
 
 void DlgObjectCallBack::OnObjectcallbackRefresh()
@@ -158,6 +138,14 @@ void DlgObjectCallBack::InsertCtrlListControl(PCObjectTypeCallBackExInfo pCallBa
 			m_CListCtrl.SetItemText(i, um_ObjectCallBackEx_Type_FunCallBack, StrBuf);
 
 			m_CListCtrl.SetItemText(i, um_ObjectCallBackEx_Type_FunName, Type[pInfo->FunAddr[j].FunType]);
+
+			// 位置：PdbResolver 解析符号
+			{
+				WCHAR resolved[256] = { 0 };
+				PdbResolver_Resolve(pInfo->FunAddr[j].FunAddr, 0,
+					pInfo->FunAddr[j].ModulePath, resolved, _countof(resolved));
+				m_CListCtrl.SetItemText(i, um_ObjectCallBackEx_Type_Pos, resolved);
+			}
 
 			StrBuf.Format(L"0x%016I64X", pInfo->Object);
 			m_CListCtrl.SetItemText(i, um_ObjectCallBackEx_Type_Object, StrBuf);
@@ -293,6 +281,7 @@ void DlgObjectCallBack::OnNMDblclkDlgKernelObjectcallbackTree(NMHDR* pNMHDR, LRE
 			m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_ValidAccessMask, _T("ValidAccessMask"), LVCFMT_LEFT, 100);
 			m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_FunCallBack, _T("函数地址"), LVCFMT_LEFT, 150);
 			m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_FunName, _T("函数"), LVCFMT_LEFT, 150);
+			m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_Pos, _T("位置"), LVCFMT_LEFT, 250);
 			m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_Object, _T("对象地址"), LVCFMT_LEFT, 150);
 			m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_ModulePath, _T("所在模块路径"), LVCFMT_LEFT, 150);
 			m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_Firm, _T("文件厂商"), LVCFMT_LEFT, 200);

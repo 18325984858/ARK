@@ -109,6 +109,11 @@
       <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
       <WarningLevel>0</WarningLevel>
     </MASM>
+    <PostBuildEvent>
+      <Command>copy /Y "$(TargetPath)" "$(ProjectDir)..\MyDriver64.sys"
+copy /Y "$(TargetDir)$(TargetName).inf" "$(ProjectDir)..\MyDriver64.inf"</Command>
+      <Message>Deploy MyDriver64.sys/.inf to ARK root</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
     <DriverSign>

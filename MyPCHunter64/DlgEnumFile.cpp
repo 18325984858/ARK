@@ -351,32 +351,52 @@ void DlgEnumFile::OnFileRefresh()
 
 void DlgEnumFile::OnNMRClickEnumfileList(NMHDR* pNMHDR, LRESULT* pResult)
 {
-	LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	// TODO: 在此添加控件通知处理程序代码
 	*pResult = 0;
 
+	// 自适应构造 "复制 ▸ 各列 / 刷新"，并保留原有 "强制删除文件 / 解除文件占用" 两项。
+	CHeaderCtrl* hdr = m_CListCtrl.GetHeaderCtrl();
+	int nCols = hdr ? hdr->GetItemCount() : 0;
+	bool hasSel = (m_CListCtrl.GetFirstSelectedItemPosition() != NULL);
+	bool hasItems = (m_CListCtrl.GetItemCount() > 0);
+
+	const UINT kCopyBase = 9001;
+	const UINT kRefresh  = 9000;
+
+	CMenu copySub;
+	copySub.CreatePopupMenu();
+	for (int i = 0; i < nCols; ++i)
+	{
+		wchar_t buf[128] = { 0 };
+		HDITEMW hi = { 0 };
+		hi.mask = HDI_TEXT; hi.pszText = buf; hi.cchTextMax = _countof(buf);
+		Header_GetItem(hdr->GetSafeHwnd(), i, &hi);
+		copySub.AppendMenuW(MF_STRING | (hasSel ? 0 : MF_GRAYED), kCopyBase + i, buf);
+	}
+
 	CMenu menu;
-	POINT point = { 0 };
+	menu.CreatePopupMenu();
+	if (nCols > 0) menu.AppendMenuW(MF_POPUP | (hasSel ? 0 : MF_GRAYED), (UINT_PTR)copySub.GetSafeHmenu(), L"复制");
+	menu.AppendMenuW(MF_STRING | (this->m_ThreadFlags == 1 ? MF_GRAYED : 0), kRefresh, L"刷新");
+	menu.AppendMenuW(MF_SEPARATOR);
+	menu.AppendMenuW(MF_STRING | (hasItems ? 0 : MF_GRAYED), ID_FILE_DELETE,       L"强制删除文件");
+	menu.AppendMenuW(MF_STRING | (hasItems ? 0 : MF_GRAYED), ID_FILE_FILEDEOCCUPY, L"解除文件占用");
 
-	GetCursorPos(&point);//获取当前的游标
-	menu.LoadMenuW(ID_MENU_FILE);//加载菜单资源
-	CMenu* pPopup = menu.GetSubMenu(0);//
+	POINT pt = { 0 }; GetCursorPos(&pt);
+	UINT cmd = menu.TrackPopupMenu(TPM_LEFTBUTTON | TPM_RETURNCMD | TPM_NONOTIFY, pt.x, pt.y, this);
+	copySub.Detach();
 
-	POSITION FristIndex = m_CListCtrl.GetFirstSelectedItemPosition();//获取选中行的行数  pos = 行数 - 1
-	int TempIndex = (int)FristIndex - 1;//存储第一次的索引位置
-
-	if (this->m_ThreadFlags == 1)
+	if (cmd == kRefresh) { OnFileRefresh(); return; }
+	if (cmd >= kCopyBase && cmd < kCopyBase + (UINT)nCols)
 	{
-		menu.EnableMenuItem(ID_FILE_REFRESH, MF_GRAYED | MF_BYCOMMAND);
+		CopyBufferToClipboard(&m_CListCtrl, (int)(cmd - kCopyBase));
+		return;
 	}
-
-	if (m_CListCtrl.GetItemCount() <= 0)
+	if (cmd == ID_FILE_DELETE || cmd == ID_FILE_FILEDEOCCUPY)
 	{
-		menu.EnableMenuItem(ID_FILE_DELETE, MF_GRAYED | MF_BYCOMMAND);
-		menu.EnableMenuItem(ID_FILE_FILEDEOCCUPY, MF_GRAYED | MF_BYCOMMAND);
+		// 路由到现有的 ON_COMMAND 处理函数
+		SendMessageW(WM_COMMAND, MAKEWPARAM(cmd, 0), 0);
+		return;
 	}
-
-	pPopup->TrackPopupMenu(TPM_LEFTBUTTON, point.x, point.y, this);//设置菜单栏出现的位置
 }
 
 void DlgEnumFile::OnFileFiledeoccupy()

@@ -6,6 +6,9 @@
 #include "afxdialogex.h"
 #include "DlgMiniFilterCallBack.h"
 #include "Thread.h"
+#include "PdbResolver.h"
+#include <unordered_map>
+#include <string>
 
 // DlgMiniFilterCallBack 对话框
 
@@ -221,6 +224,145 @@ void DlgMiniFilterCallBack::InsertCtrlListControl(PCFileSystemDeviceInfo pFileSy
 
 }
 
+// Sfilter 回调列表（来自 IopFsNotifyChangeQueueHead / MountAware）
+void DlgMiniFilterCallBack::InsertCtrlListControlSfilter(PCKernelCallBackInfo pSfilterInfo)
+{
+	if (pSfilterInfo == NULL) return;
+
+	std::unordered_map<std::wstring, CString> companyCache;
+	PCLIST_ENTRY pCurList = &pSfilterInfo->List.List;
+	do
+	{
+		if (pCurList == NULL) break;
+		int i = m_CListCtrl.GetItemCount();
+		PCKernelCallBackInfo pInfo = (PCKernelCallBackInfo)pCurList;
+		CString StrBuf;
+
+		// 类型
+		const wchar_t* typeStr = (pInfo->CallBackType == 1) ? L"Sfilter (MountAware)" : L"Sfilter";
+		m_CListCtrl.InsertItem(i, typeStr);
+
+		// 回调地址
+		StrBuf.Format(L"%016I64X", pInfo->CallBackAddr);
+		m_CListCtrl.SetItemText(i, um_Sfilter_CallBackAddr, StrBuf);
+
+		// 位置：走 PdbResolver
+		{
+			ULONG64 modBase = (pInfo->CallBackAddr >= pInfo->ModuleOffset && pInfo->ModuleOffset != 0)
+				? (pInfo->CallBackAddr - pInfo->ModuleOffset) : 0;
+			WCHAR resolved[256] = { 0 };
+			PdbResolver_Resolve(pInfo->CallBackAddr, modBase,
+				pInfo->ModulePath, resolved, _countof(resolved));
+			if (resolved[0]) m_CListCtrl.SetItemText(i, um_Sfilter_Pos, resolved);
+		}
+
+		// 驱动对象
+		StrBuf.Format(L"%016I64X", pInfo->Descr);
+		m_CListCtrl.SetItemText(i, um_Sfilter_DriverObject, StrBuf);
+
+		// 路径
+		CString filePath = pInfo->ModulePath[0] ? PathTransForm(pInfo->ModulePath) : CString(L"--");
+		m_CListCtrl.SetItemText(i, um_Sfilter_ModulePath, filePath.GetBuffer());
+
+		// 厂商
+		CString company = L"--";
+		if (pInfo->ModulePath[0])
+		{
+			auto it = companyCache.find(std::wstring(filePath.GetString()));
+			if (it != companyCache.end()) company = it->second;
+			else
+			{
+				CString tmp;
+				if (GetCompanyName(filePath, tmp)) company = tmp;
+				companyCache.emplace(std::wstring(filePath.GetString()), company);
+			}
+		}
+		m_CListCtrl.SetItemText(i, um_Sfilter_Company, (LPWSTR)company.GetString());
+
+		pCurList = pCurList->Blink;
+		SIZE_T FreeSize = 0;
+		MyNtFreeVirtualMemory(GetCurrentProcess(), (LPVOID*)&pInfo, &FreeSize, MEM_RELEASE);
+	} while (pCurList != &pSfilterInfo->List.List);
+}
+
+// ClassInitData 槽位名（与驱动端 EnumClassInitDataCallback 里的 slotOffs 索引一一对应）
+static const wchar_t* const g_ClassInitSlotNames[] = {
+	L"ClassInitDevice",
+	L"ClassStartDevice",
+	L"ClassPowerDevice",
+	L"ClassStopDevice",
+	L"ClassRemoveDevice",
+	L"ClassQueryPnpCapabilities",
+	L"ClassQueryId",
+	L"ClassReadWriteVerification",
+	L"ClassDeviceControl",
+	L"ClassShutdownFlush",
+	L"ClassCreateClose",
+	L"ClassError",
+};
+
+void DlgMiniFilterCallBack::InsertCtrlListControlClassInit(PCKernelCallBackInfo pClassInitInfo)
+{
+	if (pClassInitInfo == NULL) return;
+
+	std::unordered_map<std::wstring, CString> companyCache;
+	PCLIST_ENTRY pCurList = &pClassInitInfo->List.List;
+	do
+	{
+		if (pCurList == NULL) break;
+		int i = m_CListCtrl.GetItemCount();
+		PCKernelCallBackInfo pInfo = (PCKernelCallBackInfo)pCurList;
+		CString StrBuf;
+
+		// 槽位名
+		const wchar_t* slotName = L"?";
+		if (pInfo->CallBackType < _countof(g_ClassInitSlotNames))
+			slotName = g_ClassInitSlotNames[pInfo->CallBackType];
+		m_CListCtrl.InsertItem(i, slotName);
+
+		// 回调地址
+		StrBuf.Format(L"%016I64X", pInfo->CallBackAddr);
+		m_CListCtrl.SetItemText(i, um_Sfilter_CallBackAddr, StrBuf);
+
+		// 位置 → PdbResolver
+		{
+			ULONG64 modBase = (pInfo->CallBackAddr >= pInfo->ModuleOffset && pInfo->ModuleOffset != 0)
+				? (pInfo->CallBackAddr - pInfo->ModuleOffset) : 0;
+			WCHAR resolved[256] = { 0 };
+			PdbResolver_Resolve(pInfo->CallBackAddr, modBase,
+				pInfo->ModulePath, resolved, _countof(resolved));
+			if (resolved[0]) m_CListCtrl.SetItemText(i, um_Sfilter_Pos, resolved);
+		}
+
+		// 客户驱动对象
+		StrBuf.Format(L"%016I64X", pInfo->Descr);
+		m_CListCtrl.SetItemText(i, um_Sfilter_DriverObject, StrBuf);
+
+		// 路径
+		CString filePath = pInfo->ModulePath[0] ? PathTransForm(pInfo->ModulePath) : CString(L"--");
+		m_CListCtrl.SetItemText(i, um_Sfilter_ModulePath, filePath.GetBuffer());
+
+		// 厂商
+		CString company = L"--";
+		if (pInfo->ModulePath[0])
+		{
+			auto it = companyCache.find(std::wstring(filePath.GetString()));
+			if (it != companyCache.end()) company = it->second;
+			else
+			{
+				CString tmp;
+				if (GetCompanyName(filePath, tmp)) company = tmp;
+				companyCache.emplace(std::wstring(filePath.GetString()), company);
+			}
+		}
+		m_CListCtrl.SetItemText(i, um_Sfilter_Company, (LPWSTR)company.GetString());
+
+		pCurList = pCurList->Blink;
+		SIZE_T FreeSize = 0;
+		MyNtFreeVirtualMemory(GetCurrentProcess(), (LPVOID*)&pInfo, &FreeSize, MEM_RELEASE);
+	} while (pCurList != &pClassInitInfo->List.List);
+}
+
 void DlgMiniFilterCallBack::InsertCtrlListControl(PCSysMajorFunctionInfo pCSysMajorFunctionInfo)
 {
 	if (pCSysMajorFunctionInfo == NULL)
@@ -241,8 +383,18 @@ void DlgMiniFilterCallBack::InsertCtrlListControl(PCSysMajorFunctionInfo pCSysMa
 
 		StrBuf.Format(L"%X", pInfo->Ord);
 		m_CListCtrl.InsertItem(i, StrBuf);
-	
-		m_CListCtrl.SetItemText(i, um_FileSystemMajorFunction_FunName, m_DriverMajorFunctionInfo.TypeName[pInfo->Type % IRP_MJ_MAXIMUM_FUNCTION]);
+
+		// “函数名称”优先用 PDB 解符号；PDB 未就绪时回落 module+0xRVA
+		{
+			WCHAR resolved[256] = { 0 };
+			PdbResolver_Resolve(pInfo->FunAddr, pInfo->ModuleBase,
+				pInfo->ModulePath, resolved, _countof(resolved));
+			if (resolved[0])
+				m_CListCtrl.SetItemText(i, um_FileSystemMajorFunction_FunName, resolved);
+			else
+				m_CListCtrl.SetItemText(i, um_FileSystemMajorFunction_FunName,
+					m_DriverMajorFunctionInfo.TypeName[pInfo->Type % IRP_MJ_MAXIMUM_FUNCTION]);
+		}
 
 		StrBuf.Format(L"%016I64X", pInfo->FunAddr);
 		m_CListCtrl.SetItemText(i, um_FileSystemMajorFunction_FunAddr, StrBuf);
@@ -266,26 +418,10 @@ void DlgMiniFilterCallBack::InsertCtrlListControl(PCSysMajorFunctionInfo pCSysMa
 
 void DlgMiniFilterCallBack::OnNMRClickDlgKernelMinifiltercallbackList(NMHDR* pNMHDR, LRESULT* pResult)
 {
-	LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	// TODO: 在此添加控件通知处理程序代码
 	*pResult = 0;
-
-	CMenu menu;
-	POINT point = { 0 };
-
-	GetCursorPos(&point);//获取当前的游标
-	menu.LoadMenuW(ID_MENU_MINIFILTERCALLBACK);//加载菜单资源
-	CMenu* pPopup = menu.GetSubMenu(0);//
-
-	POSITION FristIndex = m_CListCtrl.GetFirstSelectedItemPosition();//获取选中行的行数  pos = 行数 - 1
-	int TempIndex = (int)FristIndex - 1;//存储第一次的索引位置
-
-	if (this->m_ThreadFlags == 1)
-	{
-		menu.EnableMenuItem(ID_MINIFILTERCALLBACK_REFRESH, MF_GRAYED | MF_BYCOMMAND);
-	}
-
-	pPopup->TrackPopupMenu(TPM_LEFTBUTTON, point.x, point.y, this);//设置菜单栏出现的位置
+	int r = ShowListContextMenu(&m_CListCtrl, this);
+	if (r == 0) { if (this->m_ThreadFlags != 1) OnMinifiltercallbackRefresh(); }
+	else if (r > 0) CopyBufferToClipboard(&m_CListCtrl, r - 1);
 }
 
 void DlgMiniFilterCallBack::OnNMDblclkDlgKernelMinifiltercallbackTree(NMHDR* pNMHDR, LRESULT* pResult)
@@ -350,9 +486,43 @@ void DlgMiniFilterCallBack::OnNMDblclkDlgKernelMinifiltercallbackTree(NMHDR* pNM
 		OnMinifiltercallbackRefresh();
 		break;
 	case DlgMiniFilterCallBack::um_FileSystemType_SfilterCallBack:
+		if (nPerSel != um_FileSystemType_SfilterCallBack)
+		{
+			while (m_CListCtrl.DeleteColumn(0)) {}
+			m_CListCtrl.InsertColumn(um_Sfilter_Type,         _T("类型"),         LVCFMT_LEFT, 140);
+			m_CListCtrl.InsertColumn(um_Sfilter_CallBackAddr, _T("回调地址"),     LVCFMT_LEFT, 140);
+			m_CListCtrl.InsertColumn(um_Sfilter_Pos,          _T("位置"),         LVCFMT_LEFT, 200);
+			m_CListCtrl.InsertColumn(um_Sfilter_DriverObject, _T("驱动对象"),     LVCFMT_LEFT, 140);
+			m_CListCtrl.InsertColumn(um_Sfilter_ModulePath,   _T("所在模块路径"), LVCFMT_LEFT, 280);
+			m_CListCtrl.InsertColumn(um_Sfilter_Company,      _T("文件厂商"),     LVCFMT_LEFT, 150);
+			m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
+		}
+		else
+		{
+			return;
+		}
+		nPerSel = um_FileSystemType_SfilterCallBack;
+		OnMinifiltercallbackRefresh();
 		break;
 
 	case DlgMiniFilterCallBack::um_FileSystemType_ClassInitDataClass:
+		if (nPerSel != um_FileSystemType_ClassInitDataClass)
+		{
+			while (m_CListCtrl.DeleteColumn(0)) {}
+			m_CListCtrl.InsertColumn(um_Sfilter_Type,         _T("槽位"),         LVCFMT_LEFT, 200);
+			m_CListCtrl.InsertColumn(um_Sfilter_CallBackAddr, _T("回调地址"),     LVCFMT_LEFT, 140);
+			m_CListCtrl.InsertColumn(um_Sfilter_Pos,          _T("位置"),         LVCFMT_LEFT, 240);
+			m_CListCtrl.InsertColumn(um_Sfilter_DriverObject, _T("客户驱动对象"), LVCFMT_LEFT, 140);
+			m_CListCtrl.InsertColumn(um_Sfilter_ModulePath,   _T("所在模块路径"), LVCFMT_LEFT, 280);
+			m_CListCtrl.InsertColumn(um_Sfilter_Company,      _T("文件厂商"),     LVCFMT_LEFT, 150);
+			m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
+		}
+		else
+		{
+			return;
+		}
+		nPerSel = um_FileSystemType_ClassInitDataClass;
+		OnMinifiltercallbackRefresh();
 		break;
 	case DlgMiniFilterCallBack::um_FileSystemType_NpfsMajorFunction:
 	case DlgMiniFilterCallBack::um_FileSystemType_MsfsMajorFunction:

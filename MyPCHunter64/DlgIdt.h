@@ -15,6 +15,7 @@ public:
 		um_Idt_IdtBase,
 		um_Idt_Level,						//特权
 		um_Idt_BaseAddr,
+		um_Idt_FunctionName,
 		um_Idt_Path,
 		um_Idt_Company,
 	};

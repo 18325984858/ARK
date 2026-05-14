@@ -162,25 +162,47 @@ void DlgProcessVad::InsertCtrlListControl(PCProcessVadInfo pinfo)
 
 void DlgProcessVad::OnRclickProcessVadList(NMHDR* pNMHDR, LRESULT* pResult)
 {
-	LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	// TODO: 在此添加控件通知处理程序代码
 	*pResult = 0;
+	if (m_CListCtrl.GetItemCount() < 0) return;
 
-	if (m_CListCtrl.GetItemCount() < 0)
+	CHeaderCtrl* hdr = m_CListCtrl.GetHeaderCtrl();
+	int nCols = hdr ? hdr->GetItemCount() : 0;
+	bool hasSel = (m_CListCtrl.GetFirstSelectedItemPosition() != NULL);
+
+	const UINT kCopyBase = 9001;
+	const UINT kRefresh  = 9000;
+
+	CMenu copySub;
+	copySub.CreatePopupMenu();
+	for (int i = 0; i < nCols; ++i)
 	{
-		return;
+		wchar_t buf[128] = { 0 };
+		HDITEMW hi = { 0 };
+		hi.mask = HDI_TEXT; hi.pszText = buf; hi.cchTextMax = _countof(buf);
+		Header_GetItem(hdr->GetSafeHwnd(), i, &hi);
+		copySub.AppendMenuW(MF_STRING | (hasSel ? 0 : MF_GRAYED), kCopyBase + i, buf);
 	}
 
 	CMenu menu;
-	menu.LoadMenu(ID_MENU_PROCESS_VAD);
-	CPoint point;
-	GetCursorPos(&point);//获取当前的游标
+	menu.CreatePopupMenu();
+	if (nCols > 0) menu.AppendMenuW(MF_POPUP | (hasSel ? 0 : MF_GRAYED), (UINT_PTR)copySub.GetSafeHmenu(), L"复制");
+	menu.AppendMenuW(MF_STRING | (this->m_ThreadFlags == TRUE ? MF_GRAYED : 0), kRefresh, L"刷新");
+	menu.AppendMenuW(MF_SEPARATOR);
+	menu.AppendMenuW(MF_STRING | (hasSel ? 0 : MF_GRAYED), ID_PROCESSVAD_MEMORY, L"编辑内存");
 
+	POINT pt = { 0 }; GetCursorPos(&pt);
+	UINT cmd = menu.TrackPopupMenu(TPM_LEFTBUTTON | TPM_RETURNCMD | TPM_NONOTIFY, pt.x, pt.y, this);
+	copySub.Detach();
 
-	if (this->m_ThreadFlags == TRUE)
+	if (cmd == kRefresh) { OnProcessvadRefresh(); return; }
+	if (cmd >= kCopyBase && cmd < kCopyBase + (UINT)nCols)
 	{
-		menu.EnableMenuItem(ID_PROCESSVAD_REFRESH, MF_GRAYED | MF_BYCOMMAND);
+		CopyBufferToClipboard(&m_CListCtrl, (int)(cmd - kCopyBase));
+		return;
 	}
-
-	(menu.GetSubMenu(0))->TrackPopupMenu(TPM_LEFTBUTTON, point.x, point.y, this);
+	if (cmd == ID_PROCESSVAD_MEMORY)
+	{
+		SendMessageW(WM_COMMAND, MAKEWPARAM(cmd, 0), 0);
+		return;
+	}
 }

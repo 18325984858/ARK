@@ -536,9 +536,19 @@ ULONG64 _LoadDriver::UserEnumMiniFilterCallBackInfo(PVOID pDlgMiniFilterCallBack
 		break;
 	}
 	case DlgMiniFilterCallBack::um_FileSystemType_SfilterCallBack:
+	{
+		PCKernelCallBackInfo pInfo = NULL;
+		SendMsg(um_Cmd_Enum_SfilterCallBack_info, NULL, (LPVOID*)&pInfo);
+		((DlgMiniFilterCallBack*)pDlgMiniFilterCallBackInfo)->InsertCtrlListControlSfilter(pInfo);
 		break;
+	}
 	case DlgMiniFilterCallBack::um_FileSystemType_ClassInitDataClass:
+	{
+		PCKernelCallBackInfo pInfo = NULL;
+		SendMsg(um_Cmd_Enum_ClassInitDataCallBack_info, NULL, (LPVOID*)&pInfo);
+		((DlgMiniFilterCallBack*)pDlgMiniFilterCallBackInfo)->InsertCtrlListControlClassInit(pInfo);
 		break;
+	}
 	case DlgMiniFilterCallBack::um_FileSystemType_NpfsMajorFunction:
 	{
 

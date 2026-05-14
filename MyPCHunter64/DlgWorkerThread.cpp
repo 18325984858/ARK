@@ -6,6 +6,7 @@
 #include "afxdialogex.h"
 #include "DlgWorkerThread.h"
 #include "Thread.h"
+#include "PdbResolver.h"
 
 
 IMPLEMENT_DYNAMIC(DlgWorkerThread, CDialogEx)
@@ -27,6 +28,8 @@ void DlgWorkerThread::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(DlgWorkerThread, CDialogEx)
 	ON_WM_SIZE()
+	ON_WM_CONTEXTMENU()
+	ON_NOTIFY(NM_RCLICK, ID_DPC_LIST, &DlgWorkerThread::OnNMRClickList)
 END_MESSAGE_MAP()
 
 
@@ -48,6 +51,7 @@ BOOL DlgWorkerThread::OnInitDialog()
 	m_CListCtrl.InsertColumn(um_Worker_Tid, _T("线程ID"), LVCFMT_LEFT, 80);
 	m_CListCtrl.InsertColumn(um_Worker_Priority, _T("优先级"), LVCFMT_LEFT, 60);
 	m_CListCtrl.InsertColumn(um_Worker_StartAddress, _T("入口地址"), LVCFMT_LEFT, 140);
+	m_CListCtrl.InsertColumn(um_Worker_FunctionName, _T("函数名称"), LVCFMT_LEFT, 250);
 	m_CListCtrl.InsertColumn(um_Worker_Module, _T("所在模块"), LVCFMT_LEFT, 260);
 
 	m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
@@ -95,6 +99,13 @@ void DlgWorkerThread::InsertCtrlListControl(PCProcessThreadInfo pInfo)
 		StrBuf.Format(L"%016I64X", Info->StartAddress);
 		m_CListCtrl.SetItemText(i, um_Worker_StartAddress, StrBuf);
 
+		// 函数名：PdbResolver
+		{
+			WCHAR resolved[256] = { 0 };
+			PdbResolver_Resolve(Info->StartAddress, 0, Info->MoudleName, resolved, _countof(resolved));
+			m_CListCtrl.SetItemText(i, um_Worker_FunctionName, resolved);
+		}
+
 		CString FilePath = PathTransForm(Info->MoudleName);
 		m_CListCtrl.SetItemText(i, um_Worker_Module, FilePath.GetBuffer());
 
@@ -108,4 +119,77 @@ void DlgWorkerThread::InsertCtrlListControl(PCProcessThreadInfo pInfo)
 		}
 
 	} while (pCurList != &pInfo->List.List);
+}
+
+// 右键菜单：刷新 + 复制各列。动态构建，避免改 .rc 资源。
+void DlgWorkerThread::OnNMRClickList(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	*pResult = 0;
+	LPNMITEMACTIVATE pIA = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+	LOGI("[DlgWorkerThread] NM_RCLICK fired idFrom=%u iItem=%d", (unsigned)pNMHDR->idFrom, pIA ? pIA->iItem : -1);
+
+	static const struct { UINT id; LPCWSTR text; int col; } kCopyItems[] = {
+		{ 2101, L"序号",     um_Worker_Index },
+		{ 2102, L"ETHREAD",  um_Worker_Ethread },
+		{ 2103, L"线程ID",   um_Worker_Tid },
+		{ 2104, L"优先级",   um_Worker_Priority },
+		{ 2105, L"入口地址", um_Worker_StartAddress },
+		{ 2106, L"函数名称", um_Worker_FunctionName },
+		{ 2107, L"所在模块", um_Worker_Module },
+	};
+	const UINT kRefreshId = 2100;
+
+	BOOL hasSel = (m_CListCtrl.GetFirstSelectedItemPosition() != NULL);
+
+	CMenu copySub;
+	copySub.CreatePopupMenu();
+	for (auto& it : kCopyItems)
+	{
+		copySub.AppendMenuW(MF_STRING | (hasSel ? 0 : MF_GRAYED), it.id, it.text);
+	}
+
+	CMenu menu;
+	menu.CreatePopupMenu();
+	menu.AppendMenuW(MF_POPUP | (hasSel ? 0 : MF_GRAYED), (UINT_PTR)copySub.GetSafeHmenu(), L"复制");
+	menu.AppendMenuW(MF_STRING, kRefreshId, L"刷新");
+	copySub.Detach(); // 所有权已交给 menu，避免双重销毁
+
+	POINT pt = { 0 };
+	GetCursorPos(&pt);
+	UINT cmd = menu.TrackPopupMenu(TPM_LEFTBUTTON | TPM_RETURNCMD | TPM_NONOTIFY, pt.x, pt.y, this);
+	LOGI("[DlgWorkerThread] TrackPopupMenu returned cmd=%u pt=(%ld,%ld) hasSel=%d", cmd, pt.x, pt.y, (int)hasSel);
+	if (cmd == kRefreshId)
+	{
+		LOGI("[DlgWorkerThread] -> Refresh");
+		OnWorkerThreadRefresh();
+		return;
+	}
+	for (auto& it : kCopyItems)
+	{
+		if (cmd == it.id)
+		{
+			LOGI("[DlgWorkerThread] -> Copy col=%d", it.col);
+			CopyBufferToClipboard(&m_CListCtrl, it.col);
+			return;
+		}
+	}
+}
+
+// 后备路径：WM_CONTEXTMENU
+void DlgWorkerThread::OnContextMenu(CWnd* pWnd, CPoint point)
+{
+	LOGI("[DlgWorkerThread] WM_CONTEXTMENU pWnd=%p (m_CListCtrl=%p) pt=(%ld,%ld)",
+		pWnd ? pWnd->GetSafeHwnd() : nullptr, m_CListCtrl.GetSafeHwnd(), point.x, point.y);
+	if (pWnd && pWnd->GetSafeHwnd() == m_CListCtrl.GetSafeHwnd())
+	{
+		NMITEMACTIVATE nm = { 0 };
+		nm.hdr.hwndFrom = m_CListCtrl.GetSafeHwnd();
+		nm.hdr.idFrom = ID_DPC_LIST;
+		nm.hdr.code = NM_RCLICK;
+		nm.iItem = -1;
+		LRESULT r = 0;
+		OnNMRClickList((NMHDR*)&nm, &r);
+		return;
+	}
+	CDialogEx::OnContextMenu(pWnd, point);
 }

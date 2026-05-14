@@ -22,6 +22,7 @@ class DlgHalTable : public CDialogEx,public CFunction
 		um_HalTableDlgInfo_CurFunAddr,
 		um_HalTableDlgInfo_Hook,
 		um_HalTableDlgInfo_SrcFunAddr,
+		um_HalTableDlgInfo_Pos,
 		um_HalTableDlgInfo_CurModule,
 		um_HalTableDlgInfo_FileVender
 	};
