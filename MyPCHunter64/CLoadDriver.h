@@ -171,6 +171,7 @@ public:
 		Um_UserCallBackType_UserEnumWorkerThreadInfo,										//枚举工作线程队列
 
 		Um_UserCallBackType_Test,
+		Um_UserCallBackType_UserEnumKernelHookInfo,										//内核 inline 钩子扫描
 		Um_UserCallBackType_NULL,
 	};
 	typedef ULONG64(__thiscall _LoadDriver::* PUSERCALLBAKC)(PVOID Pragma);					//函数指针
@@ -238,6 +239,9 @@ public:
 	ULONG64 _LoadDriver::UserDebugFlags1(PVOID pInfo);
 	//功能:向驱动发消息 枚举内核工作线程队列 并写入到ListControl中
 	ULONG64 _LoadDriver::UserEnumWorkerThreadInfo(PVOID pDlgWorkerThread);
+
+	//功能:内核 inline 钩子扫描，在后台线程跑，扫完后回 UI 插入到 ListControl
+	ULONG64 _LoadDriver::UserEnumKernelHookInfo(PVOID pDlgKernelHookList);
 
 
 

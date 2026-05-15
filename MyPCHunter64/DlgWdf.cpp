@@ -35,7 +35,6 @@ void DlgWdf::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(DlgWdf, CDialogEx)
 	ON_WM_SIZE()
-	ON_WM_CONTEXTMENU()
 	ON_NOTIFY(NM_DBLCLK, ID_DLG_KERNEL_WDF_TREE, &DlgWdf::OnNMDblclkDlgKernelWdfTree)
 	ON_NOTIFY(NM_RCLICK, ID_DLG_KERNEL_WDF_LIST, &DlgWdf::OnNMRClickDlgKernelWdfList)
 END_MESSAGE_MAP()
@@ -255,8 +254,6 @@ void DlgWdf::InsertCtrlListControl(PCWdfInfo pWdfInfo)
 void DlgWdf::OnNMRClickDlgKernelWdfList(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	*pResult = 0;
-	LPNMITEMACTIVATE pIA = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	LOGI("[DlgWdf] NM_RCLICK fired idFrom=%u iItem=%d", (unsigned)pNMHDR->idFrom, pIA ? pIA->iItem : -1);
 
 	static const struct { UINT id; LPCWSTR text; int col; } kCopyItems[] = {
 		{ 2001, L"序号",         um_WdfDlgInfo_Order },
@@ -287,10 +284,8 @@ void DlgWdf::OnNMRClickDlgKernelWdfList(NMHDR* pNMHDR, LRESULT* pResult)
 	POINT pt = { 0 };
 	GetCursorPos(&pt);
 	UINT cmd = menu.TrackPopupMenu(TPM_LEFTBUTTON | TPM_RETURNCMD | TPM_NONOTIFY, pt.x, pt.y, this);
-	LOGI("[DlgWdf] TrackPopupMenu returned cmd=%u pt=(%ld,%ld) hasSel=%d", cmd, pt.x, pt.y, (int)hasSel);
 	if (cmd == kRefreshId)
 	{
-		LOGI("[DlgWdf] -> Refresh");
 		OnHaltableRefresh();
 		return;
 	}
@@ -298,30 +293,8 @@ void DlgWdf::OnNMRClickDlgKernelWdfList(NMHDR* pNMHDR, LRESULT* pResult)
 	{
 		if (cmd == it.id)
 		{
-			LOGI("[DlgWdf] -> Copy col=%d", it.col);
 			CopyBufferToClipboard(&m_CListCtrl, it.col);
 			return;
 		}
 	}
-}
-
-// 后备路径：WM_CONTEXTMENU。某些键盘菜单键或父窗口吞掉 NM_RCLICK 时使用。
-void DlgWdf::OnContextMenu(CWnd* pWnd, CPoint point)
-{
-	LOGI("[DlgWdf] WM_CONTEXTMENU pWnd=%p (m_CListCtrl=%p m_CTreeCtrl=%p) pt=(%ld,%ld)",
-		pWnd ? pWnd->GetSafeHwnd() : nullptr,
-		m_CListCtrl.GetSafeHwnd(), m_CTreeCtrl.GetSafeHwnd(), point.x, point.y);
-	if (pWnd && pWnd->GetSafeHwnd() == m_CListCtrl.GetSafeHwnd())
-	{
-		// 复用 NM_RCLICK 处理：构造一个空的 NMITEMACTIVATE
-		NMITEMACTIVATE nm = { 0 };
-		nm.hdr.hwndFrom = m_CListCtrl.GetSafeHwnd();
-		nm.hdr.idFrom = ID_DLG_KERNEL_WDF_LIST;
-		nm.hdr.code = NM_RCLICK;
-		nm.iItem = -1;
-		LRESULT r = 0;
-		OnNMRClickDlgKernelWdfList((NMHDR*)&nm, &r);
-		return;
-	}
-	CDialogEx::OnContextMenu(pWnd, point);
 }

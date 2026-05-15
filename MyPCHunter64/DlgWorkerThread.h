@@ -45,6 +45,5 @@ public:
 	virtual BOOL OnInitDialog();
 	afx_msg void OnWorkerThreadRefresh();
 	afx_msg void OnNMRClickList(NMHDR* pNMHDR, LRESULT* pResult);
-	afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
 	CListCtrl m_CListCtrl;
 };

@@ -8,6 +8,7 @@
 #include "MyPCHunter64Dlg.h"
 #include "CThreadPool.h"
 #include "Thread.h"
+#include "DlgKernelHookList.h"
 
 _LoadDriver::_LoadDriver()
 {
@@ -49,6 +50,7 @@ _LoadDriver::_LoadDriver()
 
 	m_pUserCallBackFun[Um_UserCallBackType_Test] = &_LoadDriver::UserTestFun;
 
+	m_pUserCallBackFun[Um_UserCallBackType_UserEnumKernelHookInfo] = &_LoadDriver::UserEnumKernelHookInfo;
 
 	m_pUserCallBackFun[Um_UserCallBackType_NULL] = NULL;
 }
@@ -656,6 +658,17 @@ ULONG64 _LoadDriver::UserEnumWorkerThreadInfo(PVOID pDlgWorkerThread)
 
 	((DlgWorkerThread*)pDlgWorkerThread)->InsertCtrlListControl(pInfo);
 
+	return TRUE;
+}
+
+ULONG64 _LoadDriver::UserEnumKernelHookInfo(PVOID pDlgKernelHookList)
+{
+	if (pDlgKernelHookList == NULL)
+	{
+		return FALSE;
+	}
+	// 直接调用对话框上的扫描+回填，在后台线程里阻塞，不卡 UI
+	((DlgKernelHookList*)pDlgKernelHookList)->DoScanAndFill();
 	return TRUE;
 }
 ULONG64 _LoadDriver::UserRWMemOryInfo(PVOID pDlgRWMemory)

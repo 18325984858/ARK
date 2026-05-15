@@ -5,6 +5,7 @@
 #include "DlgIdt.h"
 #include "DlgObjectCallBack.h"
 #include "DlgMajorfunction.h"
+#include "DlgKernelHookList.h"
 // DlgKernelHook 对话框
 
 class DlgKernelHook : public CDialogEx, public CFunction
@@ -58,6 +59,7 @@ public:
 	DlgMajorfunction m_Dlgkbdclass;
 	DlgMajorfunction m_DlgNtfs;
 	DlgMajorfunction m_Dlgstorport;
+	DlgKernelHookList m_DlgKernelHook;
 
 	afx_msg void OnNMClickKernelhookTab(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnSize(UINT nType, int cx, int cy);

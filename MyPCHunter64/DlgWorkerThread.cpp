@@ -28,7 +28,6 @@ void DlgWorkerThread::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(DlgWorkerThread, CDialogEx)
 	ON_WM_SIZE()
-	ON_WM_CONTEXTMENU()
 	ON_NOTIFY(NM_RCLICK, ID_DPC_LIST, &DlgWorkerThread::OnNMRClickList)
 END_MESSAGE_MAP()
 
@@ -125,8 +124,6 @@ void DlgWorkerThread::InsertCtrlListControl(PCProcessThreadInfo pInfo)
 void DlgWorkerThread::OnNMRClickList(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	*pResult = 0;
-	LPNMITEMACTIVATE pIA = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	LOGI("[DlgWorkerThread] NM_RCLICK fired idFrom=%u iItem=%d", (unsigned)pNMHDR->idFrom, pIA ? pIA->iItem : -1);
 
 	static const struct { UINT id; LPCWSTR text; int col; } kCopyItems[] = {
 		{ 2101, L"序号",     um_Worker_Index },
@@ -157,10 +154,8 @@ void DlgWorkerThread::OnNMRClickList(NMHDR* pNMHDR, LRESULT* pResult)
 	POINT pt = { 0 };
 	GetCursorPos(&pt);
 	UINT cmd = menu.TrackPopupMenu(TPM_LEFTBUTTON | TPM_RETURNCMD | TPM_NONOTIFY, pt.x, pt.y, this);
-	LOGI("[DlgWorkerThread] TrackPopupMenu returned cmd=%u pt=(%ld,%ld) hasSel=%d", cmd, pt.x, pt.y, (int)hasSel);
 	if (cmd == kRefreshId)
 	{
-		LOGI("[DlgWorkerThread] -> Refresh");
 		OnWorkerThreadRefresh();
 		return;
 	}
@@ -168,28 +163,8 @@ void DlgWorkerThread::OnNMRClickList(NMHDR* pNMHDR, LRESULT* pResult)
 	{
 		if (cmd == it.id)
 		{
-			LOGI("[DlgWorkerThread] -> Copy col=%d", it.col);
 			CopyBufferToClipboard(&m_CListCtrl, it.col);
 			return;
 		}
 	}
-}
-
-// 后备路径：WM_CONTEXTMENU
-void DlgWorkerThread::OnContextMenu(CWnd* pWnd, CPoint point)
-{
-	LOGI("[DlgWorkerThread] WM_CONTEXTMENU pWnd=%p (m_CListCtrl=%p) pt=(%ld,%ld)",
-		pWnd ? pWnd->GetSafeHwnd() : nullptr, m_CListCtrl.GetSafeHwnd(), point.x, point.y);
-	if (pWnd && pWnd->GetSafeHwnd() == m_CListCtrl.GetSafeHwnd())
-	{
-		NMITEMACTIVATE nm = { 0 };
-		nm.hdr.hwndFrom = m_CListCtrl.GetSafeHwnd();
-		nm.hdr.idFrom = ID_DPC_LIST;
-		nm.hdr.code = NM_RCLICK;
-		nm.iItem = -1;
-		LRESULT r = 0;
-		OnNMRClickList((NMHDR*)&nm, &r);
-		return;
-	}
-	CDialogEx::OnContextMenu(pWnd, point);
 }

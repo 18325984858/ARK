@@ -66,6 +66,8 @@ LPVOID _CThreadPack::DoTask()
 		CallNumber >= MAX_USER_CALL_BACK_COUNT ||
 		CallNumber == _LoadDriver::UserCallBackType::Um_UserCallBackType_NULL)
 	{
+		LOGW("[task] cb=%llu this=%p REJECTED (Paragma==NULL or CallNumber out of range)",
+			(unsigned long long)CallNumber, Paragma);
 		return NULL;
 	}
 
@@ -82,6 +84,8 @@ LPVOID _CThreadPack::DoTask()
 		std::lock_guard<std::mutex> lk(s_busyMtx);
 		if (s_busy.count(Paragma))
 		{
+			LOGW("[task] cb=%llu this=%p SKIPPED (already busy in s_busy)",
+				(unsigned long long)CallNumber, Paragma);
 			return this;
 		}
 		s_busy.insert(Paragma);

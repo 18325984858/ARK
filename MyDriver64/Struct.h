@@ -91,6 +91,8 @@ enum _CommunicatOpCode
 	um_Cmd_Enum_WorkerThread_info,											//枚举内核工作线程队列
 	um_Cmd_Enum_SfilterCallBack_info,										//传统文件系统过滤驱动回调
 	um_Cmd_Enum_ClassInitDataCallBack_info,									//classpnp 客户 ClassInitData 回调
+	um_Cmd_Probe_KernelMemory_info,											//批量读取若干内核虚拟地址处的字节（用于内核钩子检测）
+	um_Cmd_Read_KernelRange_info,											//读连续内核VA区间（用于全 .text 扫描）
 
 };
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -873,4 +875,42 @@ typedef struct _DebugFlagInfo
 	};
 }CDebugFlagInfo, * PCDebugFlagInfo;
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// 内核钩子检测：批量探测若干内核虚拟地址处的前若干字节。
+// R3 一次发送 Count 个待探测地址，驱动逐个 MmIsAddressValid + SEH 安全拷贝
+// 16 字节回填 Bytes[]，Valid=1 表示读取成功；Valid=0 表示该地址不可读
+// （PG/分页换出/无映射等情形）。
+#define MAX_KHK_PROBE       256
+#define KHK_BYTES_PER       16
+
+#pragma pack(push, 1)
+typedef struct _CKernelProbeEntry
+{
+	ULONG64 Addr;															//内核虚拟地址（输入）
+	UCHAR   Valid;															//输出：1=读到 / 0=不可读
+	UCHAR   _Pad[7];														//对齐
+	UCHAR   Bytes[KHK_BYTES_PER];											//输出：前 KHK_BYTES_PER 字节
+} CKernelProbeEntry, * PCKernelProbeEntry;
+
+typedef struct _CKernelProbeHeader
+{
+	ULONG   Count;															//实际有效项数 (<=MAX_KHK_PROBE)
+	ULONG   _Pad;
+	CKernelProbeEntry Items[MAX_KHK_PROBE];
+} CKernelProbeHeader, * PCKernelProbeHeader;
+#pragma pack(pop)
+
+// 全 .text 段扫描：R3 给一段连续内核VA区间 + R3 进程地址空间里的缓冲区，
+// 驱动 MmIsAddressValid + SEH 把字节直接 RtlCopyMemory 到 R3 缓冲。
+// 一次最多读 MAX_KRD_PER_CALL 字节；ntoskrnl .text ≈ 5MB，R3 端循环调即可。
+#define MAX_KRD_PER_CALL    0x10000		//64 KB / 次
+
+typedef struct _CKernelRangeReadInfo
+{
+	ULONG64 KernelAddr;					//输入：内核 VA
+	ULONG   Length;						//输入：要读字节数 (<=MAX_KRD_PER_CALL)
+	ULONG   BytesRead;					//输出：实际读到字节数（0=失败）
+	PVOID   UserBuf;					//输入：R3 进程内的目标缓冲区
+} CKernelRangeReadInfo, * PCKernelRangeReadInfo;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -233,6 +233,9 @@
     <ClInclude Include="DlgDpc.h" />
     <ClInclude Include="DlgWorkerThread.h" />
     <ClInclude Include="PdbResolver.h" />
+    <ClInclude Include="KernelHookDetect.h" />
+    <ClInclude Include="DlgKernelHookList.h" />
+    <ClInclude Include="DlgDisasm.h" />
     <ClInclude Include="DlgFilterDriver.h" />
     <ClInclude Include="DlgHalTable.h" />
     <ClInclude Include="DlgMajorfunction.h" />
@@ -276,6 +279,9 @@
     <ClCompile Include="DlgDpc.cpp" />
     <ClCompile Include="DlgWorkerThread.cpp" />
     <ClCompile Include="PdbResolver.cpp" />
+    <ClCompile Include="KernelHookDetect.cpp" />
+    <ClCompile Include="DlgKernelHookList.cpp" />
+    <ClCompile Include="DlgDisasm.cpp" />
     <ClCompile Include="DlgFilterDriver.cpp" />
     <ClCompile Include="DlgHalTable.cpp" />
     <ClCompile Include="DlgMajorfunction.cpp" />

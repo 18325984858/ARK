@@ -56,6 +56,7 @@ void DlgKernelHook::OnNMClickKernelhookTab(NMHDR* pNMHDR, LRESULT* pResult)
 	m_DlgClassPnp.ShowWindow(FALSE);
 	m_DlgAtapi.ShowWindow(FALSE);
 	m_Dlgstorport.ShowWindow(FALSE);
+	m_DlgKernelHook.ShowWindow(FALSE);
 
 	switch (m_CTabCtrl.GetCurSel())
 	{
@@ -104,6 +105,8 @@ void DlgKernelHook::OnNMClickKernelhookTab(NMHDR* pNMHDR, LRESULT* pResult)
 		m_Dlgstorport.ShowWindow(TRUE);
 		break;
 	case DlgKernelHook::KernelHookDlgType_KernelHook:
+		m_DlgKernelHook.OnRefresh();
+		m_DlgKernelHook.ShowWindow(TRUE);
 		break;
 	case DlgKernelHook::KernelHookDlgType_ObjectHook:
 		m_DlgObjectCallBack.OnObjectcallbackRefresh();
@@ -149,6 +152,7 @@ void DlgKernelHook::OnSize(UINT nType, int cx, int cy)
 	m_DlgClassPnp.MoveWindow(&TabRect, TRUE);
 	m_DlgAtapi.MoveWindow(&TabRect, TRUE);
 	m_Dlgstorport.MoveWindow(&TabRect, TRUE);
+	m_DlgKernelHook.MoveWindow(&TabRect, TRUE);
 }
 
 
@@ -202,6 +206,7 @@ BOOL DlgKernelHook::OnInitDialog()
 	m_Dlgstorport.Create(ID_DLG_MAJORFUNCTION, &m_CTabCtrl);
 
 	m_CTabCtrl.InsertItem(KernelHookDlgType_KernelHook, TableTitleStr[KernelHookDlgType_KernelHook]);
+	m_DlgKernelHook.Create(ID_DLG_DPC, &m_CTabCtrl);
 
 	m_CTabCtrl.InsertItem(KernelHookDlgType_ObjectHook, TableTitleStr[KernelHookDlgType_ObjectHook]);
 	m_DlgObjectCallBack.Create(ID_DLG_KERNEL_OBJECTCALLBACK, &m_CTabCtrl);
@@ -231,6 +236,8 @@ BOOL DlgKernelHook::OnInitDialog()
 	m_DlgAtapi.MoveWindow(&TabRect);
 	m_Dlgstorport.MoveWindow(&TabRect);
 
+	m_DlgKernelHook.MoveWindow(&TabRect);
+
 	m_DlgSsdt.ShowWindow(TRUE);
 
 
@@ -258,4 +265,5 @@ void DlgKernelHook::OnDestroy()
 	m_DlgClassPnp.DestroyWindow();
 	m_DlgAtapi.DestroyWindow();
 	m_Dlgstorport.DestroyWindow();
+	m_DlgKernelHook.DestroyWindow();
 }

@@ -66,28 +66,37 @@ CMyModuleCall g_ModuleCall[MAX_MODULE_NAME_NUMBER] = {
 
 BOOL CMyPCHunter64Dlg::OnInitDialog()
 {
+	LOGI("[OnInitDialog] BEGIN");
 	CDialogEx::OnInitDialog();
+	LOGI("[OnInitDialog] CDialogEx::OnInitDialog done");
 
 	// 设置此对话框的图标。  当应用程序主窗口不是对话框时，框架将自动
 	//  执行此操作
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
+	LOGI("[OnInitDialog] icons set");
 
 
 	//初始化PDB库
 	{
+		LOGI("[OnInitDialog] g_NtPdb.InitPDB(ntoskrnl.exe) start");
 		if (!g_NtPdb.InitPDB(L"C:\\Windows\\System32\\ntoskrnl.exe"))
 		{
+			LOGE("[OnInitDialog] g_NtPdb.InitPDB FAILED");
 			AfxMessageBox(L"初始化ntoskrnl PDB失败!");
 			exit(1);
 		}
+		LOGI("[OnInitDialog] g_NtPdb.InitPDB OK");
 
 
+		LOGI("[OnInitDialog] g_fltmgrPDB.InitPDB(fltmgr.sys) start");
 		if (!g_fltmgrPDB.InitPDB(L"C:\\Windows\\System32\\drivers\\fltmgr.sys"))
 		{
+			LOGE("[OnInitDialog] g_fltmgrPDB.InitPDB FAILED");
 			AfxMessageBox(L"初始化fltmgr PDB失败!");
 			exit(1);
 		}
+		LOGI("[OnInitDialog] g_fltmgrPDB.InitPDB OK");
 
 		// Wdf01000 的 PDB 由 PdbResolver 统一异步下载（参见 OnInitDialog 下方 PdbResolver_Init 后的 Request）
 	}
@@ -98,23 +107,33 @@ BOOL CMyPCHunter64Dlg::OnInitDialog()
 		MyNtFreeVirtualMemory = (pfunNtFreeVirtualMemory)GetProcAddress(hModule, "NtFreeVirtualMemory");
 		if (MyNtFreeVirtualMemory == NULL)
 		{
+			LOGE("[OnInitDialog] NtFreeVirtualMemory not found in ntdll.dll");
 			exit(1);
 		}
+		LOGI("[OnInitDialog] NtFreeVirtualMemory=%p", MyNtFreeVirtualMemory);
 
 #define DRIVER_NAME (L"MyDriver64.sys")
 #define DRIVER_PATH (L"MyDriver64.sys")
 		//加载驱动
 		g_LoadDriver.SetFileNameAndPath(DRIVER_NAME, DRIVER_PATH);
 
+		LOGI("[OnInitDialog] LoadDriverFun() start");
 		BOOL bRet = g_LoadDriver.LoadDriverFun();	//加载驱动
+		LOGI("[OnInitDialog] LoadDriverFun() returned %d (GLE=%lu)", (int)bRet, GetLastError());
 		if (!bRet)
 		{
 			AfxMessageBox(TEXT("Driver驱动加载失败!"));
 			exit(1);
 		}
+		// 启动看门狗：保证任务管理器强杀后驱动也能被卸载
+		extern void SpawnWatchdog();
+		SpawnWatchdog();
 		//建立通信
 #define MINIFILTER_PORT_NAME L"\\58DF4FB5-D464-4DF9-B14E-3565FDE02AED"
-		if (!g_LoadDriver.ConnectDriver(MINIFILTER_PORT_NAME))
+		LOGI("[OnInitDialog] ConnectDriver() start");
+		BOOL bConn = g_LoadDriver.ConnectDriver(MINIFILTER_PORT_NAME);
+		LOGI("[OnInitDialog] ConnectDriver() returned %d (GLE=%lu)", (int)bConn, GetLastError());
+		if (!bConn)
 		{
 			AfxMessageBox(L"通信创建失败!");
 			g_LoadDriver.~_LoadDriver();
@@ -125,12 +144,15 @@ BOOL CMyPCHunter64Dlg::OnInitDialog()
 
 		//此Event用于等待此_LoadDriver::Um_UserCallBackType_InitData事件完成返回
 #define INITDATA_EVENT (L"Global\\7028001A-27A3-4C83-B359-0CFC333A50BB")
+		LOGI("[OnInitDialog] CreateEventW(INITDATA_EVENT) start");
 		HANDLE hEvent = CreateEventW(NULL, TRUE, FALSE, INITDATA_EVENT);
+		LOGI("[OnInitDialog] CreateEventW returned hEvent=%p (GLE=%lu)", hEvent, GetLastError());
 		if (hEvent)
 		{
 			LOGI("OnInitDialog: posting InitData task.");
 			g_ThreadPool.AddTask(new _CThreadPack{ _LoadDriver::Um_UserCallBackType_InitData, this });
 
+			LOGI("[OnInitDialog] WaitForSingleObject(InitDataEvent, INFINITE) start");
 			if (WaitForSingleObject(hEvent, INFINITE) != WAIT_OBJECT_0)
 			{
 				LOGE("OnInitDialog: InitData wait failed.");
@@ -145,7 +167,9 @@ BOOL CMyPCHunter64Dlg::OnInitDialog()
 		}
 	}
 
+	LOGI("[OnInitDialog] InitTableControl start");
 	InitTableControl();
+	LOGI("[OnInitDialog] InitTableControl done");
 
 	// 创建状态栏（左下角显示 PDB 下载进度等全局状态）
 	{
@@ -158,6 +182,7 @@ BOOL CMyPCHunter64Dlg::OnInitDialog()
 			m_StatusBar.SetPaneText(0, L"Ready");
 		}
 	}
+	LOGI("[OnInitDialog] status bar created");
 
 	// 状态栏创建后强制重新布局，让 Tab 让出底部高度
 	{
@@ -167,11 +192,14 @@ BOOL CMyPCHunter64Dlg::OnInitDialog()
 	}
 
 	// PDB 按需解析服务启动（后台线程）
+	LOGI("[OnInitDialog] PdbResolver_Init() start");
 	PdbResolver_Init(GetSafeHwnd());
 	// 预先请求 Wdf01000.sys 的 PDB，UI 不阻塞，状态栏会显示进度
 	PdbResolver_Request(L"Wdf01000.sys", L"C:\\Windows\\System32\\drivers\\Wdf01000.sys");
+	LOGI("[OnInitDialog] PdbResolver init done");
 
 	RegHostKey();
+	LOGI("[OnInitDialog] END (RegHostKey done)");
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -300,6 +328,10 @@ void CMyPCHunter64Dlg::OnClickControlMainTab(NMHDR* pNMHDR, LRESULT* pResult)
 		AfxMessageBox(L"控件出现错误!");
 		break;
 	}
+
+	// 切换后强制刷新 Tab 容器，避免旧子对话框的像素残留
+	m_Control_Tab.Invalidate();
+	m_Control_Tab.UpdateWindow();
 }
 
 

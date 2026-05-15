@@ -1,10 +1,17 @@
 ﻿#define  _CRT_NON_CONFORMING_SWPRINTFS
 #include "framework.h"
+#include "MyPCHunter64.h"   // LOGI/LOGW/LOGE
 #include <vector>
 
 
 void ErrorMessage(ULONG unErrorCode, CString Msg)/*将系统错误码转换成中文以信息框方式打印*/
 {
+	// 打日志便于定位"不知道哪冒出来的"系统错误弹窗
+	// （含调用方传入的前缀；前缀为空时说明纯粹是 FormatMessage 的系统串）
+	LOGW("[ErrorMessage] code=%lu (0x%lX) prefix='%ls'",
+		(unsigned long)unErrorCode, (unsigned long)unErrorCode,
+		Msg.IsEmpty() ? L"(empty)" : (LPCWSTR)Msg.GetString());
+
 	LPVOID lpBuffer = nullptr;
 	DWORD dwSize = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
 		NULL,

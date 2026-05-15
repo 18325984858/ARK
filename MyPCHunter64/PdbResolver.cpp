@@ -360,3 +360,109 @@ void PdbResolver_Resolve(unsigned long long kAddr, unsigned long long kModuleBas
         _snwprintf_s(outBuf, outBufCch, _TRUNCATE, L"%s+0x%I64X", base.c_str(), rva);
     }
 }
+
+unsigned long long PdbResolver_GetModuleBase(const wchar_t* basename)
+{
+    return (unsigned long long)LookupKernelModuleBase(basename);
+}
+
+unsigned long long PdbResolver_GetSymbolKva(const wchar_t* basename, const wchar_t* funcName)
+{
+    if (!basename || !*basename || !funcName || !*funcName) return 0;
+    std::wstring nameLc = ToLowerCopy(basename);
+
+    Entry* e = nullptr;
+    {
+        std::lock_guard<std::mutex> lk(g_tableMtx);
+        auto it = g_table.find(nameLc);
+        if (it != g_table.end()) e = it->second.get();
+    }
+    if (!e || !e->ready.load(std::memory_order_acquire) || !e->pdb) return 0;
+
+    ULONG64 pdbBase = e->pdb->m_mod.base();
+    if (pdbBase == 0) return 0;
+
+    // 用 SymFromName 查符号 KVA（在 dbghelp 加载的合成基址空间里）
+    BYTE buf[sizeof(SYMBOL_INFOW) + (MAX_SYM_NAME + 1) * sizeof(WCHAR)] = { 0 };
+    PSYMBOL_INFOW info = (PSYMBOL_INFOW)buf;
+    info->SizeOfStruct = sizeof(SYMBOL_INFOW);
+    info->MaxNameLen = MAX_SYM_NAME;
+    if (!SymFromNameW(Pdb::Prov::uid(), funcName, info)) return 0;
+    if (info->Address < pdbBase) return 0;
+    ULONG64 rva = info->Address - pdbBase;
+
+    ULONG64 kModBase = LookupKernelModuleBase(basename);
+    if (kModBase == 0) return 0;
+
+    return (unsigned long long)(kModBase + rva);
+}
+
+namespace
+{
+    struct EnumCtx
+    {
+        ULONG64 pdbBase;
+        ULONG64 kModBase;
+        ULONG textRva;
+        ULONG textVSize;
+        PdbFunctionCallback userCb;
+        void* userCtx;
+        size_t count;
+    };
+
+    // SymEnumSymbolsW 回调。我们要的是：Tag=SymTagFunction(5) 或 SymTagPublicSymbol(10)
+    // 且地址在 .text 范围内的条目。
+    BOOL CALLBACK EnumKernelFunctionsCb(PSYMBOL_INFOW pInfo, ULONG /*sz*/, PVOID userCtx)
+    {
+        EnumCtx* c = (EnumCtx*)userCtx;
+        if (!pInfo) return TRUE;
+        // Tag 过滤：5=Function, 10=PublicSymbol（ntoskrnl public PDB 只能拿到这种）
+        if (pInfo->Tag != 5 && pInfo->Tag != 10) return TRUE;
+        if (pInfo->Address < c->pdbBase) return TRUE;
+        ULONG64 rva = pInfo->Address - c->pdbBase;
+        if (rva < c->textRva || rva >= (ULONG64)c->textRva + c->textVSize) return TRUE;
+        if (pInfo->NameLen == 0) return TRUE;
+
+        c->userCb(pInfo->Name, (unsigned long)rva, c->kModBase + rva, c->userCtx);
+        ++c->count;
+        return TRUE;
+    }
+}
+
+size_t PdbResolver_EnumKernelFunctions(const wchar_t* basename,
+    unsigned long textRva, unsigned long textVSize,
+    PdbFunctionCallback cb, void* ctx)
+{
+    if (!basename || !*basename || !cb) return 0;
+    std::wstring nameLc = ToLowerCopy(basename);
+
+    Entry* e = nullptr;
+    {
+        std::lock_guard<std::mutex> lk(g_tableMtx);
+        auto it = g_table.find(nameLc);
+        if (it != g_table.end()) e = it->second.get();
+    }
+    if (!e || !e->ready.load(std::memory_order_acquire) || !e->pdb)
+    {
+        LOGW("[PdbEnum] %ls PDB not ready", basename);
+        return 0;
+    }
+
+    ULONG64 pdbBase = e->pdb->m_mod.base();
+    if (pdbBase == 0) return 0;
+
+    ULONG64 kModBase = LookupKernelModuleBase(basename);
+    if (kModBase == 0)
+    {
+        LOGW("[PdbEnum] %ls kernel base unknown", basename);
+        return 0;
+    }
+
+    EnumCtx ec{ pdbBase, kModBase, textRva, textVSize, cb, ctx, 0 };
+    if (!SymEnumSymbolsW(Pdb::Prov::uid(), pdbBase, L"*", EnumKernelFunctionsCb, &ec))
+    {
+        LOGW("[PdbEnum] SymEnumSymbolsW failed gle=%lu", GetLastError());
+    }
+    LOGI("[PdbEnum] %ls: %zu functions in .text", basename, ec.count);
+    return ec.count;
+}

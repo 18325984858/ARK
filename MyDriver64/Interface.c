@@ -47,6 +47,8 @@ CCmd g_CmdFun[MAX_FUNCALL_INDEX] = {
 	[um_Cmd_Enum_WdfFunction_info]							= {um_Cmd_Enum_WdfFunction_info,  EnumWdfFunctionInfo},
 	[um_Cmd_Enum_SfilterCallBack_info]						= {um_Cmd_Enum_SfilterCallBack_info, EnumSfilterCallbackInfo},
 	[um_Cmd_Enum_ClassInitDataCallBack_info]				= {um_Cmd_Enum_ClassInitDataCallBack_info, EnumClassInitDataCallbackInfo},
+	[um_Cmd_Probe_KernelMemory_info]						= {um_Cmd_Probe_KernelMemory_info, ProbeKernelMemoryInfo},
+	[um_Cmd_Read_KernelRange_info]							= {um_Cmd_Read_KernelRange_info, ReadKernelRangeInfo},
 };
 
 VOID MyThreadRoutine(PVOID Context)
@@ -986,4 +988,92 @@ VOID __vectorcall MyTest(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutDa
 
 	BOOL nret = IsDebug();
 	MyDbgPrintfEx("IsDebug:%d\n", nret);
+}
+
+// 内核钩子检测：批量探测内核虚拟地址前若干字节。
+// pIndata 指向 R3 进程地址空间里的 CKernelProbeHeader。
+// 我们就地填 Items[i].Bytes / Valid。
+VOID __vectorcall ProbeKernelMemoryInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam)
+{
+	UNREFERENCED_PARAMETER(nCmd);
+	UNREFERENCED_PARAMETER(pOutData);
+	UNREFERENCED_PARAMETER(pParam);
+
+	if (!MmIsAddressValid((PVOID)pIndata)) return;
+
+	PCKernelProbeHeader p = (PCKernelProbeHeader)pIndata;
+	ULONG cnt = p->Count;
+	if (cnt > MAX_KHK_PROBE) cnt = MAX_KHK_PROBE;
+
+	for (ULONG i = 0; i < cnt; ++i)
+	{
+		PCKernelProbeEntry e = &p->Items[i];
+		e->Valid = 0;
+		RtlZeroMemory(e->Bytes, KHK_BYTES_PER);
+
+		PVOID src = (PVOID)e->Addr;
+		if (src == NULL) continue;
+
+		// 先粗筛：MmIsAddressValid 只检查 PTE 中的 P 位，足够避免明显的无效地址。
+		// 真正的 SEH 兜底捕获换出页 / 页错误。
+		if (!MmIsAddressValid(src)) continue;
+		// 仅读取，避免覆盖到分页边界后半段不可读；只要前 16 字节起始页可读即可。
+		if (!MmIsAddressValid((PUCHAR)src + KHK_BYTES_PER - 1)) continue;
+
+		__try
+		{
+			RtlCopyMemory(e->Bytes, src, KHK_BYTES_PER);
+			e->Valid = 1;
+		}
+		__except (EXCEPTION_EXECUTE_HANDLER)
+		{
+			e->Valid = 0;
+			RtlZeroMemory(e->Bytes, KHK_BYTES_PER);
+		}
+	}
+
+	if (MmIsAddressValid((PVOID)pRet))
+	{
+		*(PULONG64)pRet = (ULONG64)cnt;
+	}
+}
+
+// 读连续内核VA区间到 R3 进程地址空间里的用户缓冲区。
+// 用于"全 ntoskrnl .text 段扫描"——一次最多 MAX_KRD_PER_CALL 字节，
+// R3 端按块循环调即可。MmIsAddressValid 起始/结束页 + SEH 安全拷贝。
+// 因为 IPC 是 minifilter port 同步派发，运行在请求进程上下文，可以直接写 R3 user buffer。
+VOID __vectorcall ReadKernelRangeInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam)
+{
+	UNREFERENCED_PARAMETER(nCmd);
+	UNREFERENCED_PARAMETER(pOutData);
+	UNREFERENCED_PARAMETER(pParam);
+
+	if (!MmIsAddressValid((PVOID)pIndata)) return;
+
+	PCKernelRangeReadInfo p = (PCKernelRangeReadInfo)pIndata;
+	p->BytesRead = 0;
+
+	if (p->Length == 0 || p->Length > MAX_KRD_PER_CALL) return;
+	if (p->UserBuf == NULL) return;
+
+	PUCHAR src = (PUCHAR)p->KernelAddr;
+	// 粗筛：起始页 + 末尾页都得有 PTE
+	if (!MmIsAddressValid(src)) return;
+	if (!MmIsAddressValid(src + p->Length - 1)) return;
+
+	__try
+	{
+		ProbeForWrite(p->UserBuf, p->Length, 1);				//校验 R3 缓冲区可写
+		RtlCopyMemory(p->UserBuf, src, p->Length);
+		p->BytesRead = p->Length;
+	}
+	__except (EXCEPTION_EXECUTE_HANDLER)
+	{
+		p->BytesRead = 0;
+	}
+
+	if (MmIsAddressValid((PVOID)pRet))
+	{
+		*(PULONG64)pRet = (ULONG64)p->BytesRead;
+	}
 }

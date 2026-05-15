@@ -12,7 +12,11 @@
 #include <eh.h>
 #include <stdarg.h>
 #include <mutex>
+#include <winsvc.h>
+#include <shellapi.h>
 #pragma comment(lib, "Dbghelp.lib")
+#pragma comment(lib, "Advapi32.lib")
+#pragma comment(lib, "Shell32.lib")
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -225,6 +229,116 @@ static void InstallCrashHandlers()
 	LOGI("crash handlers installed.");
 }
 
+//==================================================================
+// Watchdog（看门狗）：解决任务管理器 TerminateProcess 强杀后驱动残留的问题。
+// 主进程在驱动加载成功后以 `--watchdog <pid>` 参数 spawn 自身一个隐藏副本。
+// 子进程 OpenProcess(SYNCHRONIZE) 等主进程句柄 signaled（任何方式退出），
+// 然后调用 SCM 把驱动服务 stop+delete。正常退出路径主进程已经 stop+delete
+// 过，看门狗这边再调一次会拿到 ERROR_SERVICE_DOES_NOT_EXIST，幂等无副作用。
+//==================================================================
+#define WATCHDOG_FLAG L"--watchdog"
+#define WATCHDOG_SERVICE_NAME L"MyDriver64.sys"  // 与 MyPCHunter64Dlg.cpp 中 DRIVER_NAME 一致
+
+static BOOL StopAndDeleteDriverService(LPCWSTR svcName)
+{
+	SC_HANDLE hMgr = OpenSCManagerW(NULL, NULL, SC_MANAGER_ALL_ACCESS);
+	if (!hMgr) { LOGW("[WD] OpenSCManager failed gle=%lu", GetLastError()); return FALSE; }
+	SC_HANDLE hSvc = OpenServiceW(hMgr, svcName, SERVICE_ALL_ACCESS);
+	if (!hSvc)
+	{
+		DWORD gle = GetLastError();
+		CloseServiceHandle(hMgr);
+		if (gle == ERROR_SERVICE_DOES_NOT_EXIST)
+		{
+			LOGI("[WD] service already gone, nothing to do.");
+			return TRUE;
+		}
+		LOGW("[WD] OpenService failed gle=%lu", gle);
+		return FALSE;
+	}
+	SERVICE_STATUS st = { 0 };
+	ControlService(hSvc, SERVICE_CONTROL_STOP, &st);  // 容错：不在乎结果
+	BOOL ok = DeleteService(hSvc);
+	DWORD gleDel = GetLastError();
+	CloseServiceHandle(hSvc);
+	CloseServiceHandle(hMgr);
+	LOGI("[WD] stop+delete done ok=%d gle=%lu", (int)ok, gleDel);
+	return ok || gleDel == ERROR_SERVICE_MARKED_FOR_DELETE;
+}
+
+static int RunWatchdog(DWORD targetPid)
+{
+	LOGI("[WD] watchdog start: target pid=%lu", targetPid);
+	HANDLE hProc = OpenProcess(SYNCHRONIZE, FALSE, targetPid);
+	if (!hProc)
+	{
+		LOGW("[WD] OpenProcess(%lu) failed gle=%lu, target probably already exited", targetPid, GetLastError());
+		// 主进程可能已退出（或 PID 错），直接卸载兜底
+	}
+	else
+	{
+		WaitForSingleObject(hProc, INFINITE);
+		CloseHandle(hProc);
+		LOGI("[WD] target pid=%lu signaled, unloading driver...", targetPid);
+	}
+	StopAndDeleteDriverService(WATCHDOG_SERVICE_NAME);
+	LOGI("[WD] watchdog exiting.");
+	return 0;
+}
+
+// 在 InitInstance 最前面尝试匹配 --watchdog 参数。
+// 命中则在本函数内自行退出整个进程（_exit），不再进入 MFC 主循环。
+static void MaybeRunAsWatchdogAndExit()
+{
+	int argc = 0;
+	LPWSTR* argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+	if (!argv) return;
+	for (int i = 1; i + 1 < argc; ++i)
+	{
+		if (lstrcmpiW(argv[i], WATCHDOG_FLAG) == 0)
+		{
+			DWORD pid = (DWORD)_wtoi(argv[i + 1]);
+			LocalFree(argv);
+			int rc = RunWatchdog(pid);
+			_exit(rc);
+		}
+	}
+	LocalFree(argv);
+}
+
+// 由主进程在驱动加载成功后调用。spawn 一个隐藏的自身副本去守。
+void SpawnWatchdog()
+{
+	WCHAR exePath[MAX_PATH] = { 0 };
+	if (GetModuleFileNameW(NULL, exePath, MAX_PATH) == 0)
+	{
+		LOGE("[WD] GetModuleFileName failed gle=%lu", GetLastError());
+		return;
+	}
+	WCHAR cmd[MAX_PATH + 64] = { 0 };
+	// CreateProcess 的 lpCommandLine 是可写的，按惯例 argv[0] 需要带引号
+	_snwprintf_s(cmd, _countof(cmd), _TRUNCATE, L"\"%s\" %s %lu",
+		exePath, WATCHDOG_FLAG, GetCurrentProcessId());
+
+	STARTUPINFOW si = { sizeof(si) };
+	PROCESS_INFORMATION pi = { 0 };
+	BOOL ok = CreateProcessW(
+		exePath,
+		cmd,
+		NULL, NULL, FALSE,
+		CREATE_NO_WINDOW | DETACHED_PROCESS,
+		NULL, NULL,
+		&si, &pi);
+	if (!ok)
+	{
+		LOGE("[WD] CreateProcess(watchdog) failed gle=%lu", GetLastError());
+		return;
+	}
+	LOGI("[WD] watchdog spawned pid=%lu", pi.dwProcessId);
+	CloseHandle(pi.hThread);
+	CloseHandle(pi.hProcess);
+}
+
 
 // CMyPCHunter64App
 
@@ -259,6 +373,10 @@ BOOL CMyPCHunter64App::InitInstance()
 	// === 最先安装异常 hook + 日志，确保后续任何异常都会卸载驱动 ===
 	Log_Init();
 	LOGI("==== MyPCHunter64 starting (pid=%lu) ====", GetCurrentProcessId());
+
+	// 若是看门狗子进程，直接走 watchdog 分支并退出，不再初始化 MFC/UI
+	MaybeRunAsWatchdogAndExit();
+
 	InstallCrashHandlers();
 
 	// 如果一个运行在 Windows XP 上的应用程序清单指定要
@@ -308,12 +426,16 @@ BOOL CMyPCHunter64App::InitInstance()
 	}
 	LOGI("single-instance mutex OK; entering main dialog.");
 
-	WaitForSingleObject(g_hMutex, INFINITE);
+	LOGI("[InitInstance] WaitForSingleObject(g_hMutex) start");
+	DWORD waitRet = WaitForSingleObject(g_hMutex, INFINITE);
+	LOGI("[InitInstance] WaitForSingleObject returned %lu", waitRet);
 
-
+	LOGI("[InitInstance] constructing CMyPCHunter64Dlg");
 	CMyPCHunter64Dlg dlg;
+	LOGI("[InitInstance] dlg constructed; calling DoModal");
 	m_pMainWnd = &dlg;
 	INT_PTR nResponse = dlg.DoModal();
+	LOGI("[InitInstance] DoModal returned %lld", (long long)nResponse);
 	if (nResponse == IDOK)
 	{
 		// TODO: 在此放置处理何时用

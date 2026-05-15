@@ -33,3 +33,21 @@ void PdbResolver_Request(const wchar_t* basename, const wchar_t* fullPath);
 // 下次再调用同一地址时若 PDB 已就绪即返回真实符号名。
 void PdbResolver_Resolve(unsigned long long kAddr, unsigned long long kModuleBase,
     const wchar_t* modulePath, wchar_t* outBuf, size_t outBufCch);
+
+// 查询某个模块的内核加载基址。未加载/未识别返回 0。
+unsigned long long PdbResolver_GetModuleBase(const wchar_t* basename);
+
+// 根据函数名（必须是 PDB 中的符号，例如 "NtCreateFile"）返回该函数在内核中的 KVA。
+// 0 = 该模块 PDB 未就绪、或该符号不存在。
+unsigned long long PdbResolver_GetSymbolKva(const wchar_t* basename, const wchar_t* funcName);
+
+// 枚举该模块 PDB 中所有"函数级"符号（Tag = SymTagFunction 或 SymTagPublicSymbol），
+// 只回调那些落在 [textRvaStart, textRvaStart+textVSize) 范围内的符号。
+//   basename: 模块文件名，如 L"ntoskrnl.exe"
+//   textRva / textVSize: .text 段在 PE 中的 RVA 和大小，用来过滤掉 .data/.rdata 中的符号
+//   cb(name, rva, kva, ctx): 回调；name 为符号名，rva 是相对模块基址的偏移，kva 是该符号当前内核 VA
+// 返回回调被调用的次数。PDB 未就绪或 basename 未注册返回 0。
+typedef void (*PdbFunctionCallback)(const wchar_t* name, unsigned long rva, unsigned long long kva, void* ctx);
+size_t PdbResolver_EnumKernelFunctions(const wchar_t* basename,
+    unsigned long textRva, unsigned long textVSize,
+    PdbFunctionCallback cb, void* ctx);
