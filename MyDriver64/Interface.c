@@ -50,6 +50,8 @@ CCmd g_CmdFun[MAX_FUNCALL_INDEX] = {
 	[um_Cmd_Probe_KernelMemory_info]						= {um_Cmd_Probe_KernelMemory_info, ProbeKernelMemoryInfo},
 	[um_Cmd_Read_KernelRange_info]							= {um_Cmd_Read_KernelRange_info, ReadKernelRangeInfo},
 	[um_Cmd_Dump_ProcessPE_info]							= {um_Cmd_Dump_ProcessPE_info, DumpProcessPEInfo},
+	[um_Cmd_Inject_Dll_info]								= {um_Cmd_Inject_Dll_info, InjectDllInfo},
+	[um_Cmd_Inject_Dll_Manual_info]							= {um_Cmd_Inject_Dll_Manual_info, ManualMapDllInfo},
 };
 
 VOID MyThreadRoutine(PVOID Context)

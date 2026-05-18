@@ -94,6 +94,8 @@ enum _CommunicatOpCode
 	um_Cmd_Probe_KernelMemory_info,											//批量读取若干内核虚拟地址处的字节（用于内核钩子检测）
 	um_Cmd_Read_KernelRange_info,											//读连续内核VA区间（用于全 .text 扫描）
 	um_Cmd_Dump_ProcessPE_info,												//从远程进程地址空间 dump 一个 PE 模块（EXE/DLL，x86/x64）
+	um_Cmd_Inject_Dll_info,													//内核侧 DLL 注入（APC 路径，无远程线程，x86/x64）
+	um_Cmd_Inject_Dll_Manual_info,											//内核侧 manual map 注入（不走 LoadLibrary/Ldr，零 LDR 痕迹）
 
 };
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -940,5 +942,90 @@ typedef struct _CDumpPEInfo
 	USHORT  Is64;						//输出：1=PE32+ / 0=PE32
 	ULONG   Status;						//输出：DUMPPE_STATUS_*
 } CDumpPEInfo, * PCDumpPEInfo;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// DLL 注入：内核侧 APC 路径，无 CreateRemoteThread。
+// 流程（详见 Inject/DllInject.c）：
+//   1) KeStackAttachProcess 到目标
+//   2) 走目标 PEB (Wow64 走 PEB32) 找 kernel32 / wow64 kernel32 基址
+//   3) FNV-1a 在导出表里 hash 比对找 LoadLibraryW 地址（无字符串特征）
+//   4) ZwAllocateVirtualMemory(PAGE_READWRITE) 在目标 VAS 申请存路径字符串
+//   5) PsGetNextProcessThread 找若干非系统线程，KeInsertQueueApc 投递用户 APC
+//      NormalRoutine = LoadLibraryW；NormalContext = 路径字符串 user VA
+#define DLLINJECT_STATUS_OK              0
+#define DLLINJECT_STATUS_BAD_PARAM       1
+#define DLLINJECT_STATUS_BAD_PROCESS     2
+#define DLLINJECT_STATUS_NO_LDR          3   // PEB / Ldr 不可读（进程未初始化完）
+#define DLLINJECT_STATUS_NO_K32          4   // 没找到 kernel32
+#define DLLINJECT_STATUS_NO_LOADLIB      5   // 没找到 LoadLibraryW
+#define DLLINJECT_STATUS_ALLOC_FAIL      6
+#define DLLINJECT_STATUS_NO_THREAD       7   // 没有可注入线程
+#define DLLINJECT_STATUS_INSERT_FAIL     8
+
+typedef struct _CDllInjectInfo
+{
+	ULONG64 Eprocess;					//输入：目标进程 EPROCESS
+	WCHAR   DllPath[260];				//输入：要注入的 DLL 完整路径（目标进程可访问）
+	ULONG   PathLen;					//输入：路径字符数（不含 NUL）
+	ULONG   Status;						//输出：DLLINJECT_STATUS_*
+	ULONG   QueuedCount;				//输出：成功入队 APC 的线程数
+	ULONG   Is32;						//输出：目标是否 wow64 (1=x86 / 0=x64)
+	ULONG   ThreadsSeen;				//输出：诊断 - 枚举到的总线程数
+	ULONG   ThreadsSystem;				//输出：诊断 - 其中系统线程数
+	ULONG   ApcInsertFail;				//输出：诊断 - KeInsertQueueApc 返回 FALSE 的次数
+} CDllInjectInfo, * PCDllInjectInfo;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Manual Map（第 3 档）：完全在内核里"自建 loader"
+//   - 不走 LoadLibraryW / LdrLoadDll，PEB Ldr 链表里看不到这个 DLL
+//   - 驱动读磁盘 → attach 目标 → ZwAllocateVirtualMemory 申请 SizeOfImage
+//   - 拷头 + 按节拷数据；按 .reloc 修重定位；按 import 表 fix IAT；按节设保护
+//   - shellcode trampoline 调 DllMain(hMod, DLL_PROCESS_ATTACH, 0)，APC 触发
+//
+// 限制：
+//   - DLL 必须用 /ENTRY:DllMain 编译（跳过 _DllMainCRTStartup 的 CRT/TLS 初始化）
+//   - 不跑 TLS callbacks；不注册 InvertedFunctionTable（不能 C++ 抛异常）
+//   - import 的 dll 必须目标进程已加载
+//   - 仅 x64 目标（x86 wow64 v1 不支持，shellcode 编码差异较大）
+#define MMAP_STATUS_OK              0
+#define MMAP_STATUS_BAD_PARAM       1
+#define MMAP_STATUS_BAD_PROCESS     2
+#define MMAP_STATUS_FILE_FAIL       3   // 读 DLL 文件失败
+#define MMAP_STATUS_BAD_PE          4   // PE 头不合法
+#define MMAP_STATUS_X86_NOT_IMPL    5   // 目标是 wow64，本版不支持
+#define MMAP_STATUS_ALLOC_FAIL      6
+#define MMAP_STATUS_RELOC_FAIL      7
+#define MMAP_STATUS_IMPORT_FAIL     8   // 某个 import dll 未在目标加载
+#define MMAP_STATUS_PROTECT_FAIL    9
+#define MMAP_STATUS_SHELLCODE_FAIL  10
+#define MMAP_STATUS_NO_THREAD       11
+#define MMAP_STATUS_INSERT_FAIL     12
+#define MMAP_STATUS_HIJACK_OPENHND  13
+#define MMAP_STATUS_HIJACK_SUSPEND  14
+#define MMAP_STATUS_HIJACK_GETCTX   15
+#define MMAP_STATUS_HIJACK_SETCTX   16
+#define MMAP_STATUS_HIJACK_APIFAIL  17  // Ps*/Zw* 解析失败
+
+// Mode：投递方式
+#define MMAP_MODE_APC               0   // 第 3 档原版：APC 触发 shellcode
+#define MMAP_MODE_HIJACK            1   // 第 C 档：线程劫持（绕过 APC / CFG / alertable 要求）
+
+typedef struct _CManualMapInfo
+{
+	ULONG64 Eprocess;					//输入：目标进程 EPROCESS
+	WCHAR   DllPath[260];				//输入：磁盘 DLL 路径（驱动会从这里读文件）
+	ULONG   PathLen;					//输入：路径字符数（不含 NUL）
+	ULONG   Mode;						//输入：MMAP_MODE_APC / MMAP_MODE_HIJACK
+	ULONG   Status;						//输出：MMAP_STATUS_*
+	ULONG   QueuedCount;				//输出：APC 入队线程数；HIJACK 模式 = 成功劫持的线程数
+	ULONG64 ModuleBase;					//输出：手动映射后的目标进程基址
+	ULONG64 EntryPoint;					//输出：DllMain 入口 VA
+	ULONG   SizeOfImage;				//输出：映射后大小
+	WCHAR   FailedImportDll[64];		//输出：失败 import 的 dll 名（IMPORT_FAIL 时）
+	ULONG   ThreadsSeen;				//输出：诊断 - 枚举到的总线程数
+	ULONG   ThreadsSystem;				//输出：诊断 - 其中系统线程数
+	ULONG   ApcInsertFail;				//输出：诊断 - KeInsertQueueApc 返回 FALSE 的次数
+	ULONG64 OriginalRip;				//输出：HIJACK 模式劫持线程时的原始 Rip
+} CManualMapInfo, * PCManualMapInfo;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

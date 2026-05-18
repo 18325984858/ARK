@@ -236,6 +236,7 @@
     <ClInclude Include="KernelHookDetect.h" />
     <ClInclude Include="Dump\PeDump.h" />
     <ClInclude Include="Dump\ImportRebuilder.h" />
+    <ClInclude Include="Inject\DllInject.h" />
     <ClInclude Include="DlgKernelHookList.h" />
     <ClInclude Include="DlgDisasm.h" />
     <ClInclude Include="DlgFilterDriver.h" />
@@ -284,6 +285,7 @@
     <ClCompile Include="KernelHookDetect.cpp" />
     <ClCompile Include="Dump\PeDump.cpp" />
     <ClCompile Include="Dump\ImportRebuilder.cpp" />
+    <ClCompile Include="Inject\DllInject.cpp" />
     <ClCompile Include="DlgKernelHookList.cpp" />
     <ClCompile Include="DlgDisasm.cpp" />
     <ClCompile Include="DlgFilterDriver.cpp" />

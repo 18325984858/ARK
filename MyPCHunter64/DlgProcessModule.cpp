@@ -7,6 +7,7 @@
 #include "DlgProcessModule.h"
 #include "Thread.h"
 #include "Dump/PeDump.h"
+#include "Inject/DllInject.h"
 
 // DlgProcessModule 对话框
 
@@ -158,7 +159,7 @@ void DlgProcessModule::OnNMRClickProcessModuleList(NMHDR* pNMHDR, LRESULT* pResu
 	bool hasSel = (sp != NULL);
 	int selRow = hasSel ? ((int)sp - 1) : -1;
 
-	enum { kCopyBase = 1000, kRefresh = 2000, kDumpPe = 2001 };
+	enum { kCopyBase = 1000, kRefresh = 2000, kDumpPe = 2001, kHijack = 2004 };
 
 	CHeaderCtrl* hdr = m_CListCtrl.GetHeaderCtrl();
 	int nCols = hdr ? hdr->GetItemCount() : 0;
@@ -177,6 +178,7 @@ void DlgProcessModule::OnNMRClickProcessModuleList(NMHDR* pNMHDR, LRESULT* pResu
 	menu.AppendMenuW(MF_STRING, kRefresh, L"刷新");
 	menu.AppendMenuW(MF_SEPARATOR, 0, L"");
 	menu.AppendMenuW(MF_STRING | (hasSel ? 0 : MF_GRAYED), kDumpPe, L"Dump PE ...");
+	menu.AppendMenuW(MF_STRING, kHijack, L"DLL 注入 (线程劫持) ...");
 
 	CPoint pt; GetCursorPos(&pt);
 	int cmd = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RETURNCMD, pt.x, pt.y, this);
@@ -283,5 +285,41 @@ void DlgProcessModule::OnNMRClickProcessModuleList(NMHDR* pNMHDR, LRESULT* pResu
 				rr.errMsg.c_str());
 		}
 		AfxMessageBox(msg);
+	}
+
+	if (cmd == kHijack)
+	{
+		CFileDialog dlg(TRUE, L"dll", nullptr,
+			OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST,
+			L"动态链接库 (*.dll)|*.dll|所有文件 (*.*)|*.*||", this);
+		if (dlg.DoModal() != IDOK) return;
+
+		std::wstring err;
+		DllInject::ManualResult rr;
+		bool ok = DllInject::HijackInjectDll(
+			m_StrEprocess.GetString(),
+			dlg.GetPathName().GetString(),
+			rr, err);
+
+		CString msg;
+		if (ok)
+		{
+			msg.Format(
+				L"Force-APC 投递完成：\n%s\n\n"
+				L"模块基址：0x%016llX\n入口点：0x%016llX\n大小：0x%lX\n"
+				L"成功投递线程数：%lu\n枚举：%lu  系统线程：%lu  失败：%lu\n\n"
+				L"注：使用 Blackbone 风格 force-APC（user APC + kernel APC 调 KeTestAlertThread(UserMode) 强制唤醒）。\n"
+				L"提示成功只代表 APC 已入队；DllMain 是否真正执行需观察目标行为。\n"
+				L"若目标进程沙箱限制 user APC，可换 notepad 等普通进程验证。",
+				dlg.GetPathName().GetString(),
+				rr.moduleBase, rr.entryPoint, rr.sizeOfImage,
+				rr.queuedCount, rr.threadsSeen, rr.threadsSystem, rr.apcFails);
+		}
+		else
+		{
+			msg.Format(L"线程劫持失败：%s", err.c_str());
+		}
+		AfxMessageBox(msg);
+		return;
 	}
 }

@@ -369,3 +369,6 @@ FodyWeavers.xsd
 /mydriver64.cat
 /__rc_head.bin
 
+
+# Third-party reference (cloned for force-APC reference, not part of project)
+Blackbone/
