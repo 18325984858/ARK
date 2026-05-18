@@ -537,14 +537,22 @@ NTSTATUS MyMiniFltMessageNotify(
 
 	// 4. m_pIndata / m_pOutData / m_nRet / m_pParam 指向 R3 用户内存，
 	//    handler 内部会直接解引用，这里用 SEH 兜底，避免 R3 传入非法地址时蓝屏
+	//
+	// ★ 注意：pMsg 本身（FltMgr 给我们的 InputBuffer）也是用户 VA，FltMgr 只在
+	//    调用我们 Notify 期间用它的 SEH 包裹访问。一旦走进 __except，那层兜底
+	//    就失效了 —— 如果在 __except 里再次访问 pMsg->XXX，遇到 R3 给的非法
+	//    pIndata（如 fontdrvhost 通过 port 句柄发垃圾）会直接 0xc0000005 → 蓝屏。
+	//    解决：先把 cmd snapshot 到 __try 里的局部变量，__except 只用局部副本。
+	ULONG64 cmdSnapshot = 0;
 	__try
 	{
+		cmdSnapshot = pMsg->m_Cmd;
 		pfn(pMsg->m_Cmd, pMsg->m_pIndata, pMsg->m_pOutData, pMsg->m_nRet, pMsg->m_pParam);
 	}
 	__except (EXCEPTION_EXECUTE_HANDLER)
 	{
 		MyDbgPrintfEx("[%s] handler cmd=%llu raised %08X\n",
-			__FUNCTION__, pMsg->m_Cmd, GetExceptionCode());
+			__FUNCTION__, cmdSnapshot, GetExceptionCode());
 		return GetExceptionCode();
 	}
 

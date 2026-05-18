@@ -93,6 +93,7 @@ enum _CommunicatOpCode
 	um_Cmd_Enum_ClassInitDataCallBack_info,									//classpnp 客户 ClassInitData 回调
 	um_Cmd_Probe_KernelMemory_info,											//批量读取若干内核虚拟地址处的字节（用于内核钩子检测）
 	um_Cmd_Read_KernelRange_info,											//读连续内核VA区间（用于全 .text 扫描）
+	um_Cmd_Dump_ProcessPE_info,												//从远程进程地址空间 dump 一个 PE 模块（EXE/DLL，x86/x64）
 
 };
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -912,5 +913,32 @@ typedef struct _CKernelRangeReadInfo
 	ULONG   BytesRead;					//输出：实际读到字节数（0=失败）
 	PVOID   UserBuf;					//输入：R3 进程内的目标缓冲区
 } CKernelRangeReadInfo, * PCKernelRangeReadInfo;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// PE Dump：从远程进程地址空间整块拷贝一个加载好的 PE 模块到 R3 缓冲。
+// 两阶段调用：
+//   1) UserBuf=NULL / UserBufLen=0 → 驱动只解析 PE 头返回 SizeOfImage + Machine + Status；
+//   2) 分配缓冲后再调一次 → 驱动 KeStackAttachProcess + 逐页 SEH 拷贝到 UserBuf，
+//      不可读页留 0（保留畸形 PE/loader 残留字节，由 R3 修头）。
+// 不重建 IAT；R3 端会把每个 section 的 PointerToRawData/SizeOfRawData
+// 改成内存布局，使 IDA / x64dbg 能直接打开。
+#define DUMPPE_STATUS_OK              0
+#define DUMPPE_STATUS_BAD_PARAM       1
+#define DUMPPE_STATUS_BAD_PROCESS     2
+#define DUMPPE_STATUS_BAD_HEADER      3
+#define DUMPPE_STATUS_BUF_TOO_SMALL   4
+#define DUMPPE_STATUS_READ_FAILED     5
+typedef struct _CDumpPEInfo
+{
+	ULONG64 Eprocess;					//输入：目标进程 EPROCESS（与 DlgProcessModule 的 m_StrEprocess 一致）
+	ULONG64 ImageBase;					//输入：模块在目标进程中的基址
+	PVOID   UserBuf;					//输入：R3 缓冲（NULL=探测阶段）
+	ULONG   UserBufLen;					//输入：缓冲字节数（0=探测阶段）
+	ULONG   SizeOfImage;				//输出：PE OptionalHeader.SizeOfImage
+	ULONG   BytesWritten;				//输出：实际写入字节数（0=未写）
+	USHORT  Machine;					//输出：IMAGE_FILE_MACHINE_I386 / _AMD64
+	USHORT  Is64;						//输出：1=PE32+ / 0=PE32
+	ULONG   Status;						//输出：DUMPPE_STATUS_*
+} CDumpPEInfo, * PCDumpPEInfo;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

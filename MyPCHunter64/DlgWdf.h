@@ -48,7 +48,7 @@ public:
 	virtual BOOL OnInitDialog();
 	CTreeCtrl m_CTreeCtrl;
 	CListCtrl m_CListCtrl;
-	int nPerSel = 0;
+	int nPerSel = -1;
 	afx_msg void OnNMDblclkDlgKernelWdfTree(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnNMRClickDlgKernelWdfList(NMHDR* pNMHDR, LRESULT* pResult);
 };

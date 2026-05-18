@@ -234,6 +234,8 @@
     <ClInclude Include="DlgWorkerThread.h" />
     <ClInclude Include="PdbResolver.h" />
     <ClInclude Include="KernelHookDetect.h" />
+    <ClInclude Include="Dump\PeDump.h" />
+    <ClInclude Include="Dump\ImportRebuilder.h" />
     <ClInclude Include="DlgKernelHookList.h" />
     <ClInclude Include="DlgDisasm.h" />
     <ClInclude Include="DlgFilterDriver.h" />
@@ -280,6 +282,8 @@
     <ClCompile Include="DlgWorkerThread.cpp" />
     <ClCompile Include="PdbResolver.cpp" />
     <ClCompile Include="KernelHookDetect.cpp" />
+    <ClCompile Include="Dump\PeDump.cpp" />
+    <ClCompile Include="Dump\ImportRebuilder.cpp" />
     <ClCompile Include="DlgKernelHookList.cpp" />
     <ClCompile Include="DlgDisasm.cpp" />
     <ClCompile Include="DlgFilterDriver.cpp" />

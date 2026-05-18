@@ -142,6 +142,7 @@ copy /Y "$(TargetDir)$(TargetName).inf" "$(ProjectDir)..\MyDriver64.inf"</Comman
     <ClCompile Include="Hook\EtwHook.c" />
     <ClCompile Include="Hook\hde64.c" />
     <ClCompile Include="Hook\SystemServiceTableCallBack.c" />
+    <ClCompile Include="Dump\PeDump.c" />
     <ClCompile Include="Interface.c" />
     <ClCompile Include="MainDriver.c" />
     <ClCompile Include="SearchMemory.c" />
@@ -191,6 +192,7 @@ copy /Y "$(TargetDir)$(TargetName).inf" "$(ProjectDir)..\MyDriver64.inf"</Comman
     <ClInclude Include="Hook\hde64.h" />
     <ClInclude Include="Hook\SystemServiceTableCallBack.h" />
     <ClInclude Include="Hook\table64.h" />
+    <ClInclude Include="Dump\PeDump.h" />
     <ClInclude Include="Interface.h" />
     <ClInclude Include="KernelStruct.h" />
     <ClInclude Include="Ssdt.h" />

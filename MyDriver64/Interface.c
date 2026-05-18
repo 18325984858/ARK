@@ -49,6 +49,7 @@ CCmd g_CmdFun[MAX_FUNCALL_INDEX] = {
 	[um_Cmd_Enum_ClassInitDataCallBack_info]				= {um_Cmd_Enum_ClassInitDataCallBack_info, EnumClassInitDataCallbackInfo},
 	[um_Cmd_Probe_KernelMemory_info]						= {um_Cmd_Probe_KernelMemory_info, ProbeKernelMemoryInfo},
 	[um_Cmd_Read_KernelRange_info]							= {um_Cmd_Read_KernelRange_info, ReadKernelRangeInfo},
+	[um_Cmd_Dump_ProcessPE_info]							= {um_Cmd_Dump_ProcessPE_info, DumpProcessPEInfo},
 };
 
 VOID MyThreadRoutine(PVOID Context)

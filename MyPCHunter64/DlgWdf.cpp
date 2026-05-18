@@ -69,6 +69,9 @@ BOOL DlgWdf::OnInitDialog()
 
 	//创建根节点
 	auto RootNode = m_CTreeCtrl.InsertItem(L"Wdf项目");
+	// 根节点不参与加载：设个 sentinel(-1)，否则 GetItemData 默认为 0 会
+	// 撞上 um_WdfDlgInfoType_Wdf01000Maj(=0) 导致双击根节点也加载。
+	m_CTreeCtrl.SetItemData(RootNode, (DWORD_PTR)-1);
 	//创建子节点1
 	auto ChildNode0 = m_CTreeCtrl.InsertItem(L"Wdf01000派发函数", RootNode);
 	m_CTreeCtrl.SetItemData(ChildNode0, um_WdfDlgInfoType_Wdf01000Maj);
@@ -98,9 +101,10 @@ void DlgWdf::OnNMDblclkDlgKernelWdfTree(NMHDR* pNMHDR, LRESULT* pResult)
 	*pResult = 0;
 
 	auto hSelectItem = m_CTreeCtrl.GetSelectedItem();
+	if (hSelectItem == NULL) return;
 
 	//获取绑定的数据
-	int SelType = m_CTreeCtrl.GetItemData(hSelectItem);
+	int SelType = (int)m_CTreeCtrl.GetItemData(hSelectItem);
 	switch (SelType)
 	{
 	case um_WdfDlgInfoType_Wdf01000Maj:
@@ -110,31 +114,24 @@ void DlgWdf::OnNMDblclkDlgKernelWdfTree(NMHDR* pNMHDR, LRESULT* pResult)
 			return;
 		}
 
-		//刷新显示的数据
-		OnHaltableRefresh();
-
-		//重新设置选择的地方
+		// ★ 必须先设 nPerSel 再 AddTask：worker 线程 (UserEnumWdfInfo)
+		//   会读 dlg->nPerSel 决定发哪个 IPC，反序则会读到旧值/初始值导致什么也不加载。
 		nPerSel = um_WdfDlgInfoType_Wdf01000Maj;
+		OnHaltableRefresh();
 	}
 	break;
 	case um_WdfDlgInfoType_WdfFunction:
 	{
-
 		if (nPerSel == um_WdfDlgInfoType_WdfFunction)
 		{
 			return;
 		}
 
-		//刷新显示的数据
-		OnHaltableRefresh();
-
-
-		//重新设置选择的地方
 		nPerSel = um_WdfDlgInfoType_WdfFunction;
+		OnHaltableRefresh();
 	}
 	break;
 	default:
-		nPerSel = 0;
 		break;
 	}
 }

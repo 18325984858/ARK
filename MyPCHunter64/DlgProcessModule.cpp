@@ -6,6 +6,7 @@
 #include "afxdialogex.h"
 #include "DlgProcessModule.h"
 #include "Thread.h"
+#include "Dump/PeDump.h"
 
 // DlgProcessModule 对话框
 
@@ -150,7 +151,137 @@ void DlgProcessModule::OnNMRClickProcessModuleList(NMHDR* pNMHDR, LRESULT* pResu
 {
 	*pResult = 0;
 	if (m_CListCtrl.GetItemCount() < 0) return;
-	int r = ShowListContextMenu(&m_CListCtrl, this);
-	if (r == 0) { if (this->m_ThreadFlags != TRUE) OnProcessmoduleRefresh(); }
-	else if (r > 0) CopyBufferToClipboard(&m_CListCtrl, r - 1);
+
+	// 复用 ShowListContextMenu 的 "复制 / 刷新" 默认菜单，但因为我们要叠加
+	// "Dump PE..." 这条业务项，所以这里走自定义菜单的写法（参考 DlgKernelHookList）。
+	POSITION sp = m_CListCtrl.GetFirstSelectedItemPosition();
+	bool hasSel = (sp != NULL);
+	int selRow = hasSel ? ((int)sp - 1) : -1;
+
+	enum { kCopyBase = 1000, kRefresh = 2000, kDumpPe = 2001 };
+
+	CHeaderCtrl* hdr = m_CListCtrl.GetHeaderCtrl();
+	int nCols = hdr ? hdr->GetItemCount() : 0;
+
+	CMenu copySub; copySub.CreatePopupMenu();
+	for (int i = 0; i < nCols; ++i)
+	{
+		wchar_t title[128] = { 0 };
+		HDITEMW hi = { 0 }; hi.mask = HDI_TEXT; hi.pszText = title; hi.cchTextMax = _countof(title);
+		Header_GetItem(hdr->GetSafeHwnd(), i, &hi);
+		copySub.AppendMenuW(MF_STRING | (hasSel ? 0 : MF_GRAYED), kCopyBase + i, title);
+	}
+
+	CMenu menu; menu.CreatePopupMenu();
+	menu.AppendMenuW(MF_POPUP, (UINT_PTR)copySub.GetSafeHmenu(), L"复制");
+	menu.AppendMenuW(MF_STRING, kRefresh, L"刷新");
+	menu.AppendMenuW(MF_SEPARATOR, 0, L"");
+	menu.AppendMenuW(MF_STRING | (hasSel ? 0 : MF_GRAYED), kDumpPe, L"Dump PE ...");
+
+	CPoint pt; GetCursorPos(&pt);
+	int cmd = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RETURNCMD, pt.x, pt.y, this);
+	if (cmd == 0) return;
+
+	if (cmd >= kCopyBase && cmd < kCopyBase + nCols)
+	{
+		if (hasSel) CopyBufferToClipboard(&m_CListCtrl, cmd - kCopyBase);
+		return;
+	}
+	if (cmd == kRefresh)
+	{
+		if (this->m_ThreadFlags != TRUE) OnProcessmoduleRefresh();
+		return;
+	}
+	if (cmd == kDumpPe && hasSel)
+	{
+		// 取模块基址（列 1）、模块名（列 0）作为默认文件名
+		CString baseStr = m_CListCtrl.GetItemText(selRow, um_Process_Module_BaseAddr);
+		CString name = m_CListCtrl.GetItemText(selRow, um_Process_Module_Name);
+		ULONG64 imageBase = _wcstoui64(
+			baseStr.GetLength() > 2 && baseStr[0] == L'0' && (baseStr[1] == L'x' || baseStr[1] == L'X')
+				? baseStr.GetBuffer() + 2 : baseStr.GetBuffer(),
+			nullptr, 16);
+		baseStr.ReleaseBuffer();
+		if (imageBase == 0)
+		{
+			AfxMessageBox(L"无法解析模块基址");
+			return;
+		}
+
+		// 默认文件名：<模块名>_<basehex>.dmp.<ext>
+		CString defName;
+		defName.Format(L"%s_0x%016I64X_dump", name.GetString(), imageBase);
+		CFileDialog dlg(FALSE, L"bin", defName,
+			OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST,
+			L"PE Dump (*.exe;*.dll;*.bin)|*.exe;*.dll;*.bin|所有文件 (*.*)|*.*||", this);
+		if (dlg.DoModal() != IDOK) return;
+
+		// 把当前列表里所有模块收集起来，供 IAT 重建使用
+		std::vector<ImportRebuilder::LoadedModule> modules;
+		int total = m_CListCtrl.GetItemCount();
+		modules.reserve(total);
+		for (int i = 0; i < total; ++i)
+		{
+			ImportRebuilder::LoadedModule m;
+			m.name     = m_CListCtrl.GetItemText(i, um_Process_Module_Name).GetString();
+			m.fullPath = m_CListCtrl.GetItemText(i, um_Process_Module_Path).GetString();
+			CString bStr  = m_CListCtrl.GetItemText(i, um_Process_Module_BaseAddr);
+			CString szStr = m_CListCtrl.GetItemText(i, um_Process_Module_Size);
+			const wchar_t* b = bStr.GetString();
+			if (b[0] == L'0' && (b[1] == L'x' || b[1] == L'X')) b += 2;
+			m.base = _wcstoui64(b, nullptr, 16);
+			const wchar_t* s = szStr.GetString();
+			if (s[0] == L'0' && (s[1] == L'x' || s[1] == L'X')) s += 2;
+			m.size = _wcstoui64(s, nullptr, 16);
+			if (m.base != 0 && m.size != 0 && !m.fullPath.empty())
+				modules.push_back(std::move(m));
+		}
+
+		std::wstring err;
+		PeDump::RebuildResult rr;
+		bool ok = PeDump::DumpModuleFromProcess(
+			m_StrEprocess.GetString(),
+			(unsigned long long)imageBase,
+			modules,
+			dlg.GetPathName().GetString(),
+			rr,
+			err);
+
+		if (!ok)
+		{
+			CString msg;
+			msg.Format(L"Dump 失败：%s", err.c_str());
+			AfxMessageBox(msg);
+			return;
+		}
+
+		// Dump 成功，再展示 IAT 重建结果
+		CString msg;
+		if (!rr.attempted)
+		{
+			msg.Format(L"Dump 成功（未尝试 IAT 重建）：\n%s", dlg.GetPathName().GetString());
+		}
+		else if (rr.success)
+		{
+			msg.Format(
+				L"Dump 成功，IAT 重建完成：\n%s\n\n"
+				L"IAT 条目：%lu\n已解析：%lu  失败：%lu\n模块：%lu  区段：%lu%s\n\n"
+				L"诊断日志：%s",
+				dlg.GetPathName().GetString(),
+				rr.stats.totalIatEntries, rr.stats.resolved, rr.stats.unresolved,
+				rr.stats.modulesUsed, rr.stats.iatRegions,
+				rr.stats.autoLocated ? L"（自动定位）" : L"",
+				rr.iatLogPath.c_str());
+		}
+		else
+		{
+			msg.Format(
+				L"Dump 成功，但 IAT 重建失败：\n%s\n\n"
+				L"原因：%s\n\n"
+				L"已写盘的是 raw memory snapshot，仍可用 IDA / x64dbg 静态分析。",
+				dlg.GetPathName().GetString(),
+				rr.errMsg.c_str());
+		}
+		AfxMessageBox(msg);
+	}
 }

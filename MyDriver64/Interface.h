@@ -76,3 +76,4 @@ VOID __vectorcall EnumSfilterCallbackInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, O
 VOID __vectorcall EnumClassInitDataCallbackInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam);
 VOID __vectorcall ProbeKernelMemoryInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam);
 VOID __vectorcall ReadKernelRangeInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam);
+VOID __vectorcall DumpProcessPEInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam);
