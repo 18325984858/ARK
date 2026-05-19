@@ -325,6 +325,12 @@ VOID __vectorcall InjectDllInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64
 	BOOLEAN isWow64 = (PsGetProcessWow64Process((PEPROCESS)eproc) != NULL);
 	p->Is32 = isWow64 ? 1 : 0;
 
+	if (!IsProcessSafeToAttach((ULONG64)eproc))
+	{
+		p->Status = DLLINJECT_STATUS_BAD_PROCESS;
+		goto out_ret;
+	}
+
 	KAPC_STATE apcSt = { 0 };
 	KeStackAttachProcess((PEPROCESS)eproc, &apcSt);
 

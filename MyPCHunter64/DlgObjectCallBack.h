@@ -53,6 +53,8 @@ protected:
 public:
 	void InsertCtrlListControl(PCObjectTypeCallBackInfo pCallBackInfo);
 	void InsertCtrlListControl(PCObjectTypeCallBackExInfo pCallBackInfo);
+	void SelectObjectTypeInfo();
+	void SetRootTitle(LPCTSTR lpszRootTitle) { m_RootTitle = lpszRootTitle; }
 public:
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	virtual BOOL OnInitDialog();
@@ -61,5 +63,6 @@ public:
 	afx_msg void OnNMRClickDlgKernelObjectcallbackList(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnObjectcallbackRefresh();
 	CTreeCtrl m_CTreeCtrl;
+	CString m_RootTitle;
 	afx_msg void OnNMDblclkDlgKernelObjectcallbackTree(NMHDR* pNMHDR, LRESULT* pResult);
 };

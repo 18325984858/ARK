@@ -22,10 +22,10 @@ protected:
 
 	DECLARE_MESSAGE_MAP()
 
-
 	VOID UpkdDebuggerFlags();
 
 public:
+	VOID RefreshKdDebuggerFlags() { UpkdDebuggerFlags(); }
 	ULONG64 SetKdDebuggerFlags(PCDebugFlagInfo pDebugFlagsInfo);
 
 public:

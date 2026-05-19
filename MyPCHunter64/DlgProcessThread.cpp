@@ -42,9 +42,71 @@ END_MESSAGE_MAP()
 void DlgProcessThread::OnRclickProcessThreadList(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	*pResult = 0;
-	int r = ShowListContextMenu(&m_CListCtrl, this);
-	if (r == 0) { if (this->m_ThreadFlags != 1) OnProcessthreadRefresh(); }
-	else if (r > 0) CopyBufferToClipboard(&m_CListCtrl, r - 1);
+
+	// 当前选中行
+	POSITION p = m_CListCtrl.GetFirstSelectedItemPosition();
+	int sel = (p != NULL) ? (int)m_CListCtrl.GetNextSelectedItem(p) : -1;
+	m_SelectedTid = 0;
+	if (sel >= 0)
+	{
+		CString tidStr = m_CListCtrl.GetItemText(sel, um_Thread_Id);
+		m_SelectedTid = _wcstoui64(tidStr, 0, 10);
+	}
+
+	// 自适应"复制" 列名（沿用 ShowListContextMenu 的思路），再叠加 暂停/恢复/杀死/刷新
+	CHeaderCtrl* hdr = m_CListCtrl.GetHeaderCtrl();
+	int nCols = hdr ? hdr->GetItemCount() : 0;
+
+	enum { kCmdRefresh = 1, kCmdSuspend, kCmdResume, kCmdKill, kCmdCopyBase = 100 };
+
+	CMenu menu;
+	menu.CreatePopupMenu();
+
+	if (nCols > 0)
+	{
+		CMenu copySub;
+		copySub.CreatePopupMenu();
+		for (int i = 0; i < nCols; ++i)
+		{
+			wchar_t buf[128] = { 0 };
+			HDITEMW hi = { 0 };
+			hi.mask = HDI_TEXT;
+			hi.pszText = buf;
+			hi.cchTextMax = _countof(buf);
+			hdr->GetItem(i, (HDITEM*)&hi);
+			copySub.AppendMenuW(MF_STRING, kCmdCopyBase + i, buf[0] ? buf : L"--");
+		}
+		menu.AppendMenuW(MF_POPUP, (UINT_PTR)copySub.GetSafeHmenu(), L"复制");
+		copySub.Detach();
+	}
+	menu.AppendMenuW(MF_STRING, kCmdRefresh, L"刷新");
+	menu.AppendMenuW(MF_SEPARATOR, 0, (LPCTSTR)NULL);
+	UINT actionFlags = (m_SelectedTid != 0) ? MF_STRING : (MF_STRING | MF_GRAYED);
+	menu.AppendMenuW(actionFlags, kCmdSuspend, L"暂停线程");
+	menu.AppendMenuW(actionFlags, kCmdResume, L"恢复线程");
+	menu.AppendMenuW(actionFlags, kCmdKill, L"杀死线程");
+
+	POINT pt; GetCursorPos(&pt);
+	UINT cmd = menu.TrackPopupMenu(TPM_LEFTBUTTON | TPM_RETURNCMD | TPM_NONOTIFY, pt.x, pt.y, this);
+	if (cmd == 0) return;
+
+	if (cmd == kCmdRefresh)
+	{
+		if (this->m_ThreadFlags != 1) OnProcessthreadRefresh();
+		return;
+	}
+	if (cmd >= kCmdCopyBase && cmd < kCmdCopyBase + (UINT)nCols)
+	{
+		CopyBufferToClipboard(&m_CListCtrl, (int)(cmd - kCmdCopyBase));
+		return;
+	}
+	if (m_SelectedTid == 0) return;
+	if (cmd == kCmdSuspend)
+		g_ThreadPool.AddTask(new _CThreadPack{ _LoadDriver::Um_UserCallBackType_UserSuspendThread, this });
+	else if (cmd == kCmdResume)
+		g_ThreadPool.AddTask(new _CThreadPack{ _LoadDriver::Um_UserCallBackType_UserResumeThread, this });
+	else if (cmd == kCmdKill)
+		g_ThreadPool.AddTask(new _CThreadPack{ _LoadDriver::Um_UserCallBackType_UserKillThread, this });
 }
 
 

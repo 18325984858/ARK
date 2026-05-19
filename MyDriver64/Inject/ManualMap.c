@@ -364,6 +364,11 @@ VOID __vectorcall ManualMapDllInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULON
 	ULONG64  localOriginalRip   = 0;
 
 	// Phase 3 / 4：attach + 在目标 VAS 申请整块（先 PAGE_READWRITE 便于写入，最后再分节改保护）
+	if (!IsProcessSafeToAttach((ULONG64)eproc))
+	{
+		p->Status = MMAP_STATUS_BAD_PROCESS;
+		goto cleanup_file;
+	}
 	KAPC_STATE apcSt = { 0 };
 	KeStackAttachProcess((PEPROCESS)eproc, &apcSt);
 

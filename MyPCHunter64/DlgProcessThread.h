@@ -47,5 +47,6 @@ public:
 	CListCtrl m_CListCtrl;
 	CString m_StrEprocess;
 	CString m_StrProcessName;
+	ULONG64 m_SelectedTid = 0;     // 右键菜单选中行对应的 TID，给 UserSuspend/Resume/KillThread 用
 	afx_msg void OnProcessthreadRefresh();
 };

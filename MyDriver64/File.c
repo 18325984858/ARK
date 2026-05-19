@@ -812,14 +812,21 @@ retry:
 						Status = PsLookupProcessByProcessId(HandleInfo->UniqueProcessId, &Process);
 						if (NT_SUCCESS(Status))
 						{
-							//切换进程
-							KAPC_STATE ApcState;
-							KeStackAttachProcess(Process, &ApcState);
+							if (!IsProcessSafeToAttach((ULONG64)Process))
+							{
+								ObDereferenceObject(Process);
+							}
+							else
+							{
+								//切换进程
+								KAPC_STATE ApcState;
+								KeStackAttachProcess(Process, &ApcState);
 
-							//调用ZwClose
-							ZwClose(HandleInfo->HandleValue);
-							KeUnstackDetachProcess(&ApcState);
-							ObDereferenceObject(Process);
+								//调用ZwClose
+								ZwClose(HandleInfo->HandleValue);
+								KeUnstackDetachProcess(&ApcState);
+								ObDereferenceObject(Process);
+							}
 						}
 					}
 				}

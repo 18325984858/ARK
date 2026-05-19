@@ -8,6 +8,9 @@
 #include "DlgWdf.h"
 #include "DlgFilterDriver.h"
 #include "DlgWorkerThread.h"
+#include "DlgSetting.h"
+#include "DlgObjectCallBack.h"
+#include "DlgDirectIo.h"
 // DlgKernel 对话框
 
 class DlgKernel : public CDialogEx, public CFunction
@@ -57,6 +60,9 @@ public:
 	DlgWdf m_DlgWdf;
 	DlgFilterDriver m_FilterDriver;
 	DlgWorkerThread m_DlgWorkerThread;
+	DlgSetting m_DlgSystemDbg;
+	DlgObjectCallBack m_DlgObjectHijack;
+	DlgDirectIo m_DlgDirectIo;
 
 	afx_msg void OnNMClickKernelTab(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnDestroy();

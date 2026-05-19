@@ -844,6 +844,26 @@ ULONG64 PsLookUpProcessByProcessId(HANDLE Pid)
 	return ProcessObject;
 }
 
+BOOLEAN IsProcessSafeToAttach(ULONG64 pEprocess)
+{
+	if (!MmIsAddressValid((PVOID)pEprocess))
+	{
+		return FALSE;
+	}
+	//attach 到当前进程会触发 bugcheck 0x5 INVALID_PROCESS_ATTACH_ATTEMPT
+	if ((PEPROCESS)pEprocess == PsGetCurrentProcess())
+	{
+		return FALSE;
+	}
+	//正在退出/已销毁的僵尸进程：ObjectTable 被清零，attach 同样会触发 bugcheck 0x5
+	if (_EPROCESS_ObjectTable > 0 &&
+		*(PULONG64)((ULONG64)pEprocess + _EPROCESS_ObjectTable) == 0)
+	{
+		return FALSE;
+	}
+	return TRUE;
+}
+
 VOID WriteBufferToProcessStructEx(PCProcessInfo OutProcess, ULONG64 pEprocess)
 {
 	////////////////////////////////////////////////////////////////////////
@@ -1009,6 +1029,10 @@ VOID GetProcessPebMsgEx(ULONG64 pEprocess, PCProcessInfo OutProcess)
 	//项目需求区域
 	if (MmIsAddressValid(pEprocess) && MmIsAddressValid(OutProcess))
 	{
+		if (!IsProcessSafeToAttach(pEprocess))
+		{
+			return;
+		}
 		Peb = *(PULONG64)((ULONG64)pEprocess + _EPROCESS_Peb);//获取PEB
 		if (Peb != NULL)
 		{
@@ -1226,6 +1250,12 @@ ULONG64 MiReadVirtualMemory(ULONG64 pEprocess, ULONG64 pDstAddr, ULONG64 dqSize,
 
 	RtlZeroMemory(pSrcMem, dqSize);
 
+	if (!IsProcessSafeToAttach(pEprocess))
+	{
+		ExFreePoolWithTag(pSrcMem, 'Tag');
+		return FALSE;
+	}
+
 	KAPC_STATE ApcState = { 0 };
 	//挂靠到指定进程
 	KeStackAttachProcess(pEprocess, &ApcState);								//切换目标CR3
@@ -1320,6 +1350,15 @@ ULONG64 MiWriteVirtualMemory(ULONG64 pEprocess, ULONG64 pDstAddr, ULONG64 dqSize
 		RtlCopyMemory(pBuf, pInBuf, dqSize);
 	}
 
+	if (!IsProcessSafeToAttach(pEprocess))
+	{
+		if (pBuf != pInBuf)
+		{
+			ExFreePoolWithTag(pBuf, 'Tag');
+		}
+		return FALSE;
+	}
+
 	//挂靠到目标进程
 	KAPC_STATE ApcState = { 0 };
 	KeStackAttachProcess(pEprocess, &ApcState);
@@ -1372,6 +1411,10 @@ ULONG64 IsProcessInModule(ULONG64 pEprocess, ULONG64 dqDstAddr, PCProcessModuleI
 
 	if (MmIsAddressValid(pEprocess))
 	{
+		if (!IsProcessSafeToAttach(pEprocess))
+		{
+			return nRet;
+		}
 		ULONG64 Peb = *(PULONG64)((ULONG64)pEprocess + _EPROCESS_Peb);					//获取PEB
 		if (Peb != NULL)
 		{
@@ -1473,6 +1516,10 @@ ULONG64 EnumProcessModule(ULONG64 pEprocess, PCProcessModuleInfo* outData)
 
 	if (MmIsAddressValid(pEprocess))
 	{
+		if (!IsProcessSafeToAttach(pEprocess))
+		{
+			return nRet;
+		}
 		ULONG64 Peb = *(PULONG64)((ULONG64)pEprocess + _EPROCESS_Peb);					//获取PEB
 		if (Peb != NULL)
 		{
@@ -1633,6 +1680,15 @@ ULONG64 EnumThread(ULONG64 pEprocess, PCProcessThreadInfo* OutData)
 			ThreadObject = (ULONG64)NextList - _ETHREAD_ThreadListEntry;
 			TPid = *(PULONG64)(ThreadObject + _KTHREAD_UniqueProcess);
 			Tid = *(PULONG64)(ThreadObject + _KTHREAD_UniqueThread);
+
+			//跳过已经被终止还挂在 ThreadListHead 上的僵尸线程（KTHREAD.State == 4 Terminated）
+			//否则杀掉线程后用户在 UI 上还会看到它残留
+			UCHAR ThreadState = *(PUCHAR)(ThreadObject + _KTHREAD_State);
+			if (ThreadState == 4 /*Terminated*/)
+			{
+				NextList = NextList->Flink;
+				continue;
+			}
 
 			//判断线程所属PID 是否是当前进程的PID
 			if (TPid == Pid)
@@ -2550,6 +2606,11 @@ ULONG64 EnumSsdtShadowTable(PCSsdtInfo* OutData)
 	//初始化链表
 	CList list;
 	InitDoubleLoopList(&list);								//初始化链表
+
+	if (!IsProcessSafeToAttach(WinLogeProcess))
+	{
+		return FALSE;
+	}
 
 	//附加到winlogon.exe进程
 	KAPC_STATE apcState;
@@ -5640,30 +5701,52 @@ ULONG64 EnumFileSystemDevice(ULONG64 pListEntry, ULONG64 nType, PCFileSystemDevi
 			{
 				break;
 			}
+			RtlZeroMemory(pNewInfo, sizeof(CFileSystemDeviceInfo));
 			//类型
 			pNewInfo->nType = nType;
 
 			//设备对象
-			pNewInfo->DeviceObject = pDeviceObj;
+			pNewInfo->DeviceObject = (ULONG64)pDeviceObj;
 
 			//驱动对象
 			pNewInfo->DriverObject = (ULONG64)pDeviceObj->DriverObject;
+			pNewInfo->DeviceType = pDeviceObj->DeviceType;
+			pNewInfo->Characteristics = pDeviceObj->Characteristics;
+			pNewInfo->DeviceFlags = pDeviceObj->Flags;
+			pNewInfo->AttachedDevice = (ULONG64)pDeviceObj->AttachedDevice;
+			pNewInfo->NextDevice = (ULONG64)pDeviceObj->NextDevice;
 
 			//拷贝驱动对象名称
 			if (MmIsAddressValid(pNewInfo->DriverObject))
 			{
 				PUNICODE_STRING pDriverName = (PUNICODE_STRING) & ((PDRIVER_OBJECT)pNewInfo->DriverObject)->DriverName;
-				if (MmIsAddressValid(pDriverName))
+				if (MmIsAddressValid(pDriverName) && MmIsAddressValid(pDriverName->Buffer))
 				{
-					ULONG64 NameLen = pDriverName->MaximumLength > MY_MAX_PATH ? MY_MAX_PATH : pDriverName->MaximumLength;
-					memcpy_s(pNewInfo->DriverName, MY_MAX_PATH, pDriverName->Buffer, NameLen);
+					ULONG64 NameLen = pDriverName->Length;
+					if (NameLen > sizeof(pNewInfo->DriverName) - sizeof(WCHAR))
+					{
+						NameLen = sizeof(pNewInfo->DriverName) - sizeof(WCHAR);
+					}
+					memcpy_s(pNewInfo->DriverName, sizeof(pNewInfo->DriverName), pDriverName->Buffer, NameLen);
+					pNewInfo->DriverName[NameLen / sizeof(WCHAR)] = L'\0';
 				}
 			}
 
 			//拷贝设备名称
-			if (MmIsAddressValid(pNewInfo->DeviceObject))
+			POBJECT_NAME_INFORMATION pDeviceName = obGetObjectNameEx(pDeviceObj);
+			if (pDeviceName)
 			{
-				//PUNICODE_STRING DeviceName = ((PDEVICE_OBJECT)pNewInfo->DeviceObject)->DeviceExtension;
+				if (MmIsAddressValid(pDeviceName->Name.Buffer))
+				{
+					ULONG64 NameLen = pDeviceName->Name.Length;
+					if (NameLen > sizeof(pNewInfo->DeviceName) - sizeof(WCHAR))
+					{
+						NameLen = sizeof(pNewInfo->DeviceName) - sizeof(WCHAR);
+					}
+					memcpy_s(pNewInfo->DeviceName, sizeof(pNewInfo->DeviceName), pDeviceName->Name.Buffer, NameLen);
+					pNewInfo->DeviceName[NameLen / sizeof(WCHAR)] = L'\0';
+				}
+				ExFreePoolWithTag(pDeviceName, 'namT');
 			}
 
 			//插入链表
@@ -5679,6 +5762,7 @@ ULONG64 EnumFileSystemDevice(ULONG64 pListEntry, ULONG64 nType, PCFileSystemDevi
 				*OutData = pNewInfo;											//赋值
 				IsInit = TRUE;
 			}
+			dqRet++;
 		}
 	}
 	return dqRet;

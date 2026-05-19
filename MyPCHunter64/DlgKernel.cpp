@@ -64,6 +64,9 @@ void DlgKernel::OnSize(UINT nType, int cx, int cy)
 	m_DlgWdf.MoveWindow(rect, TRUE);
 	m_FilterDriver.MoveWindow(rect, TRUE);
 	m_DlgWorkerThread.MoveWindow(rect, TRUE);
+	m_DlgSystemDbg.MoveWindow(rect, TRUE);
+	m_DlgObjectHijack.MoveWindow(rect, TRUE);
+	m_DlgDirectIo.MoveWindow(rect, TRUE);
 }
 
 
@@ -96,8 +99,15 @@ BOOL DlgKernel::OnInitDialog()
 	m_DlgMiniFilterCallBack.Create(ID_DLG_KERNEL_MINIFILTERCALLBACK, &m_CTabCtrl);
 
 	m_CTabCtrl.InsertItem(KernelDlgType_SystemDbg, TableTitleStr[KernelDlgType_SystemDbg]);
+	m_DlgSystemDbg.Create(ID_DLG_SETTING, &m_CTabCtrl);
+
 	m_CTabCtrl.InsertItem(KernelDlgType_ObjectHijack, TableTitleStr[KernelDlgType_ObjectHijack]);
+	m_DlgObjectHijack.SetRootTitle(L"对象劫持");
+	m_DlgObjectHijack.Create(ID_DLG_KERNEL_OBJECTCALLBACK, &m_CTabCtrl);
+
 	m_CTabCtrl.InsertItem(KernelDlgType_IO, TableTitleStr[KernelDlgType_IO]);
+	m_DlgDirectIo.Create(ID_DLG_DPC, &m_CTabCtrl);
+
 	m_CTabCtrl.InsertItem(KernelDlgType_GDT, TableTitleStr[KernelDlgType_GDT]);
 	m_DlgGdt.Create(ID_DLG_GDT, &m_CTabCtrl);
 
@@ -118,6 +128,9 @@ BOOL DlgKernel::OnInitDialog()
 	m_DlgHalTable.MoveWindow(&TabRect);
 	m_DlgWdf.MoveWindow(&TabRect);
 	m_DlgWorkerThread.MoveWindow(&TabRect);
+	m_DlgSystemDbg.MoveWindow(&TabRect);
+	m_DlgObjectHijack.MoveWindow(&TabRect);
+	m_DlgDirectIo.MoveWindow(&TabRect);
 
 	m_DlgKernelCallBack.ShowWindow(TRUE);
 	return TRUE;
@@ -137,6 +150,9 @@ void DlgKernel::OnNMClickKernelTab(NMHDR* pNMHDR, LRESULT* pResult)
 	m_DlgWdf.ShowWindow(FALSE);
 	m_FilterDriver.ShowWindow(FALSE);
 	m_DlgWorkerThread.ShowWindow(FALSE);
+	m_DlgSystemDbg.ShowWindow(FALSE);
+	m_DlgObjectHijack.ShowWindow(FALSE);
+	m_DlgDirectIo.ShowWindow(FALSE);
 
 
 	switch (m_CTabCtrl.GetCurSel())
@@ -170,10 +186,16 @@ void DlgKernel::OnNMClickKernelTab(NMHDR* pNMHDR, LRESULT* pResult)
 		m_DlgMiniFilterCallBack.OnMinifiltercallbackRefresh();
 		break;
 	case DlgKernel::KernelDlgType_SystemDbg:
+		m_DlgSystemDbg.ShowWindow(TRUE);
+		m_DlgSystemDbg.RefreshKdDebuggerFlags();
 		break;
 	case DlgKernel::KernelDlgType_ObjectHijack:
+		m_DlgObjectHijack.ShowWindow(TRUE);
+		m_DlgObjectHijack.SelectObjectTypeInfo();
 		break;
 	case DlgKernel::KernelDlgType_IO:
+		m_DlgDirectIo.ShowWindow(TRUE);
+		m_DlgDirectIo.OnDirectIoRefresh();
 		break;
 	case DlgKernel::KernelDlgType_GDT:
 		m_DlgGdt.ShowWindow(TRUE);
@@ -198,6 +220,9 @@ void DlgKernel::OnDestroy()
 	m_DlgHalTable.DestroyWindow();
 	m_DlgWdf.DestroyWindow();
 	m_DlgWorkerThread.DestroyWindow();
+	m_DlgSystemDbg.DestroyWindow();
+	m_DlgObjectHijack.DestroyWindow();
+	m_DlgDirectIo.DestroyWindow();
 
 	// TODO: 在此处添加消息处理程序代码
 }

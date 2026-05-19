@@ -16,6 +16,7 @@
 #include "DlgMiniFilterCallBack.h"
 #include "DlgObjectCallBack.h"
 #include "DlgDpc.h"
+#include "DlgDirectIo.h"
 #include "DlgRWMemory.h"
 #include "DlgHalTable.h"
 #include "DlgWdf.h"
@@ -172,6 +173,10 @@ public:
 
 		Um_UserCallBackType_Test,
 		Um_UserCallBackType_UserEnumKernelHookInfo,										//内核 inline 钩子扫描
+		Um_UserCallBackType_UserEnumDirectIoInfo,
+		Um_UserCallBackType_UserSuspendThread,											//暂停线程
+		Um_UserCallBackType_UserResumeThread,											//恢复线程
+		Um_UserCallBackType_UserKillThread,												//结束线程
 		Um_UserCallBackType_NULL,
 	};
 	typedef ULONG64(__thiscall _LoadDriver::* PUSERCALLBAKC)(PVOID Pragma);					//函数指针
@@ -242,6 +247,14 @@ public:
 
 	//功能:内核 inline 钩子扫描，在后台线程跑，扫完后回 UI 插入到 ListControl
 	ULONG64 _LoadDriver::UserEnumKernelHookInfo(PVOID pDlgKernelHookList);
+	//功能:枚举 Direct IO 相关设备对象信息
+	ULONG64 _LoadDriver::UserEnumDirectIoInfo(PVOID pDlgDirectIo);
+	//功能:暂停选中的线程
+	ULONG64 _LoadDriver::UserSuspendThread(PVOID pDlgProcessThread);
+	//功能:恢复选中的线程
+	ULONG64 _LoadDriver::UserResumeThread(PVOID pDlgProcessThread);
+	//功能:结束选中的线程
+	ULONG64 _LoadDriver::UserKillThread(PVOID pDlgProcessThread);
 
 
 

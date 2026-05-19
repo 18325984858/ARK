@@ -114,6 +114,11 @@ VOID __vectorcall DumpProcessPEInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULO
 	ULONG   written    = 0;
 
 	KAPC_STATE apc = { 0 };
+	if (!IsProcessSafeToAttach((ULONG64)eproc))
+	{
+		p->Status = DUMPPE_STATUS_BAD_PROCESS;
+		goto out_ret;
+	}
 	KeStackAttachProcess((PEPROCESS)eproc, &apc);
 
 	__try

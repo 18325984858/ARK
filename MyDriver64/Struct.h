@@ -99,6 +99,10 @@ enum _CommunicatOpCode
 	um_Cmd_ForceUnload_Driver_info,											//强制卸载驱动：DetachDevice + DriverUnload + MmUnloadSystemImage
 	um_Cmd_MMap_Driver_info,												//手动映射加载驱动（无服务名、无注册表项、不入 PsLoadedModuleList）
 
+	um_Cmd_SuspendThread_info,												//暂停指定线程（pIndata = TID）
+	um_Cmd_ResumeThread_info,												//恢复指定线程（pIndata = TID）
+	um_Cmd_KillThread_info,													//结束指定线程（pIndata = TID）
+
 };
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -738,6 +742,11 @@ typedef struct _FileSystemDeviceInfo
 	ULONG64 nType;															//FileSystemDeviceType 类型
 	ULONG64 DeviceObject;													//设备对象
 	ULONG64 DriverObject;													//驱动对象
+	ULONG64 DeviceType;														//DEVICE_OBJECT->DeviceType
+	ULONG64 Characteristics;												//DEVICE_OBJECT->Characteristics
+	ULONG64 DeviceFlags;													//DEVICE_OBJECT->Flags
+	ULONG64 AttachedDevice;												//DEVICE_OBJECT->AttachedDevice
+	ULONG64 NextDevice;														//DEVICE_OBJECT->NextDevice
 	WCHAR DeviceName[MY_MAX_PATH];											//设备名称
 	WCHAR DriverName[MY_MAX_PATH];											//驱动名称
 }CFileSystemDeviceInfo, * PCFileSystemDeviceInfo;

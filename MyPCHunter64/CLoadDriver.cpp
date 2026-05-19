@@ -51,6 +51,10 @@ _LoadDriver::_LoadDriver()
 	m_pUserCallBackFun[Um_UserCallBackType_Test] = &_LoadDriver::UserTestFun;
 
 	m_pUserCallBackFun[Um_UserCallBackType_UserEnumKernelHookInfo] = &_LoadDriver::UserEnumKernelHookInfo;
+	m_pUserCallBackFun[Um_UserCallBackType_UserEnumDirectIoInfo] = &_LoadDriver::UserEnumDirectIoInfo;
+	m_pUserCallBackFun[Um_UserCallBackType_UserSuspendThread] = &_LoadDriver::UserSuspendThread;
+	m_pUserCallBackFun[Um_UserCallBackType_UserResumeThread] = &_LoadDriver::UserResumeThread;
+	m_pUserCallBackFun[Um_UserCallBackType_UserKillThread] = &_LoadDriver::UserKillThread;
 
 	m_pUserCallBackFun[Um_UserCallBackType_NULL] = NULL;
 }
@@ -349,6 +353,40 @@ ULONG64 _LoadDriver::UserEnumProcessThreadInfo(PVOID pDlgProcessThreadInfo)
 	((DlgProcessThread*)pDlgProcessThreadInfo)->InsertCtrlListControl(pInfo);
 
 	return TRUE;
+}
+
+static ULONG64 SendThreadOpMsg(_LoadDriver* pDriver, ULONG64 nCmd, PVOID pDlg, const wchar_t* okText, const wchar_t* failText)
+{
+	if (!pDlg) return FALSE;
+	ULONG64 Tid = ((DlgProcessThread*)pDlg)->m_SelectedTid;
+	if (Tid == 0)
+	{
+		return FALSE;
+	}
+	ULONG64 nRet = pDriver->SendMsg(nCmd, (PVOID)Tid, NULL);
+	if ((LONG)nRet >= 0)
+	{
+		::MessageBoxW(NULL, okText, L"提示", MB_OK);
+		((DlgProcessThread*)pDlg)->OnProcessthreadRefresh();
+		return TRUE;
+	}
+	::MessageBoxW(NULL, failText, L"提示", MB_OK);
+	return FALSE;
+}
+
+ULONG64 _LoadDriver::UserSuspendThread(PVOID pDlgProcessThread)
+{
+	return SendThreadOpMsg(this, um_Cmd_SuspendThread_info, pDlgProcessThread, L"暂停线程成功!", L"暂停线程失败!");
+}
+
+ULONG64 _LoadDriver::UserResumeThread(PVOID pDlgProcessThread)
+{
+	return SendThreadOpMsg(this, um_Cmd_ResumeThread_info, pDlgProcessThread, L"恢复线程成功!", L"恢复线程失败!");
+}
+
+ULONG64 _LoadDriver::UserKillThread(PVOID pDlgProcessThread)
+{
+	return SendThreadOpMsg(this, um_Cmd_KillThread_info, pDlgProcessThread, L"结束线程成功!", L"结束线程失败!");
 }
 ULONG64 _LoadDriver::UserEnumProcessHandleInfo(PVOID pDlgProcessHandleInfo)
 {
@@ -760,6 +798,21 @@ ULONG64 _LoadDriver::UserEnumFilterDriver(PVOID pInfo)
 	int nRet = SendMsg(um_Cmd_Enum_FilterDriver_info, NULL, (LPVOID*)&pFilterDeviceInfo);
 
 	((DlgFilterDriver*)pInfo)->InsertCtrlListControl(pFilterDeviceInfo);
+
+	return TRUE;
+}
+
+ULONG64 _LoadDriver::UserEnumDirectIoInfo(PVOID pDlgDirectIo)
+{
+	if (!pDlgDirectIo)
+	{
+		return FALSE;
+	}
+
+	PCFileSystemDeviceInfo pInfo = NULL;
+	SendMsg(um_Cmd_Enum_SystemDevice_info, NULL, (LPVOID*)&pInfo);
+
+	((DlgDirectIo*)pDlgDirectIo)->InsertCtrlListControl(pInfo);
 
 	return TRUE;
 }

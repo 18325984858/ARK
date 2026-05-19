@@ -15,6 +15,7 @@ IMPLEMENT_DYNAMIC(DlgObjectCallBack, CDialogEx)
 
 DlgObjectCallBack::DlgObjectCallBack(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(ID_DLG_KERNEL_OBJECTCALLBACK, pParent)
+	, m_RootTitle(L"对象类型回调")
 {
 
 }
@@ -63,7 +64,7 @@ BOOL DlgObjectCallBack::OnInitDialog()
 		m_CTreeCtrl.GetExtendedStyle() | TVS_FULLROWSELECT | TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_SHOWSELALWAYS);
 
 	//创建根节点
-	auto RootNode = m_CTreeCtrl.InsertItem(L"对象类型回调");
+	auto RootNode = m_CTreeCtrl.InsertItem(m_RootTitle);
 	//创建子节点1
 	auto ChildNode0 = m_CTreeCtrl.InsertItem(L"ObjectTypeCallBack", RootNode);
 	m_CTreeCtrl.SetItemData(ChildNode0, um_ObjectCallBack_Type);
@@ -228,6 +229,26 @@ void DlgObjectCallBack::InsertCtrlListControl(PCObjectTypeCallBackInfo pCallBack
 			AfxMessageBox(L"释放空间失败!");
 		}
 	} while (pCurList != &pCallBackInfo->List.List);
+}
+
+void DlgObjectCallBack::SelectObjectTypeInfo()
+{
+	if (nPerSel != um_ObjectCallBackInfo_Type)
+	{
+		while (m_CListCtrl.DeleteColumn(0)) {}
+		m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_Type, _T("类型"), LVCFMT_LEFT, 100);
+		m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_ValidAccessMask, _T("ValidAccessMask"), LVCFMT_LEFT, 100);
+		m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_FunCallBack, _T("函数地址"), LVCFMT_LEFT, 150);
+		m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_FunName, _T("函数"), LVCFMT_LEFT, 150);
+		m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_Pos, _T("位置"), LVCFMT_LEFT, 250);
+		m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_Object, _T("对象地址"), LVCFMT_LEFT, 150);
+		m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_ModulePath, _T("所在模块路径"), LVCFMT_LEFT, 150);
+		m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_Firm, _T("文件厂商"), LVCFMT_LEFT, 200);
+		m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
+		nPerSel = um_ObjectCallBackInfo_Type;
+	}
+
+	OnObjectcallbackRefresh();
 }
 
 void DlgObjectCallBack::OnNMDblclkDlgKernelObjectcallbackTree(NMHDR* pNMHDR, LRESULT* pResult)

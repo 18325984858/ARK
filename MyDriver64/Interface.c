@@ -54,6 +54,9 @@ CCmd g_CmdFun[MAX_FUNCALL_INDEX] = {
 	[um_Cmd_Inject_Dll_Manual_info]							= {um_Cmd_Inject_Dll_Manual_info, ManualMapDllInfo},
 	[um_Cmd_ForceUnload_Driver_info]						= {um_Cmd_ForceUnload_Driver_info, ForceUnloadDriverInfo},
 	[um_Cmd_MMap_Driver_info]								= {um_Cmd_MMap_Driver_info, MMapDriverInfo},
+	[um_Cmd_SuspendThread_info]								= {um_Cmd_SuspendThread_info, MySuspendThread},
+	[um_Cmd_ResumeThread_info]								= {um_Cmd_ResumeThread_info, MyResumeThread},
+	[um_Cmd_KillThread_info]								= {um_Cmd_KillThread_info, MyKillThread},
 };
 
 VOID MyThreadRoutine(PVOID Context)
@@ -794,6 +797,176 @@ VOID __vectorcall MyKillProcess(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64
 	if (MmIsAddressValid(pRet))
 	{
 		*(PULONG64)pRet = dqRet;
+	}
+}
+
+// Win10 19041 的 ntoskrnl 不导出 NtSuspendThread/NtResumeThread/NtTerminateThread，
+// 走项目现有 PDB 查询通道：由用户态 PdbResolver 拿到 RVA + g_NtoskrnlAddr 得到实际地址。
+// 这几个 Nt* 入口接受 HANDLE，所以 PsLookupThreadByThreadId 拿到 PETHREAD 后用
+// ObOpenObjectByPointer 申请一个内核句柄再调用。
+typedef NTSTATUS(NTAPI* PFN_NtSuspendThread)(IN HANDLE ThreadHandle, OUT PULONG PreviousSuspendCount OPTIONAL);
+typedef NTSTATUS(NTAPI* PFN_NtResumeThread)(IN HANDLE ThreadHandle, OUT PULONG PreviousSuspendCount OPTIONAL);
+typedef NTSTATUS(NTAPI* PFN_NtTerminateThread)(IN HANDLE ThreadHandle, IN NTSTATUS ExitStatus);
+
+static PFN_NtSuspendThread    g_NtSuspendThread    = NULL;
+static PFN_NtResumeThread     g_NtResumeThread     = NULL;
+static PFN_NtTerminateThread  g_NtTerminateThread  = NULL;
+
+static PVOID ResolveNtRoutineByPdb(PCWSTR Name)
+{
+	ULONG64 rva = ToUserSendGetGlobalVariablesMessgae(L"ntoskrnel.exe", (PWSTR)Name);
+	if (rva == 0 || rva == (ULONG64)-1 || g_NtoskrnlAddr == 0)
+	{
+		return NULL;
+	}
+	return (PVOID)(g_NtoskrnlAddr + rva);
+}
+
+// 从 TID 拿到内核句柄；成功时调用方负责 ZwClose + ObDereferenceObject。
+static NTSTATUS OpenKernelThreadHandleByTid(IN HANDLE Tid, IN ACCESS_MASK Access,
+	OUT PHANDLE OutHandle, OUT PETHREAD* OutThread)
+{
+	*OutHandle = NULL;
+	*OutThread = NULL;
+
+	PETHREAD Thread = NULL;
+	NTSTATUS Status = PsLookupThreadByThreadId(Tid, &Thread);
+	if (!NT_SUCCESS(Status) || !Thread)
+	{
+		return Status;
+	}
+
+	HANDLE hThread = NULL;
+	Status = ObOpenObjectByPointer(Thread, OBJ_KERNEL_HANDLE, NULL,
+		Access, *PsThreadType, KernelMode, &hThread);
+	if (!NT_SUCCESS(Status) || !hThread)
+	{
+		ObDereferenceObject(Thread);
+		return Status;
+	}
+
+	*OutHandle = hThread;
+	*OutThread = Thread;
+	return STATUS_SUCCESS;
+}
+
+// Nt* 系列入口会用 KeGetCurrentThread()->PreviousMode 校验句柄。
+// 从 FilterPort 走过来时 PreviousMode == UserMode，会拒绝内核句柄返回 STATUS_INVALID_HANDLE。
+// 调用前临时改成 KernelMode，调用完立即还原，避免污染当前线程其它路径。
+extern int g_Offset_KTHREAD_PreviousMode; // FindModuleData.c 已定义并初始化
+
+static CHAR ForceKernelPreviousMode(VOID)
+{
+	if (g_Offset_KTHREAD_PreviousMode <= 0) return (CHAR)-1;
+	PCHAR p = (PCHAR)((ULONG64)PsGetCurrentThread() + g_Offset_KTHREAD_PreviousMode);
+	CHAR saved = *p;
+	*p = (CHAR)KernelMode;
+	return saved;
+}
+
+static VOID RestorePreviousMode(CHAR saved)
+{
+	if (g_Offset_KTHREAD_PreviousMode <= 0 || saved == (CHAR)-1) return;
+	PCHAR p = (PCHAR)((ULONG64)PsGetCurrentThread() + g_Offset_KTHREAD_PreviousMode);
+	*p = saved;
+}
+
+VOID __vectorcall MySuspendThread(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam)
+{
+	if (!g_NtSuspendThread)
+		g_NtSuspendThread = (PFN_NtSuspendThread)ResolveNtRoutineByPdb(L"NtSuspendThread");
+
+	MyDbgPrintfEx("[MySuspendThread] tid=%I64u(0x%I64X) g_NtoskrnlAddr=%p NtSuspendThread=%p\n",
+		pIndata, pIndata, (PVOID)g_NtoskrnlAddr, g_NtSuspendThread);
+
+	NTSTATUS Status = STATUS_NOT_IMPLEMENTED;
+	if (g_NtSuspendThread)
+	{
+		HANDLE hThread = NULL;
+		PETHREAD Thread = NULL;
+		Status = OpenKernelThreadHandleByTid((HANDLE)pIndata, THREAD_SUSPEND_RESUME, &hThread, &Thread);
+		MyDbgPrintfEx("[MySuspendThread] OpenKernelThreadHandleByTid status=0x%X hThread=%p Thread=%p\n",
+			Status, hThread, Thread);
+		if (NT_SUCCESS(Status))
+		{
+			CHAR saved = ForceKernelPreviousMode();
+			Status = g_NtSuspendThread(hThread, NULL);
+			RestorePreviousMode(saved);
+			MyDbgPrintfEx("[MySuspendThread] NtSuspendThread status=0x%X\n", Status);
+			ZwClose(hThread);
+			ObDereferenceObject(Thread);
+		}
+	}
+
+	if (MmIsAddressValid(pRet))
+	{
+		*(PULONG64)pRet = (ULONG64)Status;
+	}
+}
+
+VOID __vectorcall MyResumeThread(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam)
+{
+	if (!g_NtResumeThread)
+		g_NtResumeThread = (PFN_NtResumeThread)ResolveNtRoutineByPdb(L"NtResumeThread");
+
+	MyDbgPrintfEx("[MyResumeThread] tid=%I64u(0x%I64X) g_NtoskrnlAddr=%p NtResumeThread=%p\n",
+		pIndata, pIndata, (PVOID)g_NtoskrnlAddr, g_NtResumeThread);
+
+	NTSTATUS Status = STATUS_NOT_IMPLEMENTED;
+	if (g_NtResumeThread)
+	{
+		HANDLE hThread = NULL;
+		PETHREAD Thread = NULL;
+		Status = OpenKernelThreadHandleByTid((HANDLE)pIndata, THREAD_SUSPEND_RESUME, &hThread, &Thread);
+		MyDbgPrintfEx("[MyResumeThread] OpenKernelThreadHandleByTid status=0x%X hThread=%p Thread=%p\n",
+			Status, hThread, Thread);
+		if (NT_SUCCESS(Status))
+		{
+			CHAR saved = ForceKernelPreviousMode();
+			Status = g_NtResumeThread(hThread, NULL);
+			RestorePreviousMode(saved);
+			MyDbgPrintfEx("[MyResumeThread] NtResumeThread status=0x%X\n", Status);
+			ZwClose(hThread);
+			ObDereferenceObject(Thread);
+		}
+	}
+
+	if (MmIsAddressValid(pRet))
+	{
+		*(PULONG64)pRet = (ULONG64)Status;
+	}
+}
+
+VOID __vectorcall MyKillThread(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam)
+{
+	if (!g_NtTerminateThread)
+		g_NtTerminateThread = (PFN_NtTerminateThread)ResolveNtRoutineByPdb(L"NtTerminateThread");
+
+	MyDbgPrintfEx("[MyKillThread] tid=%I64u(0x%I64X) g_NtoskrnlAddr=%p NtTerminateThread=%p\n",
+		pIndata, pIndata, (PVOID)g_NtoskrnlAddr, g_NtTerminateThread);
+
+	NTSTATUS Status = STATUS_NOT_IMPLEMENTED;
+	if (g_NtTerminateThread)
+	{
+		HANDLE hThread = NULL;
+		PETHREAD Thread = NULL;
+		Status = OpenKernelThreadHandleByTid((HANDLE)pIndata, THREAD_TERMINATE, &hThread, &Thread);
+		MyDbgPrintfEx("[MyKillThread] OpenKernelThreadHandleByTid status=0x%X hThread=%p Thread=%p\n",
+			Status, hThread, Thread);
+		if (NT_SUCCESS(Status))
+		{
+			CHAR saved = ForceKernelPreviousMode();
+			Status = g_NtTerminateThread(hThread, 0);
+			RestorePreviousMode(saved);
+			MyDbgPrintfEx("[MyKillThread] NtTerminateThread status=0x%X\n", Status);
+			ZwClose(hThread);
+			ObDereferenceObject(Thread);
+		}
+	}
+
+	if (MmIsAddressValid(pRet))
+	{
+		*(PULONG64)pRet = (ULONG64)Status;
 	}
 }
 

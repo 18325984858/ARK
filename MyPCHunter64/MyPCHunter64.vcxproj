@@ -232,6 +232,7 @@
     <ClInclude Include="SvcUtil.h" />
     <ClInclude Include="CThreadPool.h" />
     <ClInclude Include="DlgDpc.h" />
+    <ClInclude Include="DlgDirectIo.h" />
     <ClInclude Include="DlgWorkerThread.h" />
     <ClInclude Include="PdbResolver.h" />
     <ClInclude Include="KernelHookDetect.h" />
@@ -282,6 +283,7 @@
     <ClCompile Include="SvcUtil.cpp" />
     <ClCompile Include="CThreadPool.cpp" />
     <ClCompile Include="DlgDpc.cpp" />
+    <ClCompile Include="DlgDirectIo.cpp" />
     <ClCompile Include="DlgWorkerThread.cpp" />
     <ClCompile Include="PdbResolver.cpp" />
     <ClCompile Include="KernelHookDetect.cpp" />
