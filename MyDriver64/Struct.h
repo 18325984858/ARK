@@ -96,6 +96,8 @@ enum _CommunicatOpCode
 	um_Cmd_Dump_ProcessPE_info,												//从远程进程地址空间 dump 一个 PE 模块（EXE/DLL，x86/x64）
 	um_Cmd_Inject_Dll_info,													//内核侧 DLL 注入（APC 路径，无远程线程，x86/x64）
 	um_Cmd_Inject_Dll_Manual_info,											//内核侧 manual map 注入（不走 LoadLibrary/Ldr，零 LDR 痕迹）
+	um_Cmd_ForceUnload_Driver_info,											//强制卸载驱动：DetachDevice + DriverUnload + MmUnloadSystemImage
+	um_Cmd_MMap_Driver_info,												//手动映射加载驱动（无服务名、无注册表项、不入 PsLoadedModuleList）
 
 };
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1029,3 +1031,62 @@ typedef struct _CManualMapInfo
 } CManualMapInfo, * PCManualMapInfo;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// 强制卸载驱动：从 R3 拿到 DriverObject 内核地址，驱动里做：
+//   1) 校验对象类型 == DRIVER_OBJECT (Type == 4)
+//   2) 遍历 DriverObject->DeviceObject 链，IoDeleteDevice 每个设备
+//   3) 若 DriverUnload != NULL：DriverUnload(DriverObject) → ObDereferenceObject
+//   4) 否则 (Flags & FU_FLAG_FORCE_NO_UNLOAD) 才尝试 MmUnloadSystemImage 兜底，
+//      没有 DriverUnload 的驱动强卸极易蓝屏，UI 必须二次确认。
+#define FU_FLAG_FORCE_NO_UNLOAD     0x01    //没有 DriverUnload 也强干（危险）
+#define FU_FLAG_TRY_MM_UNLOAD       0x02    //调用 DriverUnload 后再尝试 MmUnloadSystemImage
+
+#define FU_STATUS_OK                0
+#define FU_STATUS_BAD_PARAM         1
+#define FU_STATUS_BAD_DRIVER        2       //不是合法 DRIVER_OBJECT
+#define FU_STATUS_NO_UNLOAD         3       //DriverUnload 为 NULL 且未指定 FORCE
+#define FU_STATUS_EXCEPTION         4       //执行中发生异常
+
+typedef struct _CForceUnloadInfo
+{
+    IN  ULONG64 DriverObject;
+    IN  ULONG64 ImageBase;
+    IN  ULONG   Flags;
+    OUT ULONG   Status;
+    OUT ULONG   DeviceCount;
+    OUT ULONG64 UnloadRoutine;
+    IN  WCHAR   ServiceName[64];          // 仅服务名（不含 \Registry\Machine\... 前缀），驱动会自动拼路径走 ZwUnloadDriver
+    OUT ULONG   ZwUnloadStatus;           // ZwUnloadDriver 返回值（仅供参考；0=成功）
+} CForceUnloadInfo, * PCForceUnloadInfo;
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// 手动映射加载驱动：从 R3 给一个 .sys 路径，驱动里读文件 → 解析 PE → 分配 NonPagedPool →
+// 拷头/节 → 应用 base relocations → 解 IAT（按 dll 名字在 PsLoadedModuleList 找内核模块，
+// 再走 export 表，支持 forwarder 递归）→ 构造一个 fake DRIVER_OBJECT → 调 DriverEntry。
+// 优点：不入 PsLoadedModuleList、不写注册表、不需服务名，绕 PG / ARK 的 enumeration。
+// 缺点：调用了 DriverEntry 但没有 IoCreateDriver 提供的生命周期管理，DriverObject 是假的；
+//       想"卸载"只能让 R3 再发一次命令让驱动调 DriverUnload + ExFreePool。
+#define MMD_STATUS_OK                 0
+#define MMD_STATUS_BAD_PARAM          1
+#define MMD_STATUS_FILE_FAIL          2     // 读 .sys 失败
+#define MMD_STATUS_BAD_PE             3
+#define MMD_STATUS_ALLOC_FAIL         4
+#define MMD_STATUS_IMPORT_FAIL        5     // 某个内核模块 / 函数找不到（详见 FailedImportDll）
+#define MMD_STATUS_RELOC_FAIL         6
+#define MMD_STATUS_ENTRY_NTSTATUS     7     // DriverEntry 返回非 STATUS_SUCCESS
+#define MMD_STATUS_EXCEPTION          8
+#define MMD_STATUS_UNSUPPORTED_IMAGE  9     // 不是 .sys 驱动镜像，例如 ntoskrnl.exe / hal.dll
+
+typedef struct _CMMapDriverInfo
+{
+    IN  WCHAR    SysPath[260];                  // 驱动文件磁盘路径（DOS 路径，会被转为 \??\C:\...）
+    IN  ULONG    PathLen;
+    OUT ULONG    Status;
+    OUT ULONG64  ImageBase;                     // 映射后镜像基址（NonPagedPool）
+    OUT ULONG64  EntryPoint;                    // DriverEntry 实际地址（ImageBase + AddressOfEntryPoint）
+    OUT ULONG    SizeOfImage;
+    OUT NTSTATUS EntryStatus;                   // DriverEntry 返回值
+    OUT CHAR     FailedImportDll[64];           // IMPORT_FAIL 时填的 dll 名
+    OUT CHAR     FailedImportFunc[64];          // IMPORT_FAIL 时填的 func 名
+} CMMapDriverInfo, * PCMMapDriverInfo;
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

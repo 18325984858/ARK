@@ -154,6 +154,15 @@
 #define ID_DRIVER_MENU_COPY_PATH        32831
 #define ID_DRIVER_MENU_COPY_COMPANY     32832
 #define ID_DRIVER_REFRESH               32833
+#define ID_DRIVER_LOAD_START            32908
+#define ID_DRIVER_GRACEFUL_UNLOAD       32909
+#define ID_DRIVER_FORCE_UNLOAD          32910
+#define ID_DRIVER_START_BOOT            32911
+#define ID_DRIVER_START_SYSTEM          32912
+#define ID_DRIVER_START_AUTO            32913
+#define ID_DRIVER_START_DEMAND          32914
+#define ID_DRIVER_START_DISABLED        32915
+#define ID_DRIVER_MMAP_LOAD             32916
 #define ID_Menu                         32834
 #define ID_DRIVER_MENU_COPY_SING        32835
 #define ID_SSDT_REFRESH                 32836
@@ -234,7 +243,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        162
-#define _APS_NEXT_COMMAND_VALUE         32908
+#define _APS_NEXT_COMMAND_VALUE         32917
 #define _APS_NEXT_CONTROL_VALUE         1055
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

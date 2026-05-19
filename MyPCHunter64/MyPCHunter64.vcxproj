@@ -229,6 +229,7 @@
     <ClInclude Include="..\MyDriver64\Struct.h" />
     <ClInclude Include="BaseClass.h" />
     <ClInclude Include="CLoadDriver.h" />
+    <ClInclude Include="SvcUtil.h" />
     <ClInclude Include="CThreadPool.h" />
     <ClInclude Include="DlgDpc.h" />
     <ClInclude Include="DlgWorkerThread.h" />
@@ -278,6 +279,7 @@
   <ItemGroup>
     <ClCompile Include="BaseClass.cpp" />
     <ClCompile Include="CLoadDriver.cpp" />
+    <ClCompile Include="SvcUtil.cpp" />
     <ClCompile Include="CThreadPool.cpp" />
     <ClCompile Include="DlgDpc.cpp" />
     <ClCompile Include="DlgWorkerThread.cpp" />

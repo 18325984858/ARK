@@ -49,4 +49,21 @@ public:
 	afx_msg void OnDriverRefresh();
 	afx_msg void OnNMRClickControlDrivermoduleList(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnDriverMenuCopySing();
+
+	// 强制卸载 / 加载启动 / 改启动类型
+	afx_msg void OnDriverLoadStart();
+	afx_msg void OnDriverGracefulUnload();
+	afx_msg void OnDriverForceUnload();
+	afx_msg void OnDriverMMapLoad();
+	afx_msg void OnDriverStartBoot();
+	afx_msg void OnDriverStartSystem();
+	afx_msg void OnDriverStartAuto();
+	afx_msg void OnDriverStartDemand();
+	afx_msg void OnDriverStartDisabled();
+
+private:
+	// 取当前选中行某列文本；无选中返回空串
+	CString GetSelText(int col);
+	// 改启动类型公共入口
+	void DoChangeStart(unsigned long type, const wchar_t* typeName);
 };

@@ -52,6 +52,8 @@ CCmd g_CmdFun[MAX_FUNCALL_INDEX] = {
 	[um_Cmd_Dump_ProcessPE_info]							= {um_Cmd_Dump_ProcessPE_info, DumpProcessPEInfo},
 	[um_Cmd_Inject_Dll_info]								= {um_Cmd_Inject_Dll_info, InjectDllInfo},
 	[um_Cmd_Inject_Dll_Manual_info]							= {um_Cmd_Inject_Dll_Manual_info, ManualMapDllInfo},
+	[um_Cmd_ForceUnload_Driver_info]						= {um_Cmd_ForceUnload_Driver_info, ForceUnloadDriverInfo},
+	[um_Cmd_MMap_Driver_info]								= {um_Cmd_MMap_Driver_info, MMapDriverInfo},
 };
 
 VOID MyThreadRoutine(PVOID Context)

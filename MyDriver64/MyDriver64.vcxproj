@@ -145,6 +145,8 @@ copy /Y "$(TargetDir)$(TargetName).inf" "$(ProjectDir)..\MyDriver64.inf"</Comman
     <ClCompile Include="Dump\PeDump.c" />
     <ClCompile Include="Inject\DllInject.c" />
     <ClCompile Include="Inject\ManualMap.c" />
+    <ClCompile Include="Inject\ForceUnload.c" />
+    <ClCompile Include="Inject\MMapDriver.c" />
     <ClCompile Include="Interface.c" />
     <ClCompile Include="MainDriver.c" />
     <ClCompile Include="SearchMemory.c" />

@@ -79,3 +79,5 @@ VOID __vectorcall ReadKernelRangeInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT U
 VOID __vectorcall DumpProcessPEInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam);
 VOID __vectorcall InjectDllInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam);
 VOID __vectorcall ManualMapDllInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam);
+VOID __vectorcall ForceUnloadDriverInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam);
+VOID __vectorcall MMapDriverInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam);
