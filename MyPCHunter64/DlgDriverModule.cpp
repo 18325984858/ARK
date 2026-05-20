@@ -326,12 +326,19 @@ static void ShowPeExports(HWND hwnd, const CString& path)
 		rows.push_back({ sOrd, sRva, name });
 	}
 	DRVMOD_LOG("[Exports] rows built: %zu", rows.size());
+	// 快照出 header 需要的标量再 free(buf)。dd / exp 是 buf 内部引用 /
+	// 指针， free 之后访问它们是 use-after-free —— ntoskrnl 导出夺，循环
+	// 正好让 LFH 重用原 buf 那块 → header.Format 一读就 AV （0xC0000005）。
+	const DWORD ddVa     = dd.VirtualAddress;
+	const DWORD ddSize   = dd.Size;
+	const DWORD expBase  = exp->Base;
+	const DWORD expNfunc = exp->NumberOfFunctions;
+	const DWORD expNname = exp->NumberOfNames;
 	free(buf);
 
 	CString header;
 	header.Format(L"文件: %s    导出表 RVA=0x%08X 大小=0x%X    函数=%u  名称=%u  Base=%u",
-		(LPCWSTR)path, dd.VirtualAddress, dd.Size,
-		exp->NumberOfFunctions, exp->NumberOfNames, exp->Base);
+		(LPCWSTR)path, ddVa, ddSize, expNfunc, expNname, expBase);
 
 	std::vector<ListViewerCol> cols = {
 		{ L"序号", 60 },
@@ -407,11 +414,14 @@ static void ShowPeImports(HWND hwnd, const CString& path)
 		}
 		++desc;
 	}
+	// 同样预先拍快照，避免 free(buf) 后 dd 被踩
+	const DWORD ddVa   = dd.VirtualAddress;
+	const DWORD ddSize = dd.Size;
 	free(buf);
 
 	CString header;
 	header.Format(L"文件: %s    导入表 RVA=0x%08X 大小=0x%X    共 %u 条",
-		(LPCWSTR)path, dd.VirtualAddress, dd.Size, (unsigned)rows.size());
+		(LPCWSTR)path, ddVa, ddSize, (unsigned)rows.size());
 
 	std::vector<ListViewerCol> cols = {
 		{ L"模块",   200 },
