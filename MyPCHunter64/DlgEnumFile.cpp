@@ -1055,8 +1055,8 @@ void DlgEnumFile::UpdateNavButtons()
 		CString cur = m_CurPath;
 		while (cur.GetLength() > 3 && cur[cur.GetLength() - 1] == L'\\')
 			cur.Delete(cur.GetLength() - 1);
-		int slash = cur.ReverseFind(L'\\');
-		m_BtnUp.EnableWindow(slash > 2); // "C:\Foo" 的 slash==2 → 无父级
+		// 任何比 "C:\" (3 字符) 长的路径都还能往上走
+		m_BtnUp.EnableWindow(cur.GetLength() > 3);
 	}
 	if (m_PathEdit.GetSafeHwnd() && m_NavIndex >= 0 && m_NavIndex < (int)m_NavHistory.size())
 	{
@@ -1166,9 +1166,10 @@ void DlgEnumFile::OnBtnNavUp()
 	CString cur = m_CurPath;
 	while (cur.GetLength() > 3 && cur[cur.GetLength() - 1] == L'\\')
 		cur.Delete(cur.GetLength() - 1);
+	if (cur.GetLength() <= 3) return; // 已经是盘符根目录 "C:\"
 	int slash = cur.ReverseFind(L'\\');
-	if (slash <= 2) return; // 已经是盘符根目录
-	CString parent = cur.Left(slash + 1); // 含末尾反斜杠，例如 "C:\Foo\"
+	if (slash < 0) return;
+	CString parent = cur.Left(slash + 1); // 含末尾反斜杠，例如 "C:\" 或 "C:\Foo\"
 	NavigateToDirectory(parent, true);
 }
 
