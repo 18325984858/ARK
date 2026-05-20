@@ -814,6 +814,32 @@ retry:
 			// 精确匹配（大小写不敏感）：避免 "*\X\Y" 跨盘符误伤
 			if (RtlEqualUnicodeString(NtPath, &ObjectNameInfo->Name, TRUE))
 			{
+				PFILE_OBJECT pFile = (PFILE_OBJECT)HandleInfo->Object;
+
+				// 先做 image / data section flush。
+				// 这是真正"解占用"的关键：对加载为 DLL/EXE 的文件，OS 是通过
+				// FILE_OBJECT->SectionObjectPointers 持有 image section 的，
+				// 单纯 ZwClose 句柄并不会让 OS 释放 image。MmFlushImageSection
+				// 在没有其它 mapping reference 时会清掉 image section，从而让
+				// Explorer/Win32 之后能成功 DeleteFile。
+				// 注意：对"当前正在运行的进程自己的 EXE" 这里返回 FALSE，
+				//      OS 内核硬性保护，不可能在运行期间真删自己。
+				BOOLEAN flushed = FALSE;
+				if (MmIsAddressValid(pFile) &&
+					pFile->SectionObjectPointer != NULL)
+				{
+					__try
+					{
+						flushed = MmFlushImageSection(
+							pFile->SectionObjectPointer,
+							MmFlushForDelete);
+					}
+					__except (EXCEPTION_EXECUTE_HANDLER)
+					{
+						flushed = FALSE;
+					}
+				}
+
 				PEPROCESS Process = NULL;
 				NTSTATUS pStatus = PsLookupProcessByProcessId(HandleInfo->UniqueProcessId, &Process);
 				if (NT_SUCCESS(pStatus) && Process != NULL)
@@ -845,6 +871,11 @@ retry:
 					}
 					ObDereferenceObject(Process);
 				}
+
+				// 即便没找到对应进程的句柄表（比如 system 进程持有的 image
+				// section reference），只要我们成功 flush 了 image section，
+				// 也算成功解了一份占用——统计入 closed，UI 才有反馈。
+				if (flushed) closed++;
 			}
 		}
 
