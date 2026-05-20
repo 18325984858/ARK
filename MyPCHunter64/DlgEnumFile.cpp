@@ -1313,45 +1313,43 @@ BOOL DlgEnumFile::PreTranslateMessage(MSG* pMsg)
 
 void DlgEnumFile::OnFileFiledeoccupy()
 {
-	
-	//DWORD lpThreadId = 0;
-	//
-	//CThreadInfo* pThread = new CThreadInfo{ _LoadDriver::Um_UserCallBackType_UserFileDeoccupy, this };
-	//HANDLE hThread = CreateThread(NULL, NULL, UniversalThreadFunction,/*变量参数地址*/(LPVOID)pThread, 0, &lpThreadId);
-	//
-	//CloseHandle(hThread);
-
-	g_ThreadPool.AddTask(new _CThreadPack{ _LoadDriver::Um_UserCallBackType_UserFileDeoccupy, this });
-
+	// 解除占用本身是一次很短的 SendMsg，没必要丢线程池。
+	// 跨线程访问 m_CListCtrl 不安全（MFC 控件非线程安全），改成同步直接执行。
+	FileFiledeoccupy();
 }
 
 void DlgEnumFile::FileFiledeoccupy()
 {
-	if (m_CListCtrl.GetItemCount() <= 0)
+	POSITION FirstPos = m_CListCtrl.GetFirstSelectedItemPosition();
+	if (FirstPos == NULL)
+	{
+		::MessageBoxW(GetSafeHwnd(), L"请先选中一个文件。", L"提示", MB_OK | MB_ICONINFORMATION);
+		return;
+	}
+	int row = m_CListCtrl.GetNextSelectedItem(FirstPos);
+	if (row < 0) return;
+
+	CString* pStrData = (CString*)m_CListCtrl.GetItemData(row);
+	if (pStrData == NULL || pStrData->IsEmpty())
 	{
 		return;
 	}
+	// 拷贝一份，避免传 GetBuffer() 锁住 CString 内部缓冲
+	CString path = *pStrData;
 
-	//获取当前选择的控件项
-	POSITION FristIndex = m_CListCtrl.GetFirstSelectedItemPosition();//获取选中行的行数  pos = 行数 - 1
-	int TempIndex = (int)FristIndex - 1;//存储第一次的索引位置
+	// 驱动现在通过返回值传回"实际关闭的句柄数"：0 = 没找到/全部失败，>0 = 关掉的句柄数
+	ULONG64 closedCount = g_LoadDriver.SendMsg(um_Cmd_FileDeoccupy_info, (PVOID)(LPCWSTR)path);
 
-	//获取绑定的数据
-	CString* pStrData = (CString*)m_CListCtrl.GetItemData(TempIndex);
-	if (pStrData == NULL)
+	CString msg;
+	if (closedCount > 0)
 	{
-		return;
-	}
-
-	//想驱动发送删除文件的消息
-	ULONG64 dqRet = g_LoadDriver.SendMsg(um_Cmd_FileDeoccupy_info, pStrData->GetBuffer());
-	if (dqRet == 0)
-	{
-		::MessageBoxW(NULL, L"文件解除占用成功!", L"提示", MB_OK);
+		msg.Format(L"已释放 %llu 个句柄。", closedCount);
+		::MessageBoxW(GetSafeHwnd(), msg, L"解除占用", MB_OK | MB_ICONINFORMATION);
 	}
 	else
 	{
-		::MessageBoxW(NULL, L"文件解除占用失败!", L"提示", MB_OK);
+		::MessageBoxW(GetSafeHwnd(),
+			L"未找到占用该文件的句柄，或全部句柄关闭失败。",
+			L"解除占用", MB_OK | MB_ICONWARNING);
 	}
-
 }

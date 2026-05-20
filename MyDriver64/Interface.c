@@ -739,44 +739,67 @@ VOID __vectorcall MyReturnSsdtAndSsdtShadow(IN ULONG64 nCmd, IN ULONG64 pIndata,
 
 VOID __vectorcall MyFileDeoccupy(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam)
 {
-	//验证参数,文件路径是否有效
-	if (!MmIsAddressValid(pIndata))
+	// 调用方传入 DOS 风格全路径，例如 "C:\Users\Foo\bar.dll"
+	if (!MmIsAddressValid((PVOID)pIndata))
 	{
 		return;
 	}
-	UNICODE_STRING inputString = { 0 };
-	UNICODE_STRING outputString = { 0 };
-
-	WCHAR szBuf[MY_MAX_PATH] = { 0 };
-	swprintf(szBuf, L"*%ws", &((PWCHAR)pIndata)[2]);
-	RtlInitUnicodeString(&inputString, szBuf);
-
-	outputString.Length = 0;
-	outputString.MaximumLength = inputString.MaximumLength;
-	outputString.Buffer = (PWCH)ExAllocatePoolWithTag(NonPagedPool, outputString.MaximumLength, 'tag');
-	if (outputString.Buffer == NULL)
+	PWCHAR dosPath = (PWCHAR)pIndata;
+	if (dosPath[0] == 0 || dosPath[1] != L':' || dosPath[2] != L'\\')
 	{
+		// 不是 X:\... 形式，直接拒
+		if (MmIsAddressValid((PVOID)pRet)) *(PULONG64)pRet = 0;
 		return;
 	}
 
-	//小写转换大写
-	NTSTATUS status = RtlUpcaseUnicodeString(&outputString, &inputString, FALSE);
+	// 1) 解析 "\??\X:" 这个符号链接，拿到 "\Device\HarddiskVolumeN"
+	WCHAR linkBuf[16] = { 0 };
+	swprintf(linkBuf, L"\\??\\%wc:", dosPath[0]);
+	UNICODE_STRING linkName = { 0 };
+	RtlInitUnicodeString(&linkName, linkBuf);
 
-	//调用解除文件占用的函数
-	ULONG64 dqRet = UnlockFile(&outputString);
+	OBJECT_ATTRIBUTES oa = { 0 };
+	InitializeObjectAttributes(&oa, &linkName,
+		OBJ_CASE_INSENSITIVE | OBJ_KERNEL_HANDLE, NULL, NULL);
 
-
-	//释放资源
-	if (outputString.Buffer)
+	HANDLE hLink = NULL;
+	NTSTATUS sLink = ZwOpenSymbolicLinkObject(&hLink, GENERIC_READ, &oa);
+	if (!NT_SUCCESS(sLink))
 	{
-		ExFreePoolWithTag(outputString.Buffer, 'tag');
+		if (MmIsAddressValid((PVOID)pRet)) *(PULONG64)pRet = 0;
+		return;
 	}
 
-	if (MmIsAddressValid(pRet))
+	WCHAR devBuf[128] = { 0 };
+	UNICODE_STRING devName = { 0 };
+	devName.Length = 0;
+	devName.MaximumLength = sizeof(devBuf);
+	devName.Buffer = devBuf;
+	ULONG returned = 0;
+	NTSTATUS sQuery = ZwQuerySymbolicLinkObject(hLink, &devName, &returned);
+	ZwClose(hLink);
+	if (!NT_SUCCESS(sQuery))
 	{
-		*(PULONG64)pRet = dqRet;
+		if (MmIsAddressValid((PVOID)pRet)) *(PULONG64)pRet = 0;
+		return;
 	}
 
+	// 2) 拼出完整 NT 路径： <devName> + dosPath[2..]  (跳过 "X:")
+	WCHAR ntPathBuf[MY_MAX_PATH] = { 0 };
+	swprintf(ntPathBuf, L"%wZ%ws", &devName, dosPath + 2);
+
+	UNICODE_STRING ntPath = { 0 };
+	RtlInitUnicodeString(&ntPath, ntPathBuf);
+
+	// 3) 在系统句柄表里关掉所有指向该 NT 路径的句柄
+	ULONG64 closed = 0;
+	(void)UnlockFile(&ntPath, &closed);
+
+	// 4) 通过 pRet 返回关闭的句柄数；R3 据此区分 "成功/未匹配"
+	if (MmIsAddressValid((PVOID)pRet))
+	{
+		*(PULONG64)pRet = closed;
+	}
 }
 
 VOID __vectorcall MyKillProcess(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam)

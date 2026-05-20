@@ -745,23 +745,27 @@ ULONG64 LoadPE(PUCHAR* pDllBuf, ULONG64 dqNewImageBase)
 	return TRUE;
 }
 
-NTSTATUS UnlockFile(PUNICODE_STRING Path)
+NTSTATUS UnlockFile(PUNICODE_STRING NtPath, PULONG64 OutClosed)
 {
+	// 由 FindModuleData.c 提供：KTHREAD.PreviousMode 的偏移；用于把当前线程
+	// 临时切到 KernelMode，以便 ZwClose 能够关闭受保护或来自其它进程的内核句柄。
+	extern int g_Offset_KTHREAD_PreviousMode;
 
-	NTSTATUS Status;
-	PSYSTEM_HANDLE_INFORMATION      Handles;
-	PSYSTEM_HANDLE_TABLE_ENTRY_INFO HandleInfo;
-	PVOID Buffer;
-	ULONG BufferSize = 4096;
-	ULONG ReturnLength;
-	POBJECT_NAME_INFORMATION ObjectNameInfo;
-
-	if (!MmIsAddressValid(Path))
+	if (OutClosed) *OutClosed = 0;
+	if (NtPath == NULL || NtPath->Buffer == NULL || NtPath->Length == 0)
 	{
-		return FALSE;
+		return STATUS_INVALID_PARAMETER;
 	}
 
-	ObjectNameInfo = ExAllocatePoolWithTag(NonPagedPool, BufferSize, '1234');
+	NTSTATUS Status = STATUS_SUCCESS;
+	PSYSTEM_HANDLE_INFORMATION      Handles = NULL;
+	PSYSTEM_HANDLE_TABLE_ENTRY_INFO HandleInfo = NULL;
+	PVOID  Buffer = NULL;
+	ULONG  BufferSize = 0x20000; // 句柄表很大，起步给大一点减少重试
+	ULONG  ReturnLength = 0;
+	ULONG64 closed = 0;
+
+	POBJECT_NAME_INFORMATION ObjectNameInfo = ExAllocatePoolWithTag(NonPagedPool, 4096, '1234');
 	if (!ObjectNameInfo)
 	{
 		return STATUS_NO_MEMORY;
@@ -769,72 +773,87 @@ NTSTATUS UnlockFile(PUNICODE_STRING Path)
 
 retry:
 	Buffer = ExAllocatePoolWithTag(NonPagedPool, BufferSize, '1234');
-
-	if (!Buffer) {
+	if (!Buffer)
+	{
 		ExFreePool(ObjectNameInfo);
 		return STATUS_NO_MEMORY;
 	}
-	//获取系统所有句柄
-	Status = ZwQuerySystemInformation(SystemHandleInformation, Buffer, BufferSize, &ReturnLength);
 
+	Status = ZwQuerySystemInformation(SystemHandleInformation, Buffer, BufferSize, &ReturnLength);
 	if (Status == STATUS_INFO_LENGTH_MISMATCH)
 	{
 		ExFreePool(Buffer);
-		BufferSize = ReturnLength;
+		BufferSize = ReturnLength + 0x4000;
 		goto retry;
 	}
-
-	ULONG FileHandleCount = 0;
-	if (NT_SUCCESS(Status))
+	if (!NT_SUCCESS(Status))
 	{
-		Handles = (PSYSTEM_HANDLE_INFORMATION)Buffer;
-		for (ULONG i = 0; i < Handles->NumberOfHandles; i++)
+		ExFreePool(Buffer);
+		ExFreePool(ObjectNameInfo);
+		return Status;
+	}
+
+	Handles = (PSYSTEM_HANDLE_INFORMATION)Buffer;
+	for (ULONG i = 0; i < Handles->NumberOfHandles; i++)
+	{
+		HandleInfo = &Handles->Handles[i];
+
+		// 仅处理文件对象，先按指针引用过滤类型
+		NTSTATUS refStatus = ObReferenceObjectByPointer(
+			HandleInfo->Object,
+			FILE_ALL_ACCESS,
+			*IoFileObjectType,
+			KernelMode);
+		if (!NT_SUCCESS(refStatus))
+			continue;
+
+		ULONG nameLen = 0;
+		NTSTATUS nameStatus = ObQueryNameString(HandleInfo->Object, ObjectNameInfo, 4096, &nameLen);
+		if (NT_SUCCESS(nameStatus) && ObjectNameInfo->Name.Length > 0)
 		{
-			HandleInfo = &Handles->Handles[i];
-
-			//获取文件对象
-			Status = ObReferenceObjectByPointer(
-				HandleInfo->Object,
-				FILE_ALL_ACCESS,
-				*IoFileObjectType,
-				KernelMode);
-
-			if (NT_SUCCESS(Status))
+			// 精确匹配（大小写不敏感）：避免 "*\X\Y" 跨盘符误伤
+			if (RtlEqualUnicodeString(NtPath, &ObjectNameInfo->Name, TRUE))
 			{
-				FileHandleCount++;
-				//获取对象路径
-				Status = ObQueryNameString(HandleInfo->Object, ObjectNameInfo, 4096, &ReturnLength);
-				if (NT_SUCCESS(Status))
+				PEPROCESS Process = NULL;
+				NTSTATUS pStatus = PsLookupProcessByProcessId(HandleInfo->UniqueProcessId, &Process);
+				if (NT_SUCCESS(pStatus) && Process != NULL)
 				{
-					if (FsRtlIsNameInExpression(Path, &ObjectNameInfo->Name, TRUE, NULL) == TRUE)
+					// 同步项目其它地方的 attach 安全约束
+					if (Process != PsGetCurrentProcess() && IsProcessSafeToAttach((ULONG64)Process))
 					{
-						PEPROCESS Process = NULL;
-						Status = PsLookupProcessByProcessId(HandleInfo->UniqueProcessId, &Process);
-						if (NT_SUCCESS(Status))
-						{
-							if (!IsProcessSafeToAttach((ULONG64)Process))
-							{
-								ObDereferenceObject(Process);
-							}
-							else
-							{
-								//切换进程
-								KAPC_STATE ApcState;
-								KeStackAttachProcess(Process, &ApcState);
+						KAPC_STATE ApcState = { 0 };
+						KeStackAttachProcess(Process, &ApcState);
 
-								//调用ZwClose
-								ZwClose(HandleInfo->HandleValue);
-								KeUnstackDetachProcess(&ApcState);
-								ObDereferenceObject(Process);
-							}
+						// 临时把 PreviousMode 切到 KernelMode，否则 ZwClose
+						// 会用 R3 调用方的 PreviousMode 检查句柄保护属性而拒绝
+						PCHAR pPrev = NULL;
+						CHAR savedPrev = (CHAR)-1;
+						if (g_Offset_KTHREAD_PreviousMode > 0)
+						{
+							pPrev = (PCHAR)((ULONG64)PsGetCurrentThread() + g_Offset_KTHREAD_PreviousMode);
+							savedPrev = *pPrev;
+							*pPrev = (CHAR)KernelMode;
 						}
+
+						NTSTATUS closeStatus = ZwClose(HandleInfo->HandleValue);
+
+						if (pPrev) *pPrev = savedPrev;
+
+						KeUnstackDetachProcess(&ApcState);
+
+						if (NT_SUCCESS(closeStatus)) closed++;
 					}
+					ObDereferenceObject(Process);
 				}
-				ObDereferenceObject(HandleInfo->Object);
 			}
 		}
+
+		ObDereferenceObject(HandleInfo->Object);
 	}
+
 	ExFreePool(Buffer);
 	ExFreePool(ObjectNameInfo);
-	return Status;
+
+	if (OutClosed) *OutClosed = closed;
+	return STATUS_SUCCESS;
 }
