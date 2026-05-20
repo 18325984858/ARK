@@ -6315,10 +6315,34 @@ ULONG64 kdDebugFlags(PCDebugFlagInfo pDebugInfo)
 	}
 	else
 	{
-		*KdPitchDebugger = pDebugInfo->KdPitchDebugger;
-		*KdDebuggerEnabled = pDebugInfo->kdDebuggerEnable;
-		*KdDebuggerNotPresent = pDebugInfo->KdDebuggerNotPresent;
-		((PKUSER_SHARED_DATA)KI_USER_SHARED_DATA)->KdDebuggerEnabled = pDebugInfo->SharedDataKdDebuggerEnabled;
+		// 目标全局有几种"内核态写不动"的情况：
+		//   1) nt!.data 在某些 Win10 build 被段属性收紧成 RO；
+		//   2) KUSER_SHARED_DATA (0xFFFFF78000000000) 这一页在内核态也是 RO，
+		//      需要先拿掉 CR0.WP 才能写；
+		//   3) 个别页可能被 PG / HVCI 监控；
+		// 经典 ARK 招法：抬到 DPC_LEVEL，关中断，CR0.WP=0，写完原样还原。
+		// 每个字段单独 SEH 以防其中某个真的写不进去（不阻塞其它字段）。
+		KIRQL oldIrql = KeRaiseIrqlToDpcLevel();
+		ULONG64 cr0 = __readcr0();
+		__writecr0(cr0 & ~0x10000ULL);  // 清掉 CR0.WP，允许内核写只读页
+		_disable();
+
+		__try { *KdPitchDebugger      = pDebugInfo->KdPitchDebugger; }      __except(EXCEPTION_EXECUTE_HANDLER) {}
+		__try { *KdDebuggerEnabled    = pDebugInfo->kdDebuggerEnable; }    __except(EXCEPTION_EXECUTE_HANDLER) {}
+		__try { *KdDebuggerNotPresent = pDebugInfo->KdDebuggerNotPresent; }__except(EXCEPTION_EXECUTE_HANDLER) {}
+		__try { ((PKUSER_SHARED_DATA)KI_USER_SHARED_DATA)->KdDebuggerEnabled = pDebugInfo->SharedDataKdDebuggerEnabled; }
+		__except(EXCEPTION_EXECUTE_HANDLER) {}
+
+		_enable();
+		__writecr0(cr0);                // 还原 CR0
+		KeLowerIrql(oldIrql);
+
+		// 回读确认实际生效情况（如果 WinDbg 在线，下一拍就会被它改回去）
+		MyDbgPrintfEx("kdDebugFlags SET wanted P=%d E=%d N=%d S=%d ; readback P=%d E=%d N=%d S=%d\n",
+			pDebugInfo->KdPitchDebugger, pDebugInfo->kdDebuggerEnable,
+			pDebugInfo->KdDebuggerNotPresent, pDebugInfo->SharedDataKdDebuggerEnabled,
+			*KdPitchDebugger, *KdDebuggerEnabled, *KdDebuggerNotPresent,
+			((PKUSER_SHARED_DATA)KI_USER_SHARED_DATA)->KdDebuggerEnabled);
 	}
 
 
