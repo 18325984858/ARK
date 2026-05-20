@@ -20,6 +20,7 @@ ULONG64 MyDeleteRunFile(PUNICODE_STRING pFullName)
 	IO_STATUS_BLOCK IoStatusBlock = { 0 };
 	OBJECT_ATTRIBUTES objAttribus = { 0 };
 
+	MyDbgPrintfEx("[MyDeleteRunFile] enter path=\"%wZ\"\n", pFullName);
 	InitializeObjectAttributes(&objAttribus, pFullName, OBJ_KERNEL_HANDLE | OBJ_CASE_INSENSITIVE, NULL, NULL);
 
 	//打开文件获取文件句柄//属性为 读
@@ -30,6 +31,7 @@ ULONG64 MyDeleteRunFile(PUNICODE_STRING pFullName)
 	nStatus = IoCreateFile(&FileHandle, FILE_READ_ATTRIBUTES, &objAttribus, &ioStatus, 0, FILE_ATTRIBUTE_NORMAL, FILE_SHARE_DELETE, FILE_OPEN, 0, NULL, 0, 0, NULL, IO_NO_PARAMETER_CHECKING);
 	if (!NT_SUCCESS(nStatus))
 	{
+		MyDbgPrintfEx("[MyDeleteRunFile] IoCreateFile failed 0x%08X\n", nStatus);
 		return nStatus;
 	}
 
@@ -38,6 +40,7 @@ ULONG64 MyDeleteRunFile(PUNICODE_STRING pFullName)
 	nStatus = ObReferenceObjectByHandle(FileHandle, DELETE, *IoFileObjectType, KernelMode, &pFileObj, NULL);
 	if (!NT_SUCCESS(nStatus))
 	{
+		MyDbgPrintfEx("[MyDeleteRunFile] ObReferenceObjectByHandle failed 0x%08X\n", nStatus);
 		ZwClose(FileHandle);
 		return nStatus;
 	}
@@ -61,12 +64,18 @@ ULONG64 MyDeleteRunFile(PUNICODE_STRING pFullName)
 				KEVENT nEvent = { 0 };
 				KeInitializeEvent(&nEvent, SynchronizationEvent, FALSE);
 
+				// 必须是 IO_STATUS_BLOCK，不能把 NTSTATUS 的地址塞进 UserIosb。
+				// 完成例程会写 Status + Information 两个字段（x64 共 16B，
+				// Information 在 +8），写到 NTSTATUS（4B）的地址会越界踩栈，
+				// 触发后续代码 use-after-corruption 的 C0000005。
+				IO_STATUS_BLOCK irpIos = { 0 };
+
 				//填写IPR请求包
 				FILE_BASIC_INFORMATION FileInformation = { 0 };
 				FileInformation.FileAttributes = FILE_ATTRIBUTE_NORMAL; /*修改文件属性为 无属性*/
 				pIrp->AssociatedIrp.SystemBuffer = &FileInformation;
 				pIrp->UserEvent = &nEvent;
-				pIrp->UserIosb = &nStatus;
+				pIrp->UserIosb = &irpIos;
 				pIrp->Tail.Overlay.OriginalFileObject = pFileObj;
 				pIrp->Tail.Overlay.Thread = (PETHREAD)KeGetCurrentThread();
 				pIrp->RequestorMode = KernelMode;
@@ -86,6 +95,9 @@ ULONG64 MyDeleteRunFile(PUNICODE_STRING pFullName)
 
 				//等待处理完成
 				KeWaitForSingleObject(&nEvent, Executive, KernelMode, TRUE, NULL);
+
+				MyDbgPrintfEx("[MyDeleteRunFile] clear-readonly IRP status=0x%08X info=0x%llX\n",
+					irpIos.Status, (ULONG64)irpIos.Information);
 			}
 		}
 	}
@@ -178,6 +190,8 @@ ULONG64 MyDeleteRunFile(PUNICODE_STRING pFullName)
 		PULONG64 SharedCacheMap = NULL;
 
 		PSECTION_OBJECT_POINTERS pSectionObjectPointer = pFileObj->SectionObjectPointer;
+		MyDbgPrintfEx("[MyDeleteRunFile] pFileObj=%p SectionObjectPointer=%p\n",
+			pFileObj, pSectionObjectPointer);
 		if (MmIsAddressValid(pSectionObjectPointer))
 		{
 			ImageSectionObject = pSectionObjectPointer->ImageSectionObject;			 // 备份之~~~
@@ -194,11 +208,17 @@ ULONG64 MyDeleteRunFile(PUNICODE_STRING pFullName)
 		pFileObj->DeletePending = FALSE;
 		pFileObj->DeleteAccess = TRUE;
 
-		//刷新文件
-		MmFlushImageSection(pFileObj->SectionObjectPointer, MmFlushForDelete);
+		//刷新文件（SectionObjectPointer 可能为 NULL；MmFlushImageSection 会解引用，
+		// 因此必须先检查）
+		if (MmIsAddressValid(pFileObj->SectionObjectPointer))
+		{
+			BOOLEAN flushed = MmFlushImageSection(pFileObj->SectionObjectPointer, MmFlushForDelete);
+			MyDbgPrintfEx("[MyDeleteRunFile] MmFlushImageSection -> %d\n", (int)flushed);
+		}
 
 		//修改属性之后再调用API删除
 		nStatus = ZwDeleteFile(&objAttribus);
+		MyDbgPrintfEx("[MyDeleteRunFile] ZwDeleteFile -> 0x%08X\n", nStatus);
 
 		//删除文件之后，从备份那里填充回来
 		pSectionObjectPointer = pFileObj->SectionObjectPointer;
