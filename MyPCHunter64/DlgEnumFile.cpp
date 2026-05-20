@@ -1252,16 +1252,9 @@ void DlgEnumFile::ApplyListSearchFilter(const CString& keyword)
 			CString lower = name; lower.MakeLower();
 			if (lower.Find(needle) < 0) continue;
 
-			// 命中：列表显示相对路径（相对当前 m_CurPath），方便看出来自哪个子目录
-			CString shown = fullPath;
-			if (fullPath.GetLength() >= m_CurPath.GetLength() &&
-				fullPath.Left(m_CurPath.GetLength()).CompareNoCase(m_CurPath) == 0)
-			{
-				shown = fullPath.Mid(m_CurPath.GetLength());
-			}
-
+			// 命中：列表显示完整路径，方便直接看出文件位置
 			int row = m_CListCtrl.GetItemCount();
-			m_CListCtrl.InsertItem(row, shown);
+			m_CListCtrl.InsertItem(row, fullPath);
 
 			CString s;
 			fmtTime(fd.ftCreationTime,   s); m_CListCtrl.SetItemText(row, 1, s);
