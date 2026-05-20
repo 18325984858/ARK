@@ -3,6 +3,24 @@
 #include <ntimage.h>    /*PE头文件*/
 #include "FunctionPtr.h"
 
+#ifndef FILE_DISPOSITION_DELETE
+#define FILE_DISPOSITION_DELETE                       0x00000001
+#endif
+#ifndef FILE_DISPOSITION_POSIX_SEMANTICS
+#define FILE_DISPOSITION_POSIX_SEMANTICS              0x00000002
+#endif
+#ifndef FILE_DISPOSITION_FORCE_IMAGE_SECTION_CHECK
+#define FILE_DISPOSITION_FORCE_IMAGE_SECTION_CHECK    0x00000004
+#endif
+#ifndef FILE_DISPOSITION_IGNORE_READONLY_ATTRIBUTE
+#define FILE_DISPOSITION_IGNORE_READONLY_ATTRIBUTE    0x00000010
+#endif
+#ifndef FileDispositionInformationEx
+#define FileDispositionInformationExClass ((FILE_INFORMATION_CLASS)64)
+#else
+#define FileDispositionInformationExClass FileDispositionInformationEx
+#endif
+
 NTSTATUS SkillSetFileCompletion(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp, IN PVOID Context)
 {
 	Irp->UserIosb->Status = Irp->IoStatus.Status;
@@ -180,6 +198,64 @@ ULONG64 MyDeleteRunFile(PUNICODE_STRING pFullName)
 		}
 	}
 	*/
+
+	//优先走 POSIX 删除（Win10 RS1+）：从当前 pFileObj 直接发
+	//IRP_MJ_SET_INFORMATION + FileDispositionInformationEx。
+	//FILE_DISPOSITION_POSIX_SEMANTICS 不要求排他打开，能立即从目录
+	//把文件名 unlink 掉（包括"自己的进程占着自己日志"这种场景），
+	//最后一个 handle 关闭时由 NTFS 真正释放空间。
+	if (MmIsAddressValid(pFileDeviceObj))
+	{
+		PIRP pIrp = IoAllocateIrp(pFileDeviceObj->StackSize, TRUE);
+		if (MmIsAddressValid(pIrp))
+		{
+			KEVENT nEvent = { 0 };
+			IO_STATUS_BLOCK irpIos = { 0 };
+			FILE_DISPOSITION_INFORMATION_EX dispEx = { 0 };
+			KeInitializeEvent(&nEvent, SynchronizationEvent, FALSE);
+
+			dispEx.Flags = FILE_DISPOSITION_DELETE
+				| FILE_DISPOSITION_POSIX_SEMANTICS
+				| FILE_DISPOSITION_FORCE_IMAGE_SECTION_CHECK
+				| FILE_DISPOSITION_IGNORE_READONLY_ATTRIBUTE;
+
+			pIrp->AssociatedIrp.SystemBuffer = &dispEx;
+			pIrp->UserEvent = &nEvent;
+			pIrp->UserIosb = &irpIos;
+			pIrp->Tail.Overlay.OriginalFileObject = pFileObj;
+			pIrp->Tail.Overlay.Thread = (PETHREAD)KeGetCurrentThread();
+			pIrp->RequestorMode = KernelMode;
+
+			PIO_STACK_LOCATION irpSp = IoGetNextIrpStackLocation(pIrp);
+			irpSp->MajorFunction = IRP_MJ_SET_INFORMATION;
+			irpSp->DeviceObject = pFileDeviceObj;
+			irpSp->FileObject = pFileObj;
+			irpSp->Parameters.SetFile.Length = sizeof(FILE_DISPOSITION_INFORMATION_EX);
+			irpSp->Parameters.SetFile.FileInformationClass = FileDispositionInformationExClass;
+			irpSp->Parameters.SetFile.FileObject = pFileObj;
+
+			IoSetCompletionRoutine(pIrp, SkillSetFileCompletion, &nEvent, TRUE, TRUE, TRUE);
+
+			NTSTATUS callStatus = IoCallDriver(pFileDeviceObj, pIrp);
+			if (callStatus == STATUS_PENDING)
+			{
+				KeWaitForSingleObject(&nEvent, Executive, KernelMode, FALSE, NULL);
+			}
+			MyDbgPrintfEx("[MyDeleteRunFile] POSIX-dispose IRP status=0x%08X info=0x%llX\n",
+				irpIos.Status, (ULONG64)irpIos.Information);
+
+			if (NT_SUCCESS(irpIos.Status))
+			{
+				//POSIX 删除已挂上，等 pFileObj 解引用 + R3 句柄关闭时
+				//NTFS 会真正释放空间。直接收工，不再走 ZwDeleteFile，
+				//避免重复打开造成 SHARING_VIOLATION。
+				nStatus = STATUS_SUCCESS;
+				ObDereferenceObject(pFileObj);
+				return nStatus;
+			}
+			//POSIX 失败（老系统/非 NTFS 等）→ 回退到原 ZwDeleteFile 路径
+		}
+	}
 
 	//调用API删除
 	{
