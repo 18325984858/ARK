@@ -9,10 +9,349 @@
 #include "SvcUtil.h"
 #include "CLoadDriver.h"
 #include "../MyDriver64/Struct.h"
+#include "include/capstone-5.0-Release/include/capstone/capstone.h"
 #include <shlobj.h>
+#include <commdlg.h>
 #pragma comment(lib, "shell32.lib")
+#pragma comment(lib, "comdlg32.lib")
 
 extern _LoadDriver g_LoadDriver;
+
+// ---- 本文件局部 PE 解析 / 反汇编 / 转储辅助 ----
+namespace {
+
+// 将一个文件整段读到内存里；返回 buffer + size。失败时返回 nullptr。
+static BYTE* ReadAllFile(LPCWSTR path, DWORD* outSize)
+{
+	*outSize = 0;
+	HANDLE hf = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+		NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (hf == INVALID_HANDLE_VALUE) return nullptr;
+	LARGE_INTEGER li = { 0 };
+	if (!GetFileSizeEx(hf, &li) || li.QuadPart <= 0 || li.QuadPart > 64 * 1024 * 1024)
+	{
+		CloseHandle(hf); return nullptr;
+	}
+	DWORD size = (DWORD)li.QuadPart;
+	BYTE* buf = (BYTE*)malloc(size);
+	if (!buf) { CloseHandle(hf); return nullptr; }
+	DWORD got = 0;
+	if (!ReadFile(hf, buf, size, &got, NULL) || got != size)
+	{
+		free(buf); CloseHandle(hf); return nullptr;
+	}
+	CloseHandle(hf);
+	*outSize = size;
+	return buf;
+}
+
+// 把任意 RVA 翻译成文件偏移；找不到节区返回 0。
+static DWORD RvaToFileOffset(BYTE* base, DWORD size, DWORD rva)
+{
+	if (size < sizeof(IMAGE_DOS_HEADER)) return 0;
+	auto dos = (PIMAGE_DOS_HEADER)base;
+	if (dos->e_magic != IMAGE_DOS_SIGNATURE) return 0;
+	if ((DWORD)dos->e_lfanew + sizeof(IMAGE_NT_HEADERS64) > size) return 0;
+	auto nt = (PIMAGE_NT_HEADERS64)(base + dos->e_lfanew);
+	if (nt->Signature != IMAGE_NT_SIGNATURE) return 0;
+	auto sec = IMAGE_FIRST_SECTION(nt);
+	for (WORD i = 0; i < nt->FileHeader.NumberOfSections; ++i)
+	{
+		DWORD va = sec[i].VirtualAddress;
+		DWORD vs = sec[i].Misc.VirtualSize ? sec[i].Misc.VirtualSize : sec[i].SizeOfRawData;
+		if (rva >= va && rva < va + vs)
+		{
+			return sec[i].PointerToRawData + (rva - va);
+		}
+	}
+	return 0;
+}
+
+// 拿到 NT 头指针；不是 PE64 返回 nullptr。
+static PIMAGE_NT_HEADERS64 GetNt64(BYTE* base, DWORD size)
+{
+	if (size < sizeof(IMAGE_DOS_HEADER)) return nullptr;
+	auto dos = (PIMAGE_DOS_HEADER)base;
+	if (dos->e_magic != IMAGE_DOS_SIGNATURE) return nullptr;
+	if ((DWORD)dos->e_lfanew + sizeof(IMAGE_NT_HEADERS64) > size) return nullptr;
+	auto nt = (PIMAGE_NT_HEADERS64)(base + dos->e_lfanew);
+	if (nt->Signature != IMAGE_NT_SIGNATURE) return nullptr;
+	if (nt->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR64_MAGIC) return nullptr;
+	return nt;
+}
+
+// 写一个 UTF-16 LE BOM 文本文件到 %TEMP%，并用记事本打开。
+static void WriteTempAndOpen(LPCWSTR baseName, const CString& content)
+{
+	WCHAR tmpDir[MAX_PATH] = { 0 };
+	GetTempPathW(MAX_PATH, tmpDir);
+	WCHAR tmpFile[MAX_PATH] = { 0 };
+	swprintf_s(tmpFile, L"%s%s_%u.txt", tmpDir, baseName, GetCurrentProcessId());
+	HANDLE hf = CreateFileW(tmpFile, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS,
+		FILE_ATTRIBUTE_NORMAL, NULL);
+	if (hf == INVALID_HANDLE_VALUE) return;
+	WORD bom = 0xFEFF;
+	DWORD wr = 0;
+	WriteFile(hf, &bom, sizeof(bom), &wr, NULL);
+	WriteFile(hf, (LPCWSTR)content, content.GetLength() * sizeof(wchar_t), &wr, NULL);
+	CloseHandle(hf);
+	CString quoted; quoted.Format(L"\"%s\"", tmpFile);
+	ShellExecuteW(NULL, L"open", L"notepad.exe", quoted, NULL, SW_SHOWNORMAL);
+}
+
+static void ShowPeExports(HWND hwnd, const CString& path)
+{
+	DWORD size = 0;
+	BYTE* buf = ReadAllFile(path, &size);
+	if (!buf) { ::MessageBoxW(hwnd, L"无法读取文件。", L"查看导出表", MB_OK | MB_ICONWARNING); return; }
+	auto nt = GetNt64(buf, size);
+	if (!nt)
+	{
+		free(buf);
+		::MessageBoxW(hwnd, L"不是 64 位 PE 文件。", L"查看导出表", MB_OK | MB_ICONWARNING);
+		return;
+	}
+	auto& dd = nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
+	if (dd.VirtualAddress == 0 || dd.Size == 0)
+	{
+		free(buf);
+		::MessageBoxW(hwnd, L"该文件没有导出表。", L"查看导出表", MB_OK | MB_ICONINFORMATION);
+		return;
+	}
+	DWORD off = RvaToFileOffset(buf, size, dd.VirtualAddress);
+	if (!off || off + sizeof(IMAGE_EXPORT_DIRECTORY) > size)
+	{
+		free(buf); ::MessageBoxW(hwnd, L"导出表已损坏。", L"查看导出表", MB_OK | MB_ICONWARNING); return;
+	}
+	auto exp = (PIMAGE_EXPORT_DIRECTORY)(buf + off);
+	DWORD funcsOff   = RvaToFileOffset(buf, size, exp->AddressOfFunctions);
+	DWORD namesOff   = RvaToFileOffset(buf, size, exp->AddressOfNames);
+	DWORD ordOff     = RvaToFileOffset(buf, size, exp->AddressOfNameOrdinals);
+
+	CString text;
+	text.AppendFormat(L"文件: %s\r\n", (LPCWSTR)path);
+	text.AppendFormat(L"导出表 RVA=0x%08X  大小=0x%X\r\n", dd.VirtualAddress, dd.Size);
+	text.AppendFormat(L"函数总数=%u  名称总数=%u  Base=%u\r\n\r\n",
+		exp->NumberOfFunctions, exp->NumberOfNames, exp->Base);
+	text += L"序号  RVA         名称\r\n";
+	text += L"----  ----------  ---------------------------------\r\n";
+
+	for (DWORD i = 0; i < exp->NumberOfFunctions; ++i)
+	{
+		DWORD rva = 0;
+		if (funcsOff && funcsOff + (i + 1) * sizeof(DWORD) <= size)
+		{
+			rva = ((DWORD*)(buf + funcsOff))[i];
+		}
+		// 在 NameOrdinals 表里找 i 对应的名字
+		CString name = L"(未命名 / 序号导出)";
+		if (namesOff && ordOff)
+		{
+			for (DWORD k = 0; k < exp->NumberOfNames; ++k)
+			{
+				if (ordOff + (k + 1) * sizeof(WORD) > size) break;
+				WORD ord = ((WORD*)(buf + ordOff))[k];
+				if (ord == i)
+				{
+					if (namesOff + (k + 1) * sizeof(DWORD) > size) break;
+					DWORD nameRva = ((DWORD*)(buf + namesOff))[k];
+					DWORD nameOff = RvaToFileOffset(buf, size, nameRva);
+					if (nameOff && nameOff < size)
+					{
+						const char* a = (const char*)(buf + nameOff);
+						WCHAR wbuf[256] = { 0 };
+						MultiByteToWideChar(CP_ACP, 0, a, -1, wbuf, _countof(wbuf) - 1);
+						name = wbuf;
+					}
+					break;
+				}
+			}
+		}
+		text.AppendFormat(L"%4u  0x%08X  %s\r\n", exp->Base + i, rva, (LPCWSTR)name);
+	}
+	free(buf);
+	WriteTempAndOpen(L"pchunter_exports", text);
+}
+
+static void ShowPeImports(HWND hwnd, const CString& path)
+{
+	DWORD size = 0;
+	BYTE* buf = ReadAllFile(path, &size);
+	if (!buf) { ::MessageBoxW(hwnd, L"无法读取文件。", L"查看导入表", MB_OK | MB_ICONWARNING); return; }
+	auto nt = GetNt64(buf, size);
+	if (!nt)
+	{
+		free(buf);
+		::MessageBoxW(hwnd, L"不是 64 位 PE 文件。", L"查看导入表", MB_OK | MB_ICONWARNING);
+		return;
+	}
+	auto& dd = nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
+	if (dd.VirtualAddress == 0 || dd.Size == 0)
+	{
+		free(buf);
+		::MessageBoxW(hwnd, L"该文件没有导入表。", L"查看导入表", MB_OK | MB_ICONINFORMATION);
+		return;
+	}
+	DWORD descOff = RvaToFileOffset(buf, size, dd.VirtualAddress);
+	if (!descOff)
+	{
+		free(buf); ::MessageBoxW(hwnd, L"导入表 RVA 无效。", L"查看导入表", MB_OK | MB_ICONWARNING); return;
+	}
+
+	CString text;
+	text.AppendFormat(L"文件: %s\r\n", (LPCWSTR)path);
+	text.AppendFormat(L"导入表 RVA=0x%08X  大小=0x%X\r\n\r\n", dd.VirtualAddress, dd.Size);
+
+	auto desc = (PIMAGE_IMPORT_DESCRIPTOR)(buf + descOff);
+	while ((BYTE*)desc + sizeof(IMAGE_IMPORT_DESCRIPTOR) <= buf + size && desc->Name)
+	{
+		DWORD nameOff = RvaToFileOffset(buf, size, desc->Name);
+		const char* modName = (nameOff && nameOff < size) ? (const char*)(buf + nameOff) : "(?)";
+		WCHAR wmod[260] = { 0 };
+		MultiByteToWideChar(CP_ACP, 0, modName, -1, wmod, _countof(wmod) - 1);
+		text.AppendFormat(L"\r\n[模块] %s\r\n", wmod);
+
+		DWORD oftRva = desc->OriginalFirstThunk ? desc->OriginalFirstThunk : desc->FirstThunk;
+		DWORD thunkOff = RvaToFileOffset(buf, size, oftRva);
+		if (!thunkOff) { ++desc; continue; }
+
+		auto thunk = (PIMAGE_THUNK_DATA64)(buf + thunkOff);
+		while ((BYTE*)thunk + sizeof(IMAGE_THUNK_DATA64) <= buf + size && thunk->u1.AddressOfData)
+		{
+			if (thunk->u1.Ordinal & IMAGE_ORDINAL_FLAG64)
+			{
+				text.AppendFormat(L"    (Ordinal) %llu\r\n",
+					(ULONGLONG)IMAGE_ORDINAL64(thunk->u1.Ordinal));
+			}
+			else
+			{
+				DWORD ibnOff = RvaToFileOffset(buf, size, (DWORD)thunk->u1.AddressOfData);
+				if (ibnOff && ibnOff + sizeof(WORD) < size)
+				{
+					auto ibn = (PIMAGE_IMPORT_BY_NAME)(buf + ibnOff);
+					WCHAR wname[256] = { 0 };
+					MultiByteToWideChar(CP_ACP, 0, ibn->Name, -1, wname, _countof(wname) - 1);
+					text.AppendFormat(L"    %5u  %s\r\n", ibn->Hint, wname);
+				}
+			}
+			++thunk;
+		}
+		++desc;
+	}
+	free(buf);
+	WriteTempAndOpen(L"pchunter_imports", text);
+}
+
+static void DisasmDriverEntry(HWND hwnd, const CString& path)
+{
+	DWORD size = 0;
+	BYTE* buf = ReadAllFile(path, &size);
+	if (!buf) { ::MessageBoxW(hwnd, L"无法读取文件。", L"反汇编入口点", MB_OK | MB_ICONWARNING); return; }
+	auto nt = GetNt64(buf, size);
+	if (!nt)
+	{
+		free(buf);
+		::MessageBoxW(hwnd, L"不是 64 位 PE 文件。", L"反汇编入口点", MB_OK | MB_ICONWARNING);
+		return;
+	}
+	DWORD entryRva = nt->OptionalHeader.AddressOfEntryPoint;
+	ULONGLONG imageBase = nt->OptionalHeader.ImageBase;
+	DWORD entryOff = RvaToFileOffset(buf, size, entryRva);
+	if (!entryOff || entryOff >= size)
+	{
+		free(buf);
+		::MessageBoxW(hwnd, L"入口点 RVA 无效。", L"反汇编入口点", MB_OK | MB_ICONWARNING);
+		return;
+	}
+	const DWORD kMax = 256;
+	DWORD avail = size - entryOff;
+	DWORD codeLen = avail < kMax ? avail : kMax;
+
+	csh handle = 0;
+	if (cs_open(CS_ARCH_X86, CS_MODE_64, &handle) != CS_ERR_OK)
+	{
+		free(buf);
+		::MessageBoxW(hwnd, L"capstone 初始化失败。", L"反汇编入口点", MB_OK | MB_ICONWARNING);
+		return;
+	}
+	cs_insn* insn = nullptr;
+	size_t cnt = cs_disasm(handle, buf + entryOff, codeLen,
+		imageBase + entryRva, 0, &insn);
+
+	CString text;
+	text.AppendFormat(L"文件: %s\r\n", (LPCWSTR)path);
+	text.AppendFormat(L"ImageBase = 0x%016llX\r\n", (ULONGLONG)imageBase);
+	text.AppendFormat(L"AddressOfEntryPoint RVA = 0x%08X\r\n", entryRva);
+	text.AppendFormat(L"DriverEntry VA = 0x%016llX\r\n\r\n", (ULONGLONG)(imageBase + entryRva));
+	text += L"地址                 字节                              指令\r\n";
+	text += L"-------------------- --------------------------------- ---------------------\r\n";
+
+	for (size_t i = 0; i < cnt; ++i)
+	{
+		CString hex;
+		for (UCHAR b = 0; b < insn[i].size && b < 16; ++b)
+		{
+			CString one; one.Format(L"%02X ", insn[i].bytes[b]);
+			hex += one;
+		}
+		while (hex.GetLength() < 33) hex += L' ';
+
+		WCHAR mn[32] = { 0 }, op[160] = { 0 };
+		MultiByteToWideChar(CP_ACP, 0, insn[i].mnemonic, -1, mn, _countof(mn) - 1);
+		MultiByteToWideChar(CP_ACP, 0, insn[i].op_str,   -1, op, _countof(op) - 1);
+		text.AppendFormat(L"0x%016llX %s%-7s %s\r\n",
+			(ULONGLONG)insn[i].address, (LPCWSTR)hex, mn, op);
+	}
+	if (cnt == 0)
+	{
+		text += L"(capstone 未解析出任何指令)\r\n";
+	}
+	if (insn) cs_free(insn, cnt);
+	cs_close(&handle);
+	free(buf);
+	WriteTempAndOpen(L"pchunter_disasm", text);
+}
+
+static void DumpDriverToSys(HWND hwnd, const CString& path)
+{
+	if (GetFileAttributesW(path) == INVALID_FILE_ATTRIBUTES)
+	{
+		::MessageBoxW(hwnd, L"驱动文件不存在或无权访问。", L"转储驱动", MB_OK | MB_ICONWARNING);
+		return;
+	}
+	WCHAR initName[MAX_PATH] = { 0 };
+	LPCWSTR slash = wcsrchr(path, L'\\');
+	wcsncpy_s(initName, slash ? slash + 1 : (LPCWSTR)path, _TRUNCATE);
+
+	WCHAR file[MAX_PATH] = { 0 };
+	wcsncpy_s(file, initName, _TRUNCATE);
+
+	OPENFILENAMEW ofn = { 0 };
+	ofn.lStructSize = sizeof(ofn);
+	ofn.hwndOwner = hwnd;
+	ofn.lpstrFilter = L"驱动文件 (*.sys)\0*.sys\0所有文件 (*.*)\0*.*\0";
+	ofn.lpstrFile = file;
+	ofn.nMaxFile = _countof(file);
+	ofn.lpstrTitle = L"转储驱动到 .sys";
+	ofn.lpstrDefExt = L"sys";
+	ofn.Flags = OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
+	if (!GetSaveFileNameW(&ofn)) return;
+
+	if (CopyFileW(path, file, FALSE))
+	{
+		CString msg;
+		msg.Format(L"已转储到:\n%s", file);
+		::MessageBoxW(hwnd, msg, L"转储驱动", MB_OK | MB_ICONINFORMATION);
+	}
+	else
+	{
+		CString msg;
+		msg.Format(L"复制失败，GetLastError=%u", GetLastError());
+		::MessageBoxW(hwnd, msg, L"转储驱动", MB_OK | MB_ICONWARNING);
+	}
+}
+
+} // anonymous namespace
 
 // DlgDriverModule 对话框
 
@@ -215,8 +554,8 @@ void DlgDriverModule::OnNMRClickControlDrivermoduleList(NMHDR* pNMHDR, LRESULT* 
 	pPopup->AppendMenuW(MF_SEPARATOR, 0, (LPCTSTR)NULL);
 	pPopup->AppendMenuW(MF_STRING | (hasPath ? 0 : MF_GRAYED), kDrvExports, L"查看导出表");
 	pPopup->AppendMenuW(MF_STRING | (hasPath ? 0 : MF_GRAYED), kDrvImports, L"查看导入表");
-	pPopup->AppendMenuW(MF_STRING | (hasDrvObj ? 0 : MF_GRAYED), kDrvDisasm, L"反汇编入口点 (DriverEntry)");
-	pPopup->AppendMenuW(MF_STRING | (hasDrvObj ? 0 : MF_GRAYED), kDrvDump,   L"转储驱动到 .sys");
+	pPopup->AppendMenuW(MF_STRING | (hasPath ? 0 : MF_GRAYED), kDrvDisasm, L"反汇编入口点 (DriverEntry)");
+	pPopup->AppendMenuW(MF_STRING | (hasPath ? 0 : MF_GRAYED), kDrvDump,   L"转储驱动到 .sys");
 
 	UINT cmd = pPopup->TrackPopupMenu(TPM_LEFTBUTTON | TPM_RETURNCMD, point.x, point.y, this);
 	if (HandleOpenInExplorerCmd(cmd, explorerCmd, explorerPath))
@@ -268,13 +607,10 @@ void DlgDriverModule::OnNMRClickControlDrivermoduleList(NMHDR* pNMHDR, LRESULT* 
 		ShellExecuteW(NULL, L"open", L"regedit.exe", NULL, NULL, SW_SHOWNORMAL);
 		return;
 	}
-	if (cmd == kDrvExports || cmd == kDrvImports || cmd == kDrvDisasm || cmd == kDrvDump)
-	{
-		::MessageBoxW(GetSafeHwnd(),
-			L"该功能尚在开发中，将在后续版本提供独立的查看/反汇编/转储窗口。",
-			L"提示", MB_OK | MB_ICONINFORMATION);
-		return;
-	}
+	if (cmd == kDrvExports && hasPath) { ShowPeExports(GetSafeHwnd(), drvPath);     return; }
+	if (cmd == kDrvImports && hasPath) { ShowPeImports(GetSafeHwnd(), drvPath);     return; }
+	if (cmd == kDrvDisasm  && hasPath) { DisasmDriverEntry(GetSafeHwnd(), drvPath); return; }
+	if (cmd == kDrvDump    && hasPath) { DumpDriverToSys(GetSafeHwnd(), drvPath);   return; }
 	if (cmd != 0)
 	{
 		PostMessage(WM_COMMAND, MAKEWPARAM(cmd, 0), 0);
