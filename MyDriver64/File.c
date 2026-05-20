@@ -39,11 +39,65 @@ ULONG64 MyDeleteRunFile(PUNICODE_STRING pFullName)
 	IO_STATUS_BLOCK ioStatus = { 0 };
 
 	MyDbgPrintfEx("[MyDeleteRunFile] enter path=\"%wZ\"\n", pFullName);
+
+	//第一步：把 "\??\X:\..." 解析成 "\Device\HarddiskVolumeN\..."，
+	//然后调用 UnlockFile 把所有进程对该文件的句柄强制关掉。
+	//（UnlockFile 内部用 ObQueryNameString 拿到的是规范化设备路径，
+	//直接传 "\??\X:\..." 永远匹配不到。）
+	if (pFullName && pFullName->Buffer && pFullName->Length >= 7 * sizeof(WCHAR)
+		&& pFullName->Buffer[0] == L'\\' && pFullName->Buffer[1] == L'?'
+		&& pFullName->Buffer[2] == L'?' && pFullName->Buffer[3] == L'\\'
+		&& pFullName->Buffer[5] == L':' && pFullName->Buffer[6] == L'\\')
+	{
+		WCHAR linkBuf[16] = { 0 };
+		swprintf(linkBuf, L"\\??\\%wc:", pFullName->Buffer[4]);
+		UNICODE_STRING linkName = { 0 };
+		RtlInitUnicodeString(&linkName, linkBuf);
+
+		OBJECT_ATTRIBUTES oaLink = { 0 };
+		InitializeObjectAttributes(&oaLink, &linkName,
+			OBJ_CASE_INSENSITIVE | OBJ_KERNEL_HANDLE, NULL, NULL);
+
+		HANDLE hLink = NULL;
+		NTSTATUS sLink = ZwOpenSymbolicLinkObject(&hLink, GENERIC_READ, &oaLink);
+		if (NT_SUCCESS(sLink))
+		{
+			WCHAR devBuf[128] = { 0 };
+			UNICODE_STRING devName = { 0 };
+			devName.MaximumLength = sizeof(devBuf);
+			devName.Buffer = devBuf;
+			ULONG returned = 0;
+			NTSTATUS sQuery = ZwQuerySymbolicLinkObject(hLink, &devName, &returned);
+			ZwClose(hLink);
+			if (NT_SUCCESS(sQuery))
+			{
+				WCHAR ntPathBuf[MY_MAX_PATH] = { 0 };
+				//pFullName->Buffer + 6 跳过 "\??\X:"，保留 "\path..."
+				swprintf(ntPathBuf, L"%wZ%ws", &devName, pFullName->Buffer + 6);
+				UNICODE_STRING ntPath = { 0 };
+				RtlInitUnicodeString(&ntPath, ntPathBuf);
+
+				ULONG64 closed = 0;
+				NTSTATUS uls = UnlockFile(&ntPath, &closed);
+				MyDbgPrintfEx("[MyDeleteRunFile] UnlockFile(\"%wZ\") -> 0x%08X closed=%llu\n",
+					&ntPath, uls, closed);
+			}
+			else
+			{
+				MyDbgPrintfEx("[MyDeleteRunFile] ZwQuerySymbolicLinkObject failed 0x%08X\n", sQuery);
+			}
+		}
+		else
+		{
+			MyDbgPrintfEx("[MyDeleteRunFile] ZwOpenSymbolicLinkObject(%wZ) failed 0x%08X\n",
+				&linkName, sLink);
+		}
+	}
+
 	InitializeObjectAttributes(&objAttribus, pFullName,
 		OBJ_KERNEL_HANDLE | OBJ_CASE_INSENSITIVE, NULL, NULL);
 
-	//打开文件——访问权限带 DELETE，允许任意 share，最大限度兼容
-	//已经被进程占用的文件（典型例：自己的日志）。
+	//第二步：打开文件——访问权限带 DELETE，允许任意 share。
 	nStatus = IoCreateFile(&FileHandle,
 		FILE_READ_ATTRIBUTES | DELETE | SYNCHRONIZE,
 		&objAttribus, &ioStatus, 0, FILE_ATTRIBUTE_NORMAL,
@@ -56,9 +110,8 @@ ULONG64 MyDeleteRunFile(PUNICODE_STRING pFullName)
 		return nStatus;
 	}
 
-	//走 POSIX 删除（Win10 RS1+ NTFS）：用上面拿到的句柄发
-	//ZwSetInformationFile + FileDispositionInformationEx，FltMgr 路径完整，
-	//NTFS 会按 POSIX 语义立即把文件名从目录里 unlink，不要求排他打开。
+	//第三步：走 POSIX 删除（Win10 RS1+ NTFS），FltMgr 路径完整，
+	//NTFS 会按 POSIX 语义立即把文件名从目录里 unlink。
 	FILE_DISPOSITION_INFORMATION_EX dispEx = { 0 };
 	dispEx.Flags = FILE_DISPOSITION_DELETE
 		| FILE_DISPOSITION_POSIX_SEMANTICS
