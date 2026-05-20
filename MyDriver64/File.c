@@ -44,13 +44,41 @@ ULONG64 MyDeleteRunFile(PUNICODE_STRING pFullName)
 	//打开文件获取文件句柄//属性为 读
 	//NTSTATUS nStatus = ZwOpenFile(&FileHandle, GENERIC_READ, &objAttribus, &IoStatusBlock, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, FILE_NON_DIRECTORY_FILE);
 	//__debugbreak();
-	//打开文件
+	//打开文件——访问权限带 DELETE，并允许任意 share，最大限度兼容
+	//已经被进程占用的文件（典型例：自己的日志）。
 	IO_STATUS_BLOCK ioStatus = { 0 };
-	nStatus = IoCreateFile(&FileHandle, FILE_READ_ATTRIBUTES, &objAttribus, &ioStatus, 0, FILE_ATTRIBUTE_NORMAL, FILE_SHARE_DELETE, FILE_OPEN, 0, NULL, 0, 0, NULL, IO_NO_PARAMETER_CHECKING);
+	nStatus = IoCreateFile(&FileHandle,
+		FILE_READ_ATTRIBUTES | DELETE | SYNCHRONIZE,
+		&objAttribus, &ioStatus, 0, FILE_ATTRIBUTE_NORMAL,
+		FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+		FILE_OPEN, FILE_SYNCHRONOUS_IO_NONALERT, NULL, 0, 0, NULL, IO_NO_PARAMETER_CHECKING);
 	if (!NT_SUCCESS(nStatus))
 	{
 		MyDbgPrintfEx("[MyDeleteRunFile] IoCreateFile failed 0x%08X\n", nStatus);
 		return nStatus;
+	}
+
+	//优先走 POSIX 删除（Win10 RS1+ NTFS）：直接用上面拿到的句柄
+	//发 ZwSetInformationFile + FileDispositionInformationEx，走的是
+	//完整 FltMgr 路径，NTFS 会真按 POSIX 语义立即把名字从目录里 unlink，
+	//不需要排他打开——能直接搞定"自己占着自己日志"的场景。
+	{
+		FILE_DISPOSITION_INFORMATION_EX dispEx = { 0 };
+		IO_STATUS_BLOCK posixIos = { 0 };
+		dispEx.Flags = FILE_DISPOSITION_DELETE
+			| FILE_DISPOSITION_POSIX_SEMANTICS
+			| FILE_DISPOSITION_FORCE_IMAGE_SECTION_CHECK
+			| FILE_DISPOSITION_IGNORE_READONLY_ATTRIBUTE;
+		NTSTATUS posix = ZwSetInformationFile(FileHandle, &posixIos,
+			&dispEx, sizeof(dispEx), FileDispositionInformationExClass);
+		MyDbgPrintfEx("[MyDeleteRunFile] POSIX dispose -> 0x%08X (ios=0x%08X)\n",
+			posix, posixIos.Status);
+		if (NT_SUCCESS(posix))
+		{
+			ZwClose(FileHandle);
+			return STATUS_SUCCESS;
+		}
+		//POSIX 不支持（老系统/非 NTFS）→ 回退到原 ZwDeleteFile 路径
 	}
 
 	//获取文件对象
@@ -198,64 +226,6 @@ ULONG64 MyDeleteRunFile(PUNICODE_STRING pFullName)
 		}
 	}
 	*/
-
-	//优先走 POSIX 删除（Win10 RS1+）：从当前 pFileObj 直接发
-	//IRP_MJ_SET_INFORMATION + FileDispositionInformationEx。
-	//FILE_DISPOSITION_POSIX_SEMANTICS 不要求排他打开，能立即从目录
-	//把文件名 unlink 掉（包括"自己的进程占着自己日志"这种场景），
-	//最后一个 handle 关闭时由 NTFS 真正释放空间。
-	if (MmIsAddressValid(pFileDeviceObj))
-	{
-		PIRP pIrp = IoAllocateIrp(pFileDeviceObj->StackSize, TRUE);
-		if (MmIsAddressValid(pIrp))
-		{
-			KEVENT nEvent = { 0 };
-			IO_STATUS_BLOCK irpIos = { 0 };
-			FILE_DISPOSITION_INFORMATION_EX dispEx = { 0 };
-			KeInitializeEvent(&nEvent, SynchronizationEvent, FALSE);
-
-			dispEx.Flags = FILE_DISPOSITION_DELETE
-				| FILE_DISPOSITION_POSIX_SEMANTICS
-				| FILE_DISPOSITION_FORCE_IMAGE_SECTION_CHECK
-				| FILE_DISPOSITION_IGNORE_READONLY_ATTRIBUTE;
-
-			pIrp->AssociatedIrp.SystemBuffer = &dispEx;
-			pIrp->UserEvent = &nEvent;
-			pIrp->UserIosb = &irpIos;
-			pIrp->Tail.Overlay.OriginalFileObject = pFileObj;
-			pIrp->Tail.Overlay.Thread = (PETHREAD)KeGetCurrentThread();
-			pIrp->RequestorMode = KernelMode;
-
-			PIO_STACK_LOCATION irpSp = IoGetNextIrpStackLocation(pIrp);
-			irpSp->MajorFunction = IRP_MJ_SET_INFORMATION;
-			irpSp->DeviceObject = pFileDeviceObj;
-			irpSp->FileObject = pFileObj;
-			irpSp->Parameters.SetFile.Length = sizeof(FILE_DISPOSITION_INFORMATION_EX);
-			irpSp->Parameters.SetFile.FileInformationClass = FileDispositionInformationExClass;
-			irpSp->Parameters.SetFile.FileObject = pFileObj;
-
-			IoSetCompletionRoutine(pIrp, SkillSetFileCompletion, &nEvent, TRUE, TRUE, TRUE);
-
-			NTSTATUS callStatus = IoCallDriver(pFileDeviceObj, pIrp);
-			if (callStatus == STATUS_PENDING)
-			{
-				KeWaitForSingleObject(&nEvent, Executive, KernelMode, FALSE, NULL);
-			}
-			MyDbgPrintfEx("[MyDeleteRunFile] POSIX-dispose IRP status=0x%08X info=0x%llX\n",
-				irpIos.Status, (ULONG64)irpIos.Information);
-
-			if (NT_SUCCESS(irpIos.Status))
-			{
-				//POSIX 删除已挂上，等 pFileObj 解引用 + R3 句柄关闭时
-				//NTFS 会真正释放空间。直接收工，不再走 ZwDeleteFile，
-				//避免重复打开造成 SHARING_VIOLATION。
-				nStatus = STATUS_SUCCESS;
-				ObDereferenceObject(pFileObj);
-				return nStatus;
-			}
-			//POSIX 失败（老系统/非 NTFS 等）→ 回退到原 ZwDeleteFile 路径
-		}
-	}
 
 	//调用API删除
 	{
