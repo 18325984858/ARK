@@ -83,6 +83,28 @@ static PIMAGE_NT_HEADERS64 GetNt64(BYTE* base, DWORD size)
 	return nt;
 }
 
+// 安全把文件缓冲区里的 ANSI 字符串拷成宽字符串。
+// 关键：MultiByteToWideChar 用 -1 会一路扫到 null。如果 buf 里的字符串
+// 紧贴 buf+size 且没有 null 结尾，会越界读到未映射页 → AV。
+// ntoskrnl.exe 导出表巨大、字符串密集，正是这个坑的高发场景。
+// 这里先在 [offset, size) 区间用 strnlen 限定长度，再显式传给 MBToWC。
+static CString SafeAnsiAtOffsetToCString(BYTE* buf, DWORD size, DWORD offset)
+{
+	CString out;
+	if (!buf || offset >= size) return out;
+	const char* p = (const char*)(buf + offset);
+	size_t maxLen = (size_t)(size - offset);
+	size_t slen = strnlen(p, maxLen);
+	if (slen == 0) return out;
+	int needed = MultiByteToWideChar(CP_ACP, 0, p, (int)slen, NULL, 0);
+	if (needed <= 0) return out;
+	if (needed > 4096) needed = 4096;  // 极端保护
+	LPWSTR wbuf = out.GetBuffer(needed);
+	int got = MultiByteToWideChar(CP_ACP, 0, p, (int)slen, wbuf, needed);
+	out.ReleaseBuffer(got > 0 ? got : 0);
+	return out;
+}
+
 // 写一个 UTF-16 LE BOM 文本文件到 %TEMP%，并用记事本打开。
 // 已被 ShowTextViewer 取代，保留作旧调用兼容（暂未使用）。
 static void WriteTempAndOpen(LPCWSTR baseName, const CString& content)
@@ -271,10 +293,8 @@ static void ShowPeExports(HWND hwnd, const CString& path)
 					DWORD nameO = RvaToFileOffset(buf, size, nameRva);
 					if (nameO && nameO < size)
 					{
-						WCHAR wbuf[256] = { 0 };
-						MultiByteToWideChar(CP_ACP, 0, (const char*)(buf + nameO), -1,
-							wbuf, _countof(wbuf) - 1);
-						name = wbuf;
+						CString s = SafeAnsiAtOffsetToCString(buf, size, nameO);
+						if (!s.IsEmpty()) name = s;
 					}
 					break;
 				}
@@ -330,9 +350,8 @@ static void ShowPeImports(HWND hwnd, const CString& path)
 	while ((BYTE*)desc + sizeof(IMAGE_IMPORT_DESCRIPTOR) <= buf + size && desc->Name)
 	{
 		DWORD nameOff = RvaToFileOffset(buf, size, desc->Name);
-		const char* modName = (nameOff && nameOff < size) ? (const char*)(buf + nameOff) : "(?)";
-		WCHAR wmod[260] = { 0 };
-		MultiByteToWideChar(CP_ACP, 0, modName, -1, wmod, _countof(wmod) - 1);
+		CString wmod = (nameOff && nameOff < size)
+			? SafeAnsiAtOffsetToCString(buf, size, nameOff) : CString(L"(?)");
 
 		DWORD oftRva = desc->OriginalFirstThunk ? desc->OriginalFirstThunk : desc->FirstThunk;
 		DWORD thunkOff = RvaToFileOffset(buf, size, oftRva);
@@ -355,9 +374,8 @@ static void ShowPeImports(HWND hwnd, const CString& path)
 				{
 					auto ibn = (PIMAGE_IMPORT_BY_NAME)(buf + ibnOff);
 					sHint.Format(L"%u", ibn->Hint);
-					WCHAR wname[256] = { 0 };
-					MultiByteToWideChar(CP_ACP, 0, ibn->Name, -1, wname, _countof(wname) - 1);
-					sName = wname;
+					DWORD nameByteOff = ibnOff + (DWORD)FIELD_OFFSET(IMAGE_IMPORT_BY_NAME, Name);
+					sName = SafeAnsiAtOffsetToCString(buf, size, nameByteOff);
 				}
 				else { sHint = L"?"; sName = L"(? bad RVA)"; }
 			}
