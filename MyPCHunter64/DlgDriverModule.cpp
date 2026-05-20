@@ -584,31 +584,45 @@ static void MemoryDumpDriverToSys(HWND hwnd, ULONG64 imageBase, ULONG64 imageSiz
 	}
 
 	WCHAR initName[MAX_PATH] = { 0 };
+	// 按原驱动名的后缀决定 dump 文件后缀（.sys/.exe/.dll/.dll/...）
+	CString ext = L"sys";   // 兜底
 	LPCWSTR slash = origPath.IsEmpty() ? NULL : wcsrchr(origPath, L'\\');
 	if (slash)
 	{
-		// 去掉扩展名加 "_mem.sys"
 		CString base = slash + 1;
 		int dot = base.ReverseFind(L'.');
-		if (dot > 0) base = base.Left(dot);
-		swprintf_s(initName, L"%s_mem.sys", (LPCWSTR)base);
+		CString stem = (dot > 0) ? base.Left(dot) : base;
+		if (dot > 0 && dot + 1 < base.GetLength())
+			ext = base.Mid(dot + 1);
+		swprintf_s(initName, L"%s_mem.%s", (LPCWSTR)stem, (LPCWSTR)ext);
 	}
 	else
 	{
-		wcscpy_s(initName, L"driver_mem.sys");
+		swprintf_s(initName, L"driver_mem.%s", (LPCWSTR)ext);
 	}
 
 	WCHAR file[MAX_PATH] = { 0 };
 	wcscpy_s(file, initName);
 
+	// 过滤器也跟着扩展名走，方便另存为同类型
+	CString filterSpec, filterAll = L"所有文件 (*.*)";
+	filterSpec.Format(L"原类型 (*.%s)", (LPCWSTR)ext);
+	WCHAR filterBuf[256] = { 0 };
+	int off = 0;
+	off += swprintf_s(filterBuf + off, _countof(filterBuf) - off, L"%s", (LPCWSTR)filterSpec) + 1;
+	off += swprintf_s(filterBuf + off, _countof(filterBuf) - off, L"*.%s", (LPCWSTR)ext) + 1;
+	off += swprintf_s(filterBuf + off, _countof(filterBuf) - off, L"%s", (LPCWSTR)filterAll) + 1;
+	off += swprintf_s(filterBuf + off, _countof(filterBuf) - off, L"*.*") + 1;
+	filterBuf[off] = 0;  // 双 null 结尾
+
 	OPENFILENAMEW ofn = { 0 };
 	ofn.lStructSize = sizeof(ofn);
 	ofn.hwndOwner   = hwnd;
-	ofn.lpstrFilter = L"驱动文件 (*.sys)\0*.sys\0所有文件 (*.*)\0*.*\0";
+	ofn.lpstrFilter = filterBuf;
 	ofn.lpstrFile   = file;
 	ofn.nMaxFile    = _countof(file);
-	ofn.lpstrTitle  = L"内存转储驱动到 .sys";
-	ofn.lpstrDefExt = L"sys";
+	ofn.lpstrTitle  = L"内存转储驱动到 .sys/.exe/.dll";
+	ofn.lpstrDefExt = (LPCWSTR)ext;
 	ofn.Flags = OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
 	if (!GetSaveFileNameW(&ofn))
 	{
