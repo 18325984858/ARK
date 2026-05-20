@@ -837,14 +837,39 @@ void _CFunction::VerifyFileSignatureDialog(HWND hwnd, const CString& path)
 	}
 
 	CString msg;
+	UINT icon = MB_ICONINFORMATION;
 	if (r == ERROR_SUCCESS)
+	{
 		msg.Format(L"文件: %s\n\n签名状态: 已签名且有效\n签名者: %s",
 			(LPCWSTR)path,
 			signer.IsEmpty() ? L"(未取得)" : (LPCWSTR)signer);
+	}
+	else if (r == TRUST_E_NOSIGNATURE
+		|| (DWORD)r == 0x800B0003 /* TRUST_E_PROVIDER_UNKNOWN */
+		|| (DWORD)r == 0x800B0001 /* TRUST_E_SUBJECT_FORM_UNKNOWN */)
+	{
+		//该文件类型不携带 Authenticode 签名（desktop.ini / 文本 / 数据
+		//文件等），不算"验证失败"，按"未签名"展示即可。
+		msg.Format(L"文件: %s\n\n签名状态: 未签名（该文件类型不携带数字签名）",
+			(LPCWSTR)path);
+	}
 	else
-		msg.Format(L"文件: %s\n\n签名状态: 未签名或验证失败\nWinVerifyTrust 返回: 0x%08X",
-			(LPCWSTR)path, (unsigned)r);
+	{
+		LPCWSTR detail = L"";
+		switch ((DWORD)r)
+		{
+		case 0x80096010: detail = L"文件已被篡改（摘要不匹配）"; break; // TRUST_E_BAD_DIGEST
+		case 0x800B010C: detail = L"证书已吊销";                   break; // CERT_E_REVOKED
+		case 0x800B0101: detail = L"证书已过期";                   break; // CERT_E_EXPIRED
+		case 0x800B0109: detail = L"根证书不受信任";               break; // CERT_E_UNTRUSTEDROOT
+		case 0x800B010A: detail = L"证书链构建失败";               break; // CERT_E_CHAINING
+		case 0x80092009: detail = L"签名容器无法解析";             break; // CRYPT_E_NO_MATCH
+		default: detail = L"验证失败"; break;
+		}
+		msg.Format(L"文件: %s\n\n签名状态: %s\nWinVerifyTrust 返回: 0x%08X",
+			(LPCWSTR)path, detail, (unsigned)r);
+		icon = MB_ICONWARNING;
+	}
 
-	::MessageBoxW(hwnd, msg, L"数字签名验证",
-		MB_OK | (r == ERROR_SUCCESS ? MB_ICONINFORMATION : MB_ICONWARNING));
+	::MessageBoxW(hwnd, msg, L"数字签名验证", MB_OK | icon);
 }
