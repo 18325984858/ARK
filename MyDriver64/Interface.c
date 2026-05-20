@@ -694,6 +694,7 @@ VOID __vectorcall MyDeleteFile(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 
 {
 	if (pIndata == 0 || !MmIsAddressValid((PVOID)pIndata))
 	{
+		MyDbgPrintfEx("[MyDeleteFile] bad pIndata=%p\n", (PVOID)pIndata);
 		if (MmIsAddressValid((PVOID)pRet)) *(PULONG64)pRet = (ULONG64)STATUS_INVALID_PARAMETER;
 		return;
 	}
@@ -719,12 +720,16 @@ VOID __vectorcall MyDeleteFile(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 
 	}
 	__except (EXCEPTION_EXECUTE_HANDLER)
 	{
+		MyDbgPrintfEx("[MyDeleteFile] snapshot user path SEH=%08X\n", GetExceptionCode());
 		if (MmIsAddressValid((PVOID)pRet)) *(PULONG64)pRet = (ULONG64)STATUS_INVALID_USER_BUFFER;
 		return;
 	}
 
+	MyDbgPrintfEx("[MyDeleteFile] user path=\"%ws\"\n", userPath);
+
 	if (userPath[0] == L'\0')
 	{
+		MyDbgPrintfEx("[MyDeleteFile] empty path\n");
 		if (MmIsAddressValid((PVOID)pRet)) *(PULONG64)pRet = (ULONG64)STATUS_INVALID_PARAMETER;
 		return;
 	}
@@ -732,6 +737,7 @@ VOID __vectorcall MyDeleteFile(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 
 	// 期望形如 "X:\..." 的 DOS 路径；其它形式（NT 路径、空白）直接拒
 	if (userPath[1] != L':' || userPath[2] != L'\\')
 	{
+		MyDbgPrintfEx("[MyDeleteFile] not DOS path: \"%ws\"\n", userPath);
 		if (MmIsAddressValid((PVOID)pRet)) *(PULONG64)pRet = (ULONG64)STATUS_OBJECT_PATH_SYNTAX_BAD;
 		return;
 	}
@@ -742,6 +748,7 @@ VOID __vectorcall MyDeleteFile(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 
 	UNICODE_STRING FilePath = { 0 };
 	RtlInitUnicodeString(&FilePath, szFilePath);
 	ULONG64 dqRet = MyDeleteRunFile(&FilePath);
+	MyDbgPrintfEx("[MyDeleteFile] MyDeleteRunFile(\"%wZ\") -> 0x%08llX\n", &FilePath, dqRet);
 
 	if (MmIsAddressValid((PVOID)pRet))
 	{
@@ -781,15 +788,18 @@ VOID __vectorcall MyFileDeoccupy(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG6
 	// 调用方传入 DOS 风格全路径，例如 "C:\Users\Foo\bar.dll"
 	if (!MmIsAddressValid((PVOID)pIndata))
 	{
+		MyDbgPrintfEx("[MyFileDeoccupy] bad pIndata=%p\n", (PVOID)pIndata);
 		return;
 	}
 	PWCHAR dosPath = (PWCHAR)pIndata;
 	if (dosPath[0] == 0 || dosPath[1] != L':' || dosPath[2] != L'\\')
 	{
 		// 不是 X:\... 形式，直接拒
+		MyDbgPrintfEx("[MyFileDeoccupy] not DOS path\n");
 		if (MmIsAddressValid((PVOID)pRet)) *(PULONG64)pRet = 0;
 		return;
 	}
+	MyDbgPrintfEx("[MyFileDeoccupy] dos path=\"%ws\"\n", dosPath);
 
 	// 1) 解析 "\??\X:" 这个符号链接，拿到 "\Device\HarddiskVolumeN"
 	WCHAR linkBuf[16] = { 0 };
@@ -805,6 +815,8 @@ VOID __vectorcall MyFileDeoccupy(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG6
 	NTSTATUS sLink = ZwOpenSymbolicLinkObject(&hLink, GENERIC_READ, &oa);
 	if (!NT_SUCCESS(sLink))
 	{
+		MyDbgPrintfEx("[MyFileDeoccupy] ZwOpenSymbolicLinkObject(%wZ) failed 0x%08X\n",
+			&linkName, sLink);
 		if (MmIsAddressValid((PVOID)pRet)) *(PULONG64)pRet = 0;
 		return;
 	}
@@ -819,6 +831,7 @@ VOID __vectorcall MyFileDeoccupy(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG6
 	ZwClose(hLink);
 	if (!NT_SUCCESS(sQuery))
 	{
+		MyDbgPrintfEx("[MyFileDeoccupy] ZwQuerySymbolicLinkObject failed 0x%08X\n", sQuery);
 		if (MmIsAddressValid((PVOID)pRet)) *(PULONG64)pRet = 0;
 		return;
 	}
@@ -829,12 +842,14 @@ VOID __vectorcall MyFileDeoccupy(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG6
 
 	UNICODE_STRING ntPath = { 0 };
 	RtlInitUnicodeString(&ntPath, ntPathBuf);
+	MyDbgPrintfEx("[MyFileDeoccupy] nt path=\"%wZ\"\n", &ntPath);
 
 	// 3) 在系统句柄表里关掉所有指向该 NT 路径的句柄
 	ULONG64 closed = 0;
 	(void)UnlockFile(&ntPath, &closed);
 
 	// 4) 通过 pRet 返回关闭的句柄数；R3 据此区分 "成功/未匹配"
+	MyDbgPrintfEx("[MyFileDeoccupy] returning closed=%llu\n", closed);
 	if (MmIsAddressValid((PVOID)pRet))
 	{
 		*(PULONG64)pRet = closed;

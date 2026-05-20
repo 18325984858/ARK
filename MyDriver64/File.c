@@ -754,8 +754,10 @@ NTSTATUS UnlockFile(PUNICODE_STRING NtPath, PULONG64 OutClosed)
 	if (OutClosed) *OutClosed = 0;
 	if (NtPath == NULL || NtPath->Buffer == NULL || NtPath->Length == 0)
 	{
+		MyDbgPrintfEx("[UnlockFile] bad input: NtPath=%p\n", NtPath);
 		return STATUS_INVALID_PARAMETER;
 	}
+	MyDbgPrintfEx("[UnlockFile] target=\"%wZ\"\n", NtPath);
 
 	NTSTATUS Status = STATUS_SUCCESS;
 	PSYSTEM_HANDLE_INFORMATION      Handles = NULL;
@@ -763,7 +765,10 @@ NTSTATUS UnlockFile(PUNICODE_STRING NtPath, PULONG64 OutClosed)
 	PVOID  Buffer = NULL;
 	ULONG  BufferSize = 0x20000; // 句柄表很大，起步给大一点减少重试
 	ULONG  ReturnLength = 0;
-	ULONG64 closed = 0;
+	ULONG64 closed   = 0;
+	ULONG64 matched  = 0;  // 命名匹配的句柄数（用于调试）
+	ULONG64 flushedCnt = 0;
+	ULONG64 closedHandle = 0;
 
 	POBJECT_NAME_INFORMATION ObjectNameInfo = ExAllocatePoolWithTag(NonPagedPool, 4096, '1234');
 	if (!ObjectNameInfo)
@@ -815,6 +820,12 @@ retry:
 			if (RtlEqualUnicodeString(NtPath, &ObjectNameInfo->Name, TRUE))
 			{
 				PFILE_OBJECT pFile = (PFILE_OBJECT)HandleInfo->Object;
+				matched++;
+				MyDbgPrintfEx("[UnlockFile] HIT pid=%u handle=%p obj=%p name=\"%wZ\"\n",
+					(ULONG)(ULONG_PTR)HandleInfo->UniqueProcessId,
+					(PVOID)(ULONG_PTR)HandleInfo->HandleValue,
+					HandleInfo->Object,
+					&ObjectNameInfo->Name);
 
 				// 关键手法：在关闭句柄之前，先把 FILE_OBJECT->SectionObjectPointer
 				// 上的 ImageSectionObject / DataSectionObject / SharedCacheMap
@@ -849,7 +860,10 @@ retry:
 				__except (EXCEPTION_EXECUTE_HANDLER)
 				{
 					flushed = FALSE;
+					MyDbgPrintfEx("[UnlockFile] flush SEH exception on obj=%p\n", pFile);
 				}
+				MyDbgPrintfEx("[UnlockFile] flush result=%d on obj=%p\n",
+					(int)flushed, pFile);
 
 				PEPROCESS Process = NULL;
 				NTSTATUS pStatus = PsLookupProcessByProcessId(HandleInfo->UniqueProcessId, &Process);
@@ -878,15 +892,30 @@ retry:
 
 						KeUnstackDetachProcess(&ApcState);
 
-						if (NT_SUCCESS(closeStatus)) closed++;
+						MyDbgPrintfEx("[UnlockFile] ZwClose pid=%u handle=%p -> 0x%08X\n",
+							(ULONG)(ULONG_PTR)HandleInfo->UniqueProcessId,
+							(PVOID)(ULONG_PTR)HandleInfo->HandleValue, closeStatus);
+						if (NT_SUCCESS(closeStatus)) { closed++; closedHandle++; }
+					}
+					else
+					{
+						MyDbgPrintfEx("[UnlockFile] skip attach pid=%u (cur=%p, target=%p, safe-to-attach=%s)\n",
+							(ULONG)(ULONG_PTR)HandleInfo->UniqueProcessId,
+							PsGetCurrentProcess(), Process,
+							IsProcessSafeToAttach((ULONG64)Process) ? "yes" : "no");
 					}
 					ObDereferenceObject(Process);
+				}
+				else
+				{
+					MyDbgPrintfEx("[UnlockFile] PsLookupProcessByProcessId pid=%u -> 0x%08X\n",
+						(ULONG)(ULONG_PTR)HandleInfo->UniqueProcessId, pStatus);
 				}
 
 				// 即便没找到对应进程的句柄表（system 进程持有的 image
 				// section reference），只要我们成功 flush 了 image section，
 				// 也算成功解了一份占用——统计入 closed，UI 才有反馈。
-				if (flushed) closed++;
+				if (flushed) { closed++; flushedCnt++; }
 			}
 		}
 
@@ -897,5 +926,7 @@ retry:
 	ExFreePool(ObjectNameInfo);
 
 	if (OutClosed) *OutClosed = closed;
+	MyDbgPrintfEx("[UnlockFile] done: matched=%llu flushed=%llu closedHandle=%llu total=%llu\n",
+		matched, flushedCnt, closedHandle, closed);
 	return STATUS_SUCCESS;
 }
