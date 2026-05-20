@@ -399,6 +399,13 @@ void DlgEnumFile::OnNMRClickEnumfileList(NMHDR* pNMHDR, LRESULT* pResult)
 	const UINT kFileCopyDir    = 9025;
 	const UINT kFileRename     = 9026;
 	const UINT kFileProperties = 9027;
+	const UINT kFileNotepad    = 9028; // 以记事本打开
+	const UINT kFileCmd        = 9029; // 在此处打开命令行
+	const UINT kFilePwsh       = 9030; // 在此处打开 PowerShell
+	const UINT kFileHash       = 9031; // 计算哈希
+	const UINT kFileVerify     = 9032; // 检查数字签名
+	const UINT kFileNewFolder  = 9033; // 新建文件夹
+	const UINT kFileNewText    = 9034; // 新建文本文件
 
 	CMenu copySub;
 	copySub.CreatePopupMenu();
@@ -417,7 +424,15 @@ void DlgEnumFile::OnNMRClickEnumfileList(NMHDR* pNMHDR, LRESULT* pResult)
 	menu.AppendMenuW(MF_STRING | (hasSel ? 0 : MF_GRAYED), kFileOpen,    L"打开");
 	menu.AppendMenuW(MF_STRING | (hasSel && isExe ? 0 : MF_GRAYED), kFileRunAs, L"以管理员身份运行");
 	menu.AppendMenuW(MF_STRING | (hasSel ? 0 : MF_GRAYED), kFileOpenAs,  L"打开方式...");
+	menu.AppendMenuW(MF_STRING | (hasSel ? 0 : MF_GRAYED), kFileNotepad, L"以记事本打开");
 	menu.AppendMenuW(MF_STRING | (hasSel ? 0 : MF_GRAYED), kFileOpenExp, L"在资源管理器中显示");
+	menu.AppendMenuW(MF_SEPARATOR);
+
+	// 在当前目录打开终端 / 新建
+	menu.AppendMenuW(MF_STRING | (!m_CurPath.IsEmpty() ? 0 : MF_GRAYED), kFileCmd,  L"在此处打开命令行");
+	menu.AppendMenuW(MF_STRING | (!m_CurPath.IsEmpty() ? 0 : MF_GRAYED), kFilePwsh, L"在此处打开 PowerShell");
+	menu.AppendMenuW(MF_STRING | (!m_CurPath.IsEmpty() ? 0 : MF_GRAYED), kFileNewFolder, L"新建文件夹");
+	menu.AppendMenuW(MF_STRING | (!m_CurPath.IsEmpty() ? 0 : MF_GRAYED), kFileNewText,   L"新建文本文件");
 	menu.AppendMenuW(MF_SEPARATOR);
 
 	// 剪贴板/复制类
@@ -433,6 +448,11 @@ void DlgEnumFile::OnNMRClickEnumfileList(NMHDR* pNMHDR, LRESULT* pResult)
 	// 危险/驱动相关
 	menu.AppendMenuW(MF_STRING | (hasItems ? 0 : MF_GRAYED), ID_FILE_DELETE,       L"强制删除文件");
 	menu.AppendMenuW(MF_STRING | (hasItems ? 0 : MF_GRAYED), ID_FILE_FILEDEOCCUPY, L"解除文件占用");
+	menu.AppendMenuW(MF_SEPARATOR);
+
+	// 哈希 / 签名
+	menu.AppendMenuW(MF_STRING | (hasSel ? 0 : MF_GRAYED), kFileHash,   L"计算 MD5 / SHA1 / SHA256");
+	menu.AppendMenuW(MF_STRING | (hasSel ? 0 : MF_GRAYED), kFileVerify, L"检查数字签名");
 	menu.AppendMenuW(MF_SEPARATOR);
 
 	// 属性 / 视图
@@ -511,6 +531,63 @@ void DlgEnumFile::OnNMRClickEnumfileList(NMHDR* pNMHDR, LRESULT* pResult)
 	{
 		m_CListCtrl.SetFocus();
 		m_CListCtrl.EditLabel(selRow);
+		return;
+	}
+	if (cmd == kFileNotepad && !selPath.IsEmpty())
+	{
+		// 以记事本打开任意文件做快速文本预览
+		ShellExecuteW(NULL, L"open", L"notepad.exe", L"\"" + selPath + L"\"", NULL, SW_SHOWNORMAL);
+		return;
+	}
+	if (cmd == kFileCmd && !m_CurPath.IsEmpty())
+	{
+		// 以当前目录为工作目录打开 cmd（/K 保持窗口）
+		ShellExecuteW(NULL, L"open", L"cmd.exe", L"/K cd /d \"" + m_CurPath + L"\"", NULL, SW_SHOWNORMAL);
+		return;
+	}
+	if (cmd == kFilePwsh && !m_CurPath.IsEmpty())
+	{
+		ShellExecuteW(NULL, L"open", L"powershell.exe",
+			L"-NoExit -Command \"Set-Location -LiteralPath '" + m_CurPath + L"'\"",
+			NULL, SW_SHOWNORMAL);
+		return;
+	}
+	if (cmd == kFileNewFolder && !m_CurPath.IsEmpty())
+	{
+		// 在当前目录下创建一个不重名的"新建文件夹"
+		CString base = m_CurPath + L"新建文件夹";
+		CString full = base;
+		for (int n = 2; n <= 99 && !CreateDirectoryW(full, NULL); ++n)
+		{
+			if (GetLastError() != ERROR_ALREADY_EXISTS) { full.Empty(); break; }
+			full.Format(L"%s (%d)", (LPCWSTR)base, n);
+		}
+		if (!full.IsEmpty()) OnFileRefresh();
+		return;
+	}
+	if (cmd == kFileNewText && !m_CurPath.IsEmpty())
+	{
+		CString base = m_CurPath + L"新建文本文档.txt";
+		CString full = base;
+		for (int n = 2; n <= 99; ++n)
+		{
+			if (GetFileAttributesW(full) == INVALID_FILE_ATTRIBUTES) break;
+			CString stem = m_CurPath + L"新建文本文档";
+			full.Format(L"%s (%d).txt", (LPCWSTR)stem, n);
+		}
+		HANDLE h = CreateFileW(full, GENERIC_WRITE, 0, NULL, CREATE_NEW,
+			FILE_ATTRIBUTE_NORMAL, NULL);
+		if (h != INVALID_HANDLE_VALUE) { CloseHandle(h); OnFileRefresh(); }
+		return;
+	}
+	if (cmd == kFileHash && !selPath.IsEmpty())
+	{
+		ShowFileHashesDialog(GetSafeHwnd(), selPath);
+		return;
+	}
+	if (cmd == kFileVerify && !selPath.IsEmpty())
+	{
+		VerifyFileSignatureDialog(GetSafeHwnd(), selPath);
 		return;
 	}
 	if (cmd == kFileProperties && !selPath.IsEmpty())

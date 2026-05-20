@@ -54,6 +54,12 @@ public:
 
 	// 判断 cmd 是否落在 AppendCopyColumnsSubmenu 的 ID 范围内，是的话执行复制并返回 true。
 	bool TryHandleCopyColumnsCmd(UINT cmd, UINT kCopyBase, int nCols, CListCtrl* list);
+
+	// 计算指定文件的 MD5 / SHA1 / SHA256，弹出 MessageBox 展示结果。
+	void ShowFileHashesDialog(HWND hwnd, const CString& path);
+
+	// 调用 WinVerifyTrust 校验 PE 数字签名并以 MessageBox 显示结果。
+	void VerifyFileSignatureDialog(HWND hwnd, const CString& path);
 };
 
 using CFunction = _CFunction;

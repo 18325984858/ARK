@@ -1,4 +1,4 @@
-// DlgDriverModule.cpp: ÊµÏÖÎÄ¼ş
+ï»¿// DlgDriverModule.cpp: Êµï¿½ï¿½ï¿½Ä¼ï¿½
 //
 
 #include "pch.h"
@@ -9,10 +9,12 @@
 #include "SvcUtil.h"
 #include "CLoadDriver.h"
 #include "../MyDriver64/Struct.h"
+#include <shlobj.h>
+#pragma comment(lib, "shell32.lib")
 
 extern _LoadDriver g_LoadDriver;
 
-// DlgDriverModule ¶Ô»°¿ò
+// DlgDriverModule ï¿½Ô»ï¿½ï¿½ï¿½
 
 IMPLEMENT_DYNAMIC(DlgDriverModule, CDialogEx)
 
@@ -57,22 +59,22 @@ BEGIN_MESSAGE_MAP(DlgDriverModule, CDialogEx)
 	ON_COMMAND(ID_DRIVER_START_DISABLED,    &DlgDriverModule::OnDriverStartDisabled)
 END_MESSAGE_MAP()
 
-// DlgDriverModule ÏûÏ¢´¦Àí³ÌĞò
+// DlgDriverModule ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 BOOL DlgDriverModule::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	m_CListCtrl.InsertColumn(um_Driver_Name, _T("Çı¶¯Ãû"), LVCFMT_LEFT, 130);
-	m_CListCtrl.InsertColumn(um_Driver_BaseAddr, _T("»ùµØÖ·"), LVCFMT_LEFT, 120);
-	m_CListCtrl.InsertColumn(um_Driver_Size, _T("´óĞ¡"), LVCFMT_LEFT, 100);
-	m_CListCtrl.InsertColumn(um_Driver_LoadOrder, _T("¼ÓÔØË³Ğò"), LVCFMT_LEFT, 75);
-	m_CListCtrl.InsertColumn(um_Driver_Object, _T("Çı¶¯¶ÔÏó"), LVCFMT_LEFT, 120);
-	m_CListCtrl.InsertColumn(um_Driver_ObjectName, _T("¶ÔÏóÃû³Æ"), LVCFMT_LEFT, 120);
-	m_CListCtrl.InsertColumn(um_Driver_ServerName, _T("·şÎñÃû³Æ"), LVCFMT_LEFT, 100);
-	m_CListCtrl.InsertColumn(um_Driver_DigitalSignature, _T("Êı×ÖÇ©Ãû"), LVCFMT_LEFT, 100);
-	m_CListCtrl.InsertColumn(um_Driver_FilePath, _T("Â·¾¶"), LVCFMT_LEFT, 500);
-	m_CListCtrl.InsertColumn(um_Driver_FileName, _T("¹«Ë¾Ãû"), LVCFMT_LEFT, 250);
+	m_CListCtrl.InsertColumn(um_Driver_Name, _T("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½"), LVCFMT_LEFT, 130);
+	m_CListCtrl.InsertColumn(um_Driver_BaseAddr, _T("ï¿½ï¿½ï¿½ï¿½Ö·"), LVCFMT_LEFT, 120);
+	m_CListCtrl.InsertColumn(um_Driver_Size, _T("ï¿½ï¿½Ğ¡"), LVCFMT_LEFT, 100);
+	m_CListCtrl.InsertColumn(um_Driver_LoadOrder, _T("ï¿½ï¿½ï¿½ï¿½Ë³ï¿½ï¿½"), LVCFMT_LEFT, 75);
+	m_CListCtrl.InsertColumn(um_Driver_Object, _T("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½"), LVCFMT_LEFT, 120);
+	m_CListCtrl.InsertColumn(um_Driver_ObjectName, _T("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½"), LVCFMT_LEFT, 120);
+	m_CListCtrl.InsertColumn(um_Driver_ServerName, _T("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½"), LVCFMT_LEFT, 100);
+	m_CListCtrl.InsertColumn(um_Driver_DigitalSignature, _T("ï¿½ï¿½ï¿½ï¿½Ç©ï¿½ï¿½"), LVCFMT_LEFT, 100);
+	m_CListCtrl.InsertColumn(um_Driver_FilePath, _T("Â·ï¿½ï¿½"), LVCFMT_LEFT, 500);
+	m_CListCtrl.InsertColumn(um_Driver_FileName, _T("ï¿½ï¿½Ë¾ï¿½ï¿½"), LVCFMT_LEFT, 250);
 	m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 
 	return TRUE;
@@ -135,13 +137,13 @@ void DlgDriverModule::InsertCtrlListControl(PCDriverInfo pInfo)
 			m_CListCtrl.SetItemText(i, um_Driver_FileName, (LPWSTR)szDstFileName.GetString());
 		}
 
-		//»ñÈ¡ÏÂÒ»¸ö½Úµã
+		//ï¿½ï¿½È¡ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Úµï¿½
 		pList = pList->Blink;
 
 		SIZE_T FreeSize = 0;
 		if (MyNtFreeVirtualMemory(GetCurrentProcess(), (LPVOID*)&pDriverInfo, &FreeSize, MEM_RELEASE) != 0)
 		{
-			AfxMessageBox(L"ÊÍ·Å¿Õ¼äÊ§°Ü!");
+			AfxMessageBox(L"ï¿½Í·Å¿Õ¼ï¿½Ê§ï¿½ï¿½!");
 		}
 
 	} while (pList != &pInfo->List.List);
@@ -151,25 +153,25 @@ void DlgDriverModule::InsertCtrlListControl(PCDriverInfo pInfo)
 void DlgDriverModule::OnNMRClickControlDrivermoduleList(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	// TODO: ÔÚ´ËÌí¼Ó¿Ø¼şÍ¨Öª´¦Àí³ÌĞò´úÂë
+	// TODO: ï¿½Ú´ï¿½ï¿½ï¿½ï¿½Ó¿Ø¼ï¿½Í¨Öªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	*pResult = 0;
 
 	CMenu menu;
 	POINT point = { 0 };
 
-	GetCursorPos(&point);//»ñÈ¡µ±Ç°µÄÓÎ±ê
-	menu.LoadMenuW(ID_MENU_DRIVER);//¼ÓÔØ²Ëµ¥×ÊÔ´
+	GetCursorPos(&point);//ï¿½ï¿½È¡ï¿½ï¿½Ç°ï¿½ï¿½ï¿½Î±ï¿½
+	menu.LoadMenuW(ID_MENU_DRIVER);//ï¿½ï¿½ï¿½Ø²Ëµï¿½ï¿½ï¿½Ô´
 	CMenu* pPopup = menu.GetSubMenu(0);//
 
-	POSITION FristIndex = m_CListCtrl.GetFirstSelectedItemPosition();//»ñÈ¡Ñ¡ÖĞĞĞµÄĞĞÊı  pos = ĞĞÊı - 1
-	int TempIndex = (int)FristIndex - 1;//´æ´¢µÚÒ»´ÎµÄË÷ÒıÎ»ÖÃ
+	POSITION FristIndex = m_CListCtrl.GetFirstSelectedItemPosition();//ï¿½ï¿½È¡Ñ¡ï¿½ï¿½ï¿½Ğµï¿½ï¿½ï¿½ï¿½ï¿½  pos = ï¿½ï¿½ï¿½ï¿½ - 1
+	int TempIndex = (int)FristIndex - 1;//ï¿½æ´¢ï¿½ï¿½Ò»ï¿½Îµï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½
 
 	if (this->m_ThreadFlags == 1)
 	{
 		menu.EnableMenuItem(ID_DRIVER_REFRESH, MF_GRAYED | MF_BYCOMMAND);
 	}
 
-	// Ã»ÓĞ DriverObject£¨ntoskrnl / win32k / hal µÈÏµÍ³¾µÏñ£©½ûÓÃÇ¿Ğ¶ / ÓÅÑÅĞ¶ / ¸ÄÆô¶¯ÀàĞÍ
+	// Ã»ï¿½ï¿½ DriverObjectï¿½ï¿½ntoskrnl / win32k / hal ï¿½ï¿½ÏµÍ³ï¿½ï¿½ï¿½ñ£©½ï¿½ï¿½ï¿½Ç¿Ğ¶ / ï¿½ï¿½ï¿½ï¿½Ğ¶ / ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	CString driverObj = GetSelText(um_Driver_Object);
 	CString svcName   = GetSelText(um_Driver_ServerName);
 	BOOL hasDrvObj = (!driverObj.IsEmpty() && driverObj != L"--");
@@ -181,7 +183,7 @@ void DlgDriverModule::OnNMRClickControlDrivermoduleList(NMHDR* pNMHDR, LRESULT* 
 	if (!hasSvc)
 	{
 		menu.EnableMenuItem(ID_DRIVER_GRACEFUL_UNLOAD, MF_GRAYED | MF_BYCOMMAND);
-		// ¸ÄÆô¶¯ÀàĞÍÕâÒ»Õû¸ö popup »Òµô£¨ÓÃ BYPOSITION ÄÑ¶¨Î»£¬Ö±½Ó°´ ID µ¥Ïî»Ò£©
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ popup ï¿½Òµï¿½ï¿½ï¿½ï¿½ï¿½ BYPOSITION ï¿½Ñ¶ï¿½Î»ï¿½ï¿½Ö±ï¿½Ó°ï¿½ ID ï¿½ï¿½ï¿½ï¿½Ò£ï¿½
 		menu.EnableMenuItem(ID_DRIVER_START_BOOT,     MF_GRAYED | MF_BYCOMMAND);
 		menu.EnableMenuItem(ID_DRIVER_START_SYSTEM,   MF_GRAYED | MF_BYCOMMAND);
 		menu.EnableMenuItem(ID_DRIVER_START_AUTO,     MF_GRAYED | MF_BYCOMMAND);
@@ -192,9 +194,85 @@ void DlgDriverModule::OnNMRClickControlDrivermoduleList(NMHDR* pNMHDR, LRESULT* 
 	CString explorerPath;
 	UINT explorerCmd = AppendOpenInExplorerItem(*pPopup, &m_CListCtrl, explorerPath);
 
+	// åŠ¨æ€è¿½åŠ ï¼šå“ˆå¸Œ / ç­¾å / æœåŠ¡æ³¨å†Œè¡¨ / (å¾…å®ç°çš„å‡ é¡¹)
+	const UINT kDrvHash     = 9100;
+	const UINT kDrvVerify   = 9101;
+	const UINT kDrvSvcReg   = 9102;
+	const UINT kDrvExports  = 9103;
+	const UINT kDrvImports  = 9104;
+	const UINT kDrvDisasm   = 9105;
+	const UINT kDrvDump     = 9106;
+	const UINT kDrvCopyPath = 9107;
+	const UINT kDrvProps    = 9108;
+	CString drvPath = GetSelText(um_Driver_FilePath);
+	BOOL hasPath = !drvPath.IsEmpty() && drvPath != L"--";
+	pPopup->AppendMenuW(MF_SEPARATOR, 0, (LPCTSTR)NULL);
+	pPopup->AppendMenuW(MF_STRING | (hasPath ? 0 : MF_GRAYED), kDrvCopyPath, L"å¤åˆ¶ä¸ºè·¯å¾„");
+	pPopup->AppendMenuW(MF_STRING | (hasPath ? 0 : MF_GRAYED), kDrvProps,    L"å±æ€§");
+	pPopup->AppendMenuW(MF_STRING | (hasPath ? 0 : MF_GRAYED), kDrvHash,     L"è®¡ç®— MD5 / SHA1 / SHA256");
+	pPopup->AppendMenuW(MF_STRING | (hasPath ? 0 : MF_GRAYED), kDrvVerify,   L"æ£€æŸ¥æ•°å­—ç­¾å");
+	pPopup->AppendMenuW(MF_STRING | (hasSvc ? 0 : MF_GRAYED),  kDrvSvcReg,   L"æ‰“å¼€æœåŠ¡æ³¨å†Œè¡¨é¡¹");
+	pPopup->AppendMenuW(MF_SEPARATOR, 0, (LPCTSTR)NULL);
+	pPopup->AppendMenuW(MF_STRING | (hasPath ? 0 : MF_GRAYED), kDrvExports, L"æŸ¥çœ‹å¯¼å‡ºè¡¨");
+	pPopup->AppendMenuW(MF_STRING | (hasPath ? 0 : MF_GRAYED), kDrvImports, L"æŸ¥çœ‹å¯¼å…¥è¡¨");
+	pPopup->AppendMenuW(MF_STRING | (hasDrvObj ? 0 : MF_GRAYED), kDrvDisasm, L"åæ±‡ç¼–å…¥å£ç‚¹ (DriverEntry)");
+	pPopup->AppendMenuW(MF_STRING | (hasDrvObj ? 0 : MF_GRAYED), kDrvDump,   L"è½¬å‚¨é©±åŠ¨åˆ° .sys");
+
 	UINT cmd = pPopup->TrackPopupMenu(TPM_LEFTBUTTON | TPM_RETURNCMD, point.x, point.y, this);
 	if (HandleOpenInExplorerCmd(cmd, explorerCmd, explorerPath))
 	{
+		return;
+	}
+	// å¤„ç†åŠ¨æ€è¿½åŠ é¡¹
+	if (cmd == kDrvCopyPath && hasPath)
+	{
+		CString quoted = L"\"" + drvPath + L"\"";
+		if (OpenClipboard())
+		{
+			EmptyClipboard();
+			size_t bytes = (quoted.GetLength() + 1) * sizeof(wchar_t);
+			HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, bytes);
+			if (hMem)
+			{
+				void* p = GlobalLock(hMem);
+				if (p) { memcpy(p, (LPCWSTR)quoted, bytes); GlobalUnlock(hMem); }
+				SetClipboardData(CF_UNICODETEXT, hMem);
+			}
+			CloseClipboard();
+		}
+		return;
+	}
+	if (cmd == kDrvProps && hasPath)
+	{
+		SHObjectProperties(GetSafeHwnd(), SHOP_FILEPATH, drvPath, NULL);
+		return;
+	}
+	if (cmd == kDrvHash && hasPath)   { ShowFileHashesDialog(GetSafeHwnd(), drvPath); return; }
+	if (cmd == kDrvVerify && hasPath) { VerifyFileSignatureDialog(GetSafeHwnd(), drvPath); return; }
+	if (cmd == kDrvSvcReg && hasSvc)
+	{
+		// é€šè¿‡ regedit çš„ LastKey è·³è½¬åˆ°æŒ‡å®šæœåŠ¡é”®
+		HKEY hk = NULL;
+		if (RegCreateKeyExW(HKEY_CURRENT_USER,
+			L"Software\\Microsoft\\Windows\\CurrentVersion\\Applets\\Regedit",
+			0, NULL, 0, KEY_SET_VALUE, NULL, &hk, NULL) == ERROR_SUCCESS)
+		{
+			CString target;
+			target.Format(L"Computer\\HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\%s",
+				(LPCWSTR)svcName);
+			RegSetValueExW(hk, L"LastKey", 0, REG_SZ,
+				(const BYTE*)(LPCWSTR)target,
+				(DWORD)((target.GetLength() + 1) * sizeof(wchar_t)));
+			RegCloseKey(hk);
+		}
+		ShellExecuteW(NULL, L"open", L"regedit.exe", NULL, NULL, SW_SHOWNORMAL);
+		return;
+	}
+	if (cmd == kDrvExports || cmd == kDrvImports || cmd == kDrvDisasm || cmd == kDrvDump)
+	{
+		::MessageBoxW(GetSafeHwnd(),
+			L"è¯¥åŠŸèƒ½å°šåœ¨å¼€å‘ä¸­ï¼Œå°†åœ¨åç»­ç‰ˆæœ¬æä¾›ç‹¬ç«‹çš„æŸ¥çœ‹/åæ±‡ç¼–/è½¬å‚¨çª—å£ã€‚",
+			L"æç¤º", MB_OK | MB_ICONINFORMATION);
 		return;
 	}
 	if (cmd != 0)
@@ -214,7 +292,7 @@ void DlgDriverModule::OnSize(UINT nType, int cx, int cy)
 
 void DlgDriverModule::OnDriverRefresh()
 {
-	// TODO: ÔÚ´ËÌí¼ÓÃüÁî´¦Àí³ÌĞò´úÂë
+	// TODO: ï¿½Ú´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½î´¦ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	m_CListCtrl.DeleteAllItems();
 
 	g_ThreadPool.AddTask(new _CThreadPack{ _LoadDriver::Um_UserCallBackType_UserEnumDriverInfo, this });
@@ -272,7 +350,7 @@ void DlgDriverModule::OnDriverMenuCopyCompany()
 }
 
 // ============================================================
-//   Çı¶¯²Ù×÷£º¼ÓÔØ/Æô¶¯¡¢Í£Ö¹Ğ¶ÔØ¡¢Ç¿ÖÆĞ¶ÔØ¡¢¸ÄÆô¶¯ÀàĞÍ
+//   ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í£Ö¹Ğ¶ï¿½Ø¡ï¿½Ç¿ï¿½ï¿½Ğ¶ï¿½Ø¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 // ============================================================
 CString DlgDriverModule::GetSelText(int col)
 {
@@ -285,16 +363,16 @@ return m_CListCtrl.GetItemText(idx, col);
 void DlgDriverModule::OnDriverLoadStart()
 {
 CFileDialog dlg(TRUE, L"sys", NULL, OFN_FILEMUSTEXIST | OFN_HIDEREADONLY,
-L"Çı¶¯ÎÄ¼ş (*.sys)|*.sys||", this);
+L"ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ (*.sys)|*.sys||", this);
 if (dlg.DoModal() != IDOK) return;
 
 CString path = dlg.GetPathName();
-CString name = dlg.GetFileTitle();              // È¥ºó×ºµÄÎÄ¼şÃû×ö·şÎñÃû
+CString name = dlg.GetFileTitle();              // È¥ï¿½ï¿½×ºï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 std::wstring err;
 DWORD rc = SvcUtil::LoadAndStart(name.GetString(), path.GetString(), &err);
 CString msg;
-if (rc == 0) msg.Format(L"¼ÓÔØ²¢Æô¶¯³É¹¦£º\n·şÎñÃû£º%s\nÂ·¾¶£º%s", name.GetString(), path.GetString());
-else         msg.Format(L"¼ÓÔØÊ§°Ü£º%s", err.c_str());
+if (rc == 0) msg.Format(L"ï¿½ï¿½ï¿½Ø²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É¹ï¿½ï¿½ï¿½\nï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½%s\nÂ·ï¿½ï¿½ï¿½ï¿½%s", name.GetString(), path.GetString());
+else         msg.Format(L"ï¿½ï¿½ï¿½ï¿½Ê§ï¿½Ü£ï¿½%s", err.c_str());
 AfxMessageBox(msg);
 OnDriverRefresh();
 }
@@ -302,13 +380,13 @@ OnDriverRefresh();
 void DlgDriverModule::OnDriverGracefulUnload()
 {
 CString name = GetSelText(um_Driver_ServerName);
-if (name.IsEmpty() || name == L"--") { AfxMessageBox(L"ÇëÏÈÑ¡ÖĞÒ»¸öÓĞ·şÎñÃûµÄÇı¶¯ĞĞ"); return; }
-if (AfxMessageBox(L"È·¶¨Í£Ö¹²¢Ğ¶ÔØ·şÎñ£º" + name + L" ?", MB_YESNO | MB_ICONQUESTION) != IDYES) return;
+if (name.IsEmpty() || name == L"--") { AfxMessageBox(L"ï¿½ï¿½ï¿½ï¿½Ñ¡ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Ğ·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½"); return; }
+if (AfxMessageBox(L"È·ï¿½ï¿½Í£Ö¹ï¿½ï¿½Ğ¶ï¿½Ø·ï¿½ï¿½ï¿½" + name + L" ?", MB_YESNO | MB_ICONQUESTION) != IDYES) return;
 std::wstring err;
 DWORD rc = SvcUtil::StopAndDelete(name.GetString(), &err);
 CString msg;
-if (rc == 0) msg = L"ÒÑÍ£Ö¹²¢É¾³ı·şÎñ£º" + name;
-else         msg.Format(L"Í£Ö¹/É¾³ıÊ§°Ü£º%s", err.c_str());
+if (rc == 0) msg = L"ï¿½ï¿½Í£Ö¹ï¿½ï¿½É¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½" + name;
+else         msg.Format(L"Í£Ö¹/É¾ï¿½ï¿½Ê§ï¿½Ü£ï¿½%s", err.c_str());
 AfxMessageBox(msg);
 OnDriverRefresh();
 }
@@ -320,18 +398,18 @@ CString baseHex      = GetSelText(um_Driver_BaseAddr);
 CString name         = GetSelText(um_Driver_Name);
 if (driverObjHex.IsEmpty() || driverObjHex == L"--")
 {
-AfxMessageBox(L"¸ÃÄ£¿éÃ»ÓĞ DRIVER_OBJECT£¨¿ÉÄÜ²»ÊÇ SCM ¼ÓÔØµÄÇı¶¯£©£¬ÎŞ·¨×ßÄÚºËÇ¿Ğ¶Â·¾¶");
+AfxMessageBox(L"ï¿½ï¿½Ä£ï¿½ï¿½Ã»ï¿½ï¿½ DRIVER_OBJECTï¿½ï¿½ï¿½ï¿½ï¿½Ü²ï¿½ï¿½ï¿½ SCM ï¿½ï¿½ï¿½Øµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ş·ï¿½ï¿½ï¿½ï¿½Úºï¿½Ç¿Ğ¶Â·ï¿½ï¿½");
 return;
 }
 CString warn;
-warn.Format(L"? Î£ÏÕ²Ù×÷£º½«Í¨¹ıÄÚºËÇ¿ÖÆĞ¶ÔØ\n  Ä£¿é£º%s\n  DRIVER_OBJECT£º0x%s\n\n"
-L"Çı¶¯Àï»á×ö£ºIoDeleteDevice(ËùÓĞÉè±¸) ¡ú µ÷ DriverUnload ¡ú ObDereference\n"
-L"Èç¹û¸ÃÇı¶¯Ã»ÓĞ DriverUnload Àı³Ì£¬»á±»¾Ü¾ø£¨Ç¿ÖÆĞè½øÒ»²½È·ÈÏ£©¡£\n\n¼ÌĞø£¿", name.GetString(), driverObjHex.GetString());
+warn.Format(L"? Î£ï¿½Õ²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½Úºï¿½Ç¿ï¿½ï¿½Ğ¶ï¿½ï¿½\n  Ä£ï¿½é£º%s\n  DRIVER_OBJECTï¿½ï¿½0x%s\n\n"
+L"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½IoDeleteDevice(ï¿½ï¿½ï¿½ï¿½ï¿½è±¸) ï¿½ï¿½ ï¿½ï¿½ DriverUnload ï¿½ï¿½ ObDereference\n"
+L"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ DriverUnload ï¿½ï¿½ï¿½Ì£ï¿½ï¿½á±»ï¿½Ü¾ï¿½ï¿½ï¿½Ç¿ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½È·ï¿½Ï£ï¿½ï¿½ï¿½\n\nï¿½ï¿½ï¿½ï¿½ï¿½ï¿½", name.GetString(), driverObjHex.GetString());
 if (AfxMessageBox(warn, MB_YESNO | MB_ICONWARNING) != IDYES) return;
 
 ULONG64 drvObj = _wcstoui64(driverObjHex, nullptr, 16);
 ULONG64 imgBase = _wcstoui64(baseHex, nullptr, 16);
-CString svcName = GetSelText(um_Driver_ServerName);   // ·şÎñÃû£¨ÓÃÓÚ ZwUnloadDriver ¸É¾»Ğ¶£©
+CString svcName = GetSelText(um_Driver_ServerName);   // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ZwUnloadDriver ï¿½É¾ï¿½Ğ¶ï¿½ï¿½
 
 CForceUnloadInfo req = { 0 };
 req.DriverObject = drvObj;
@@ -348,7 +426,7 @@ g_LoadDriver.SendMsg(um_Cmd_ForceUnload_Driver_info, &req, nullptr, nullptr, nul
 
 if (req.Status == FU_STATUS_NO_UNLOAD)
 {
-if (AfxMessageBox(L"¸ÃÇı¶¯Ã»ÓĞ DriverUnload Àı³Ì¡£Ç¿Ğ¶¼«Ò×À¶ÆÁ£¬ÊÇ·ñÈÔÒª¼ÌĞø£¿",
+if (AfxMessageBox(L"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ DriverUnload ï¿½ï¿½ï¿½Ì¡ï¿½Ç¿Ğ¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½",
 MB_YESNO | MB_ICONSTOP) != IDYES) return;
 req.Flags = FU_FLAG_FORCE_NO_UNLOAD;
 g_LoadDriver.SendMsg(um_Cmd_ForceUnload_Driver_info, &req, nullptr, nullptr, nullptr);
@@ -358,14 +436,14 @@ CString msg;
 switch (req.Status)
 {
 case FU_STATUS_OK:
-msg.Format(L"Ç¿Ğ¶Íê³É£ºÉ¾³ıÉè±¸ %lu ¸ö£¬DriverUnload=0x%016llX£¬ZwUnloadDriver=0x%08X",
+msg.Format(L"Ç¿Ğ¶ï¿½ï¿½É£ï¿½É¾ï¿½ï¿½ï¿½è±¸ %lu ï¿½ï¿½ï¿½ï¿½DriverUnload=0x%016llXï¿½ï¿½ZwUnloadDriver=0x%08X",
     req.DeviceCount, req.UnloadRoutine, req.ZwUnloadStatus);
 break;
-case FU_STATUS_BAD_PARAM:   msg = L"²ÎÊı´íÎó"; break;
-case FU_STATUS_BAD_DRIVER:  msg = L"´«ÈëµÄ²»ÊÇºÏ·¨ DRIVER_OBJECT£¨Type != 4£©"; break;
-case FU_STATUS_NO_UNLOAD:   msg = L"ÒÑÈ¡Ïû£¨Çı¶¯ÎŞ DriverUnload£©"; break;
-case FU_STATUS_EXCEPTION:   msg.Format(L"Ö´ĞĞ¹ı³ÌÖĞ·¢ÉúÒì³££¬ÒÑÉ¾³ı %lu ¸öÉè±¸ºóÖĞ¶Ï", req.DeviceCount); break;
-default:                    msg.Format(L"Î´Öª×´Ì¬£º%lu", req.Status); break;
+case FU_STATUS_BAD_PARAM:   msg = L"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½"; break;
+case FU_STATUS_BAD_DRIVER:  msg = L"ï¿½ï¿½ï¿½ï¿½Ä²ï¿½ï¿½ÇºÏ·ï¿½ DRIVER_OBJECTï¿½ï¿½Type != 4ï¿½ï¿½"; break;
+case FU_STATUS_NO_UNLOAD:   msg = L"ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ DriverUnloadï¿½ï¿½"; break;
+case FU_STATUS_EXCEPTION:   msg.Format(L"Ö´ï¿½Ğ¹ï¿½ï¿½ï¿½ï¿½Ğ·ï¿½ï¿½ï¿½ï¿½ì³£ï¿½ï¿½ï¿½ï¿½É¾ï¿½ï¿½ %lu ï¿½ï¿½ï¿½è±¸ï¿½ï¿½ï¿½Ğ¶ï¿½", req.DeviceCount); break;
+default:                    msg.Format(L"Î´Öª×´Ì¬ï¿½ï¿½%lu", req.Status); break;
 }
 AfxMessageBox(msg);
 OnDriverRefresh();
@@ -374,12 +452,12 @@ OnDriverRefresh();
 void DlgDriverModule::DoChangeStart(unsigned long type, const wchar_t* typeName)
 {
 CString name = GetSelText(um_Driver_ServerName);
-if (name.IsEmpty() || name == L"--") { AfxMessageBox(L"ÇëÏÈÑ¡ÖĞÒ»¸öÓĞ·şÎñÃûµÄÇı¶¯ĞĞ"); return; }
+if (name.IsEmpty() || name == L"--") { AfxMessageBox(L"ï¿½ï¿½ï¿½ï¿½Ñ¡ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Ğ·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½"); return; }
 std::wstring err;
 DWORD rc = SvcUtil::ChangeStartType(name.GetString(), type, &err);
 CString msg;
-if (rc == 0) msg.Format(L"ÒÑ½« %s Æô¶¯ÀàĞÍ¸ÄÎª£º%s", name.GetString(), typeName);
-else         msg.Format(L"¸ü¸ÄÊ§°Ü£º%s", err.c_str());
+if (rc == 0) msg.Format(L"ï¿½Ñ½ï¿½ %s ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¸ï¿½Îªï¿½ï¿½%s", name.GetString(), typeName);
+else         msg.Format(L"ï¿½ï¿½ï¿½ï¿½Ê§ï¿½Ü£ï¿½%s", err.c_str());
 AfxMessageBox(msg);
 }
 
@@ -391,15 +469,15 @@ void DlgDriverModule::OnDriverStartDisabled() { DoChangeStart(SERVICE_DISABLED, 
 void DlgDriverModule::OnDriverMMapLoad()
 {
 CFileDialog dlg(TRUE, L"sys", NULL, OFN_FILEMUSTEXIST | OFN_HIDEREADONLY,
-L"Çı¶¯ÎÄ¼ş (*.sys)|*.sys|ËùÓĞÎÄ¼ş (*.*)|*.*||", this);
+L"ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ (*.sys)|*.sys|ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ (*.*)|*.*||", this);
 if (dlg.DoModal() != IDOK) return;
 
 CString path = dlg.GetPathName();
-CString warn = L"? ÊÖ¶¯Ó³Éä¼ÓÔØ£º\n  " + path + L"\n\n"
-L"Çı¶¯»á±»¶ÁÈë NonPagedPool ºóÖ±½Ó jmp DriverEntry£º\n"
-L"? ÎŞ·şÎñÃû¡¢ÎŞ×¢²á±í¡¢²»Èë PsLoadedModuleList£¬PCHunter ÁĞ±íÀï¿´²»µ½\n"
-L"? DriverEntry ÄÃµ½µÄÊÇ fake DRIVER_OBJECT£»Ïë'Ğ¶ÔØ'Ö»ÄÜÒÀÀµÇı¶¯×Ô¼ºĞ´µÄÇåÀí\n"
-L"? ½öÊÊºÏ¼òµ¥Çı¶¯£¨ÒÀÀµ ntoskrnl / hal Ö®ÀàÄÚÖÃÄ£¿é£©\n\n¼ÌĞø£¿";
+CString warn = L"? ï¿½Ö¶ï¿½Ó³ï¿½ï¿½ï¿½ï¿½Ø£ï¿½\n  " + path + L"\n\n"
+L"ï¿½ï¿½ï¿½ï¿½ï¿½á±»ï¿½ï¿½ï¿½ï¿½ NonPagedPool ï¿½ï¿½Ö±ï¿½ï¿½ jmp DriverEntryï¿½ï¿½\n"
+L"? ï¿½Ş·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ PsLoadedModuleListï¿½ï¿½PCHunter ï¿½Ğ±ï¿½ï¿½ï¿´ï¿½ï¿½ï¿½ï¿½\n"
+L"? DriverEntry ï¿½Ãµï¿½ï¿½ï¿½ï¿½ï¿½ fake DRIVER_OBJECTï¿½ï¿½ï¿½ï¿½'Ğ¶ï¿½ï¿½'Ö»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô¼ï¿½Ğ´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½\n"
+L"? ï¿½ï¿½ï¿½ÊºÏ¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ntoskrnl / hal Ö®ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä£ï¿½é£©\n\nï¿½ï¿½ï¿½ï¿½ï¿½ï¿½";
 if (AfxMessageBox(warn, MB_YESNO | MB_ICONWARNING) != IDYES) return;
 
 CMMapDriverInfo req = { 0 };
@@ -414,27 +492,27 @@ CString msg;
 switch (req.Status)
 {
 case MMD_STATUS_OK:
-msg.Format(L"ÊÖ¶¯Ó³Éä¼ÓÔØ³É¹¦£º\n  »ùÖ·=0x%016llX\n  Èë¿Ú=0x%016llX\n  ´óĞ¡=0x%lX\n  DriverEntry ·µ»Ø=0x%08X",
+msg.Format(L"ï¿½Ö¶ï¿½Ó³ï¿½ï¿½ï¿½ï¿½Ø³É¹ï¿½ï¿½ï¿½\n  ï¿½ï¿½Ö·=0x%016llX\n  ï¿½ï¿½ï¿½=0x%016llX\n  ï¿½ï¿½Ğ¡=0x%lX\n  DriverEntry ï¿½ï¿½ï¿½ï¿½=0x%08X",
 req.ImageBase, req.EntryPoint, req.SizeOfImage, req.EntryStatus);
 break;
-case MMD_STATUS_BAD_PARAM:    msg = L"²ÎÊı´íÎó"; break;
-case MMD_STATUS_FILE_FAIL:    msg = L"¶Á .sys ÎÄ¼şÊ§°Ü"; break;
-case MMD_STATUS_BAD_PE:       msg = L"PE Í·²»ºÏ·¨»ò²»ÊÇ 64 Î»Çı¶¯"; break;
-case MMD_STATUS_ALLOC_FAIL:   msg = L"NonPagedPool ·ÖÅäÊ§°Ü"; break;
+case MMD_STATUS_BAD_PARAM:    msg = L"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½"; break;
+case MMD_STATUS_FILE_FAIL:    msg = L"ï¿½ï¿½ .sys ï¿½Ä¼ï¿½Ê§ï¿½ï¿½"; break;
+case MMD_STATUS_BAD_PE:       msg = L"PE Í·ï¿½ï¿½ï¿½Ï·ï¿½ï¿½ï¿½ï¿½ï¿½ 64 Î»ï¿½ï¿½ï¿½ï¿½"; break;
+case MMD_STATUS_ALLOC_FAIL:   msg = L"NonPagedPool ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½"; break;
 case MMD_STATUS_IMPORT_FAIL:
-msg.Format(L"µ¼Èë½âÎöÊ§°Ü£º\n  dll=%S\n  func=%S",
+msg.Format(L"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½Ü£ï¿½\n  dll=%S\n  func=%S",
 req.FailedImportDll[0] ? req.FailedImportDll : "(?)",
 req.FailedImportFunc[0] ? req.FailedImportFunc : "(?)");
 break;
-case MMD_STATUS_RELOC_FAIL:   msg = L"ÖØ¶¨Î»Ê§°Ü"; break;
+case MMD_STATUS_RELOC_FAIL:   msg = L"ï¿½Ø¶ï¿½Î»Ê§ï¿½ï¿½"; break;
 case MMD_STATUS_ENTRY_NTSTATUS:
-msg.Format(L"DriverEntry ·µ»ØÊ§°Ü£º0x%08X\n  ¾µÏñ±£ÁôÔÚÄÚ´æÖĞ£¬Î´Ğ¶ÔØ", req.EntryStatus);
+msg.Format(L"DriverEntry ï¿½ï¿½ï¿½ï¿½Ê§ï¿½Ü£ï¿½0x%08X\n  ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú´ï¿½ï¿½Ğ£ï¿½Î´Ğ¶ï¿½ï¿½", req.EntryStatus);
 break;
-case MMD_STATUS_EXCEPTION:    msg = L"Ö´ĞĞ¹ı³ÌÖĞÒì³£"; break;
+case MMD_STATUS_EXCEPTION:    msg = L"Ö´ï¿½Ğ¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ì³£"; break;
 case MMD_STATUS_UNSUPPORTED_IMAGE:
-msg = L"²»Ö§³ÖµÄÓ³Ïñ£ºÊÖ¶¯Ó³Éä¼ÓÔØÖ»½ÓÊÜ .sys Çı¶¯ÎÄ¼ş£¬²»ÄÜ¼ÓÔØ ntoskrnl.exe / hal.dll ÕâÀàÏµÍ³ºËĞÄÓ³Ïñ";
+msg = L"ï¿½ï¿½Ö§ï¿½Öµï¿½Ó³ï¿½ï¿½ï¿½Ö¶ï¿½Ó³ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½ï¿½ï¿½ï¿½ .sys ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü¼ï¿½ï¿½ï¿½ ntoskrnl.exe / hal.dll ï¿½ï¿½ï¿½ï¿½ÏµÍ³ï¿½ï¿½ï¿½ï¿½Ó³ï¿½ï¿½";
 break;
-default:                      msg.Format(L"Î´Öª×´Ì¬£º%lu", req.Status); break;
+default:                      msg.Format(L"Î´Öª×´Ì¬ï¿½ï¿½%lu", req.Status); break;
 }
 AfxMessageBox(msg);
 }

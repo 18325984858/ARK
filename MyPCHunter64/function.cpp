@@ -3,7 +3,12 @@
 #include "MyPCHunter64.h"   // LOGI/LOGW/LOGE
 #include <vector>
 #include <shlobj.h>
+#include <wincrypt.h>
+#include <wintrust.h>
+#include <Softpub.h>
 #pragma comment(lib, "shell32.lib")
+#pragma comment(lib, "crypt32.lib")
+#pragma comment(lib, "wintrust.lib")
 
 // 路径菜单 helpers 前向声明，定义见本文件下方
 static CString TrimPathString(const CString& s);
@@ -713,4 +718,133 @@ LONG _CFunction::GetSoftSign(TCHAR* v_pszFilePath, TCHAR* v_pszSign, int v_iBufS
 	}
 
 	return lRet;
+}
+
+// ---------------------------------------------------------------------------
+//  Hash / Signature helpers
+// ---------------------------------------------------------------------------
+
+static bool ComputeHashHex(const CString& path, ALG_ID algId, CString& outHex)
+{
+	HANDLE hFile = CreateFileW(path, GENERIC_READ,
+		FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+		NULL, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+	if (hFile == INVALID_HANDLE_VALUE) return false;
+
+	HCRYPTPROV hProv = 0;
+	if (!CryptAcquireContextW(&hProv, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT))
+	{
+		CloseHandle(hFile);
+		return false;
+	}
+
+	HCRYPTHASH hHash = 0;
+	if (!CryptCreateHash(hProv, algId, 0, 0, &hHash))
+	{
+		CryptReleaseContext(hProv, 0);
+		CloseHandle(hFile);
+		return false;
+	}
+
+	BYTE buf[64 * 1024];
+	DWORD r = 0;
+	BOOL ok = TRUE;
+	while (ReadFile(hFile, buf, sizeof(buf), &r, NULL) && r > 0)
+	{
+		if (!CryptHashData(hHash, buf, r, 0)) { ok = FALSE; break; }
+	}
+	CloseHandle(hFile);
+
+	if (!ok)
+	{
+		CryptDestroyHash(hHash);
+		CryptReleaseContext(hProv, 0);
+		return false;
+	}
+
+	BYTE digest[64] = { 0 };
+	DWORD dlen = sizeof(digest);
+	BOOL got = CryptGetHashParam(hHash, HP_HASHVAL, digest, &dlen, 0);
+	CryptDestroyHash(hHash);
+	CryptReleaseContext(hProv, 0);
+	if (!got) return false;
+
+	outHex.Empty();
+	for (DWORD i = 0; i < dlen; ++i)
+	{
+		CString s; s.Format(L"%02X", digest[i]);
+		outHex += s;
+	}
+	return true;
+}
+
+void _CFunction::ShowFileHashesDialog(HWND hwnd, const CString& path)
+{
+	if (path.IsEmpty()) return;
+	if (GetFileAttributesW(path) == INVALID_FILE_ATTRIBUTES)
+	{
+		::MessageBoxW(hwnd, L"文件不存在或无权访问。", L"计算哈希", MB_OK | MB_ICONWARNING);
+		return;
+	}
+
+	CString md5, sha1, sha256;
+	bool ok1 = ComputeHashHex(path, CALG_MD5,    md5);
+	bool ok2 = ComputeHashHex(path, CALG_SHA1,   sha1);
+	bool ok3 = ComputeHashHex(path, CALG_SHA_256, sha256);
+
+	CString msg;
+	msg.Format(L"文件: %s\n\nMD5:    %s\nSHA1:   %s\nSHA256: %s",
+		(LPCWSTR)path,
+		ok1 ? (LPCWSTR)md5    : L"(失败)",
+		ok2 ? (LPCWSTR)sha1   : L"(失败)",
+		ok3 ? (LPCWSTR)sha256 : L"(失败)");
+	::MessageBoxW(hwnd, msg, L"文件哈希", MB_OK | MB_ICONINFORMATION);
+}
+
+void _CFunction::VerifyFileSignatureDialog(HWND hwnd, const CString& path)
+{
+	if (path.IsEmpty()) return;
+	if (GetFileAttributesW(path) == INVALID_FILE_ATTRIBUTES)
+	{
+		::MessageBoxW(hwnd, L"文件不存在或无权访问。", L"数字签名", MB_OK | MB_ICONWARNING);
+		return;
+	}
+
+	WINTRUST_FILE_INFO fi = { 0 };
+	fi.cbStruct       = sizeof(fi);
+	fi.pcwszFilePath  = path;
+
+	GUID action = WINTRUST_ACTION_GENERIC_VERIFY_V2;
+
+	WINTRUST_DATA wd = { 0 };
+	wd.cbStruct            = sizeof(wd);
+	wd.dwUIChoice          = WTD_UI_NONE;
+	wd.fdwRevocationChecks = WTD_REVOKE_NONE;
+	wd.dwUnionChoice       = WTD_CHOICE_FILE;
+	wd.pFile               = &fi;
+	wd.dwStateAction       = WTD_STATEACTION_VERIFY;
+
+	LONG r = WinVerifyTrust(NULL, &action, &wd);
+	wd.dwStateAction = WTD_STATEACTION_CLOSE;
+	WinVerifyTrust(NULL, &action, &wd);
+
+	// 尝试取签名者信息（已有的 GetSoftSign 用于 PE）
+	CString signer;
+	{
+		WCHAR sbuf[512] = { 0 };
+		if (GetSoftSign((TCHAR*)(LPCWSTR)path, sbuf, _countof(sbuf)) == 0)
+			signer = sbuf;
+	}
+
+	CString msg;
+	if (r == ERROR_SUCCESS)
+		msg.Format(L"文件: %s\n\n签名状态: 已签名且有效\n签名者: %s",
+			(LPCWSTR)path,
+			signer.IsEmpty() ? L"(未取得)" : (LPCWSTR)signer);
+	else
+		msg.Format(L"文件: %s\n\n签名状态: 未签名或验证失败\nWinVerifyTrust 返回: 0x%08X",
+			(LPCWSTR)path, (unsigned)r);
+
+	::MessageBoxW(hwnd, msg, L"数字签名验证",
+		MB_OK | (r == ERROR_SUCCESS ? MB_ICONINFORMATION : MB_ICONWARNING));
 }
