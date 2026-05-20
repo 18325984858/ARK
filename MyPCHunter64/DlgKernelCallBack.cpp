@@ -1,4 +1,4 @@
-// DlgKernelCallBack.cpp: ÊµÏÖÎÄ¼ş
+ï»¿// DlgKernelCallBack.cpp: å®ç°æ–‡ä»¶
 //
 
 #include "pch.h"
@@ -8,7 +8,7 @@
 #include "resource.h"
 #include "Thread.h"
 #include "PdbResolver.h"
-// DlgKernelCallBack ¶Ô»°¿ò
+// DlgKernelCallBack å¯¹è¯æ¡†
 
 IMPLEMENT_DYNAMIC(DlgKernelCallBack, CDialogEx)
 
@@ -34,7 +34,7 @@ BEGIN_MESSAGE_MAP(DlgKernelCallBack, CDialogEx)
 	ON_WM_SIZE()
 END_MESSAGE_MAP()
 
-// DlgKernelCallBack ÏûÏ¢´¦Àí³ÌĞò
+// DlgKernelCallBack æ¶ˆæ¯å¤„ç†ç¨‹åº
 
 void DlgKernelCallBack::OnNMRClickDlgKernelKernelcallbackList(NMHDR* pNMHDR, LRESULT* pResult)
 {
@@ -65,16 +65,16 @@ BOOL DlgKernelCallBack::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	m_CListCtrl.InsertColumn(um_KernelCallBack_Type, _T("ÀàĞÍ"), LVCFMT_LEFT, 120);
-	m_CListCtrl.InsertColumn(um_KernelCallBack_Addr, _T("µØÖ·"), LVCFMT_LEFT, 120);
-	m_CListCtrl.InsertColumn(um_KernelCallBack_Pos, _T("Î»ÖÃ"), LVCFMT_LEFT, 120);
-	m_CListCtrl.InsertColumn(um_KernelCallBack_Path, _T("Â·¾¶"), LVCFMT_LEFT, 250);
-	m_CListCtrl.InsertColumn(um_KernelCallBack_Company, _T("¹«Ë¾Ãû"), LVCFMT_LEFT, 120);
-	m_CListCtrl.InsertColumn(um_KernelCallBack_Descr, _T("±¸×¢"), LVCFMT_LEFT, 120);
+	m_CListCtrl.InsertColumn(um_KernelCallBack_Type, _T("ç±»å‹"), LVCFMT_LEFT, 120);
+	m_CListCtrl.InsertColumn(um_KernelCallBack_Addr, _T("åœ°å€"), LVCFMT_LEFT, 120);
+	m_CListCtrl.InsertColumn(um_KernelCallBack_Pos, _T("ä½ç½®"), LVCFMT_LEFT, 120);
+	m_CListCtrl.InsertColumn(um_KernelCallBack_Path, _T("è·¯å¾„"), LVCFMT_LEFT, 250);
+	m_CListCtrl.InsertColumn(um_KernelCallBack_Company, _T("å…¬å¸å"), LVCFMT_LEFT, 120);
+	m_CListCtrl.InsertColumn(um_KernelCallBack_Descr, _T("å¤‡æ³¨"), LVCFMT_LEFT, 120);
 	m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
-	// Òì³£: OCX ÊôĞÔÒ³Ó¦·µ»Ø FALSE
+	// å¼‚å¸¸: OCX å±æ€§é¡µåº”è¿”å› FALSE
 }
 
 void DlgKernelCallBack::InsertCtrlListControl(PCKernelCallBackInfo pKernelCallBackInfo)
@@ -84,7 +84,7 @@ void DlgKernelCallBack::InsertCtrlListControl(PCKernelCallBackInfo pKernelCallBa
 		return;
 	}
 
-	//ÀàĞÍ
+	//ç±»å‹
 	CString CallBackType[] = { L"ShutDown",L"DbgCheck",L"PlugPlay",L"LoadImage",L"CreateProcess",L"CreateThread",L"Registry" ,L"IoTime" };
 
 	PCLIST_ENTRY pCurList = &pKernelCallBackInfo->List.List;
@@ -127,7 +127,7 @@ void DlgKernelCallBack::InsertCtrlListControl(PCKernelCallBackInfo pKernelCallBa
 		}
 
 		StrBuf.Format(L"%ws+%I64X", &pInfo->ModulePath[n + 1], pInfo->ModuleOffset);
-		// ¡°Î»ÖÃ¡±ÁĞÓÃ PdbResolver ³¢ÊÔ½â·ûºÅ£»PDB Î´¾ÍĞ÷Ê±ÈÔÍÆ³öÏÂÔØ²¢ÍĞµ×Îª module+offset
+		// â€œä½ç½®â€åˆ—ç”¨ PdbResolver å°è¯•è§£ç¬¦å·ï¼›PDB æœªå°±ç»ªæ—¶ä»æ¨å‡ºä¸‹è½½å¹¶æ‰˜åº•ä¸º module+offset
 		{
 			ULONG64 modBase = (pInfo->CallBackAddr >= pInfo->ModuleOffset) ?
 				(pInfo->CallBackAddr - pInfo->ModuleOffset) : 0;
@@ -149,11 +149,11 @@ void DlgKernelCallBack::InsertCtrlListControl(PCKernelCallBackInfo pKernelCallBa
 
 		pCurList = pCurList->Blink;
 
-		//ÊÍ·Å¿Õ¼ä
+		//é‡Šæ”¾ç©ºé—´
 		SIZE_T FreeSize = 0;
 		if (MyNtFreeVirtualMemory(GetCurrentProcess(), (LPVOID*)&pInfo, &FreeSize, MEM_RELEASE) != 0)
 		{
-			AfxMessageBox(L"ÊÍ·Å¿Õ¼äÊ§°Ü!");
+			AfxMessageBox(L"é‡Šæ”¾ç©ºé—´å¤±è´¥!");
 		}
 	} while (pCurList != &pKernelCallBackInfo->List.List);
 }

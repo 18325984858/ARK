@@ -1,4 +1,4 @@
-// DlgSsdtShadow.cpp: ÊµÏÖÎÄ¼ş
+ï»¿// DlgSsdtShadow.cpp: å®ç°æ–‡ä»¶
 //
 
 #include "pch.h"
@@ -8,7 +8,7 @@
 #include "LoadPe.h"
 #include "Thread.h"
 
-// DlgSsdtShadow ¶Ô»°¿ò
+// DlgSsdtShadow å¯¹è¯æ¡†
 
 IMPLEMENT_DYNAMIC(DlgSsdtShadow, CDialogEx)
 
@@ -42,12 +42,12 @@ BEGIN_MESSAGE_MAP(DlgSsdtShadow, CDialogEx)
 	ON_COMMAND(ID_SSDTSHADOW_MODULEPATH, &DlgSsdtShadow::OnSsdtshadowModulepath)
 END_MESSAGE_MAP()
 
-// DlgSsdtShadow ÏûÏ¢´¦Àí³ÌĞò
+// DlgSsdtShadow æ¶ˆæ¯å¤„ç†ç¨‹åº
 
 void DlgSsdtShadow::OnNMRClickSsdtshadowList(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	// TODO: ÔÚ´ËÌí¼Ó¿Ø¼şÍ¨Öª´¦Àí³ÌĞò´úÂë
+	// TODO: åœ¨æ­¤æ·»åŠ æ§ä»¶é€šçŸ¥å¤„ç†ç¨‹åºä»£ç 
 	*pResult = 0;
 
 	if (m_CListCtrl.GetItemCount() <= 0)
@@ -58,14 +58,14 @@ void DlgSsdtShadow::OnNMRClickSsdtshadowList(NMHDR* pNMHDR, LRESULT* pResult)
 	CMenu menu;
 	menu.LoadMenu(ID_MENU_SSDTSHADOW);
 	CPoint point;
-	GetCursorPos(&point);//»ñÈ¡µ±Ç°µÄÓÎ±ê
+	GetCursorPos(&point);//è·å–å½“å‰çš„æ¸¸æ ‡
 
 	POSITION selPos = m_CListCtrl.GetFirstSelectedItemPosition();
 	bool hasSel = (selPos != NULL);
 	ULONG64 Index = hasSel ? ((int)selPos - 1) : 0;
 
-	//»¹Ô­
-	// ×¢£ºID_MENU_SSDTSHADOW µÄ .rc ¶¨ÒåÖĞ²¢Ã»ÓĞ ¡°Hook¡± Ïî£¬Ö»ÓĞ ¡°»Ö¸´Hook¡±¡£
+	//è¿˜åŸ
+	// æ³¨ï¼šID_MENU_SSDTSHADOW çš„ .rc å®šä¹‰ä¸­å¹¶æ²¡æœ‰ â€œHookâ€ é¡¹ï¼Œåªæœ‰ â€œæ¢å¤Hookâ€ã€‚
 	if (!hasSel)
 	{
 		menu.EnableMenuItem(ID_SSDTSHADOW_RETURNHOOK, MF_GRAYED | MF_BYCOMMAND);
@@ -108,19 +108,19 @@ BOOL DlgSsdtShadow::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	m_CListCtrl.InsertColumn(um_SSDTShadow_Order, _T("ĞòºÅ"), LVCFMT_LEFT, 50);
-	m_CListCtrl.InsertColumn(um_SSDTShadow_ServerNumber, _T("·şÎñºÅ"), LVCFMT_LEFT, 60);
-	m_CListCtrl.InsertColumn(um_SSDTShadow_FunctionName, _T("º¯ÊıÃû³Æ"), LVCFMT_LEFT, 400);
-	m_CListCtrl.InsertColumn(um_SSDTShadow_KernelAddr, _T("µ±Ç°ÄÚºË²ãµØÖ·"), LVCFMT_LEFT, 125);
-	m_CListCtrl.InsertColumn(um_SSDTShadow_SrcKernelAddr, _T("Ô­ÄÚºË²ãµØÖ·"), LVCFMT_LEFT, 125);
-	m_CListCtrl.InsertColumn(um_SSDTShadow_UserAddr, _T("ÓÃ»§²ãº¯ÊıµØÖ·"), LVCFMT_LEFT, 125);
-	m_CListCtrl.InsertColumn(um_SSDTShadow_Path, _T("º¯ÊıËùÔÚÄ£¿éÎ»ÖÃ"), LVCFMT_LEFT, 300);
+	m_CListCtrl.InsertColumn(um_SSDTShadow_Order, _T("åºå·"), LVCFMT_LEFT, 50);
+	m_CListCtrl.InsertColumn(um_SSDTShadow_ServerNumber, _T("æœåŠ¡å·"), LVCFMT_LEFT, 60);
+	m_CListCtrl.InsertColumn(um_SSDTShadow_FunctionName, _T("å‡½æ•°åç§°"), LVCFMT_LEFT, 400);
+	m_CListCtrl.InsertColumn(um_SSDTShadow_KernelAddr, _T("å½“å‰å†…æ ¸å±‚åœ°å€"), LVCFMT_LEFT, 125);
+	m_CListCtrl.InsertColumn(um_SSDTShadow_SrcKernelAddr, _T("åŸå†…æ ¸å±‚åœ°å€"), LVCFMT_LEFT, 125);
+	m_CListCtrl.InsertColumn(um_SSDTShadow_UserAddr, _T("ç”¨æˆ·å±‚å‡½æ•°åœ°å€"), LVCFMT_LEFT, 125);
+	m_CListCtrl.InsertColumn(um_SSDTShadow_Path, _T("å‡½æ•°æ‰€åœ¨æ¨¡å—ä½ç½®"), LVCFMT_LEFT, 300);
 	m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 
 	OnSsdtshadowRefresh();
 
 	return TRUE;  // return TRUE unless you set the focus to a control
-	// Òì³£: OCX ÊôĞÔÒ³Ó¦·µ»Ø FALSE
+	// å¼‚å¸¸: OCX å±æ€§é¡µåº”è¿”å› FALSE
 }
 
 void DlgSsdtShadow::OnSsdtshadowRefresh()
@@ -133,22 +133,22 @@ void DlgSsdtShadow::OnSsdtshadowRefresh()
 
 void DlgSsdtShadow::InsertCtrlListControl(PCSsdtInfo pSsdtShadowInfo)
 {
-	LoadPEFile loadpe;									//¼ÓÔØPeÎÄ¼ş
+	LoadPEFile loadpe;									//åŠ è½½Peæ–‡ä»¶
 
-	//±éÀúwin32u.dllµÄµ¼³ö±í»ñÈ¡º¯ÊıÃû³Æ
-	if (loadpe.ReadUserDefineDllToBuffer(L"C:\\Windows\\SysWOW64\\win32u.dll"))//¼ÓÔØ32Î»ntdll.dll
+	//éå†win32u.dllçš„å¯¼å‡ºè¡¨è·å–å‡½æ•°åç§°
+	if (loadpe.ReadUserDefineDllToBuffer(L"C:\\Windows\\SysWOW64\\win32u.dll"))//åŠ è½½32ä½ntdll.dll
 	{
 		loadpe.EnumWin32kPeExportTable((PLONG64)pSsdtShadowInfo, NULL);
 	}
 	else
 	{
-		if (loadpe.ReadUserDefineDllToBuffer(L"C:\\Windows\\System32\\win32u.dll"))//Èç¼ÓÔØ32Î»Ê§°Ü,³¢ÊÔ¼ÓÔØ64Î»
+		if (loadpe.ReadUserDefineDllToBuffer(L"C:\\Windows\\System32\\win32u.dll"))//å¦‚åŠ è½½32ä½å¤±è´¥,å°è¯•åŠ è½½64ä½
 		{
 			loadpe.EnumWin32kPeExportTable((PLONG64)pSsdtShadowInfo, NULL);
 		}
 		else
 		{
-			AfxMessageBox(_T("win32u.dllÄ£¿é¼ÓÔØÊ§°Ü!"));
+			AfxMessageBox(_T("win32u.dllæ¨¡å—åŠ è½½å¤±è´¥!"));
 		}
 	}
 
@@ -184,7 +184,7 @@ void DlgSsdtShadow::InsertCtrlListControl(PCSsdtInfo pSsdtShadowInfo)
 		CString FilePath = PathTransForm(pProcessVadInfo->Path);
 		m_CListCtrl.SetItemText(i, um_SSDTShadow_Path, FilePath.GetBuffer());
 
-		//ÅĞ¶ÏÔ­µØÖ·º¯Êı,ÊÇ·ñºÍµ±Ç°µØÖ·Ò»Ñù
+		//åˆ¤æ–­åŸåœ°å€å‡½æ•°,æ˜¯å¦å’Œå½“å‰åœ°å€ä¸€æ ·
 		if (pProcessVadInfo->SrcNtFunAddr != pProcessVadInfo->NtFunAddr)
 		{
 			m_CListCtrl.SetItemData(i, TRUE);
@@ -194,13 +194,13 @@ void DlgSsdtShadow::InsertCtrlListControl(PCSsdtInfo pSsdtShadowInfo)
 			m_CListCtrl.SetItemData(i, FALSE);
 		}
 
-		//Ö¸ÏòÏÂÒ»¸ö
+		//æŒ‡å‘ä¸‹ä¸€ä¸ª
 		pCurList = pCurList->Blink;
 
 		SIZE_T FreeSize = 0;
 		if (MyNtFreeVirtualMemory(GetCurrentProcess(), (LPVOID*)&pProcessVadInfo, &FreeSize, MEM_RELEASE) != 0)
 		{
-			AfxMessageBox(L"ÊÍ·Å¿Õ¼äÊ§°Ü!");
+			AfxMessageBox(L"é‡Šæ”¾ç©ºé—´å¤±è´¥!");
 		}
 
 	} while (pCurList != &pSsdtShadowInfo->List.List);
@@ -209,7 +209,7 @@ void DlgSsdtShadow::InsertCtrlListControl(PCSsdtInfo pSsdtShadowInfo)
 
 void DlgSsdtShadow::OnSsdtshadowReturnhook()
 {
-	//»Ö¸´¹³×Óº¯Êı
+	//æ¢å¤é’©å­å‡½æ•°
 
 }
 

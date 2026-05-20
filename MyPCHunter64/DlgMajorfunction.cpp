@@ -1,4 +1,4 @@
-// DlgAcpi.cpp: ÊµÏÖÎÄ¼ş
+ï»¿// DlgAcpi.cpp: å®ç°æ–‡ä»¶
 //
 
 #include "pch.h"
@@ -9,7 +9,7 @@
 #include "Thread.h"
 #include "PdbResolver.h"
 
-// DlgAcpi ¶Ô»°¿ò
+// DlgAcpi å¯¹è¯æ¡†
 
 IMPLEMENT_DYNAMIC(DlgMajorfunction, CDialogEx)
 
@@ -36,12 +36,12 @@ BEGIN_MESSAGE_MAP(DlgMajorfunction, CDialogEx)
 	ON_NOTIFY(NM_RCLICK, ID_MAJORFUNCTION_LIST, &DlgMajorfunction::OnNMRClickMajorfunctionList)
 END_MESSAGE_MAP()
 
-// DlgAcpi ÏûÏ¢´¦Àí³ÌĞò
+// DlgAcpi æ¶ˆæ¯å¤„ç†ç¨‹åº
 
 void DlgMajorfunction::OnLvnItemchangedMajorFunctioniList(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
-	// TODO: ÔÚ´ËÌí¼Ó¿Ø¼şÍ¨Öª´¦Àí³ÌĞò´úÂë
+	// TODO: åœ¨æ­¤æ·»åŠ æ§ä»¶é€šçŸ¥å¤„ç†ç¨‹åºä»£ç 
 	*pResult = 0;
 }
 
@@ -58,11 +58,11 @@ BOOL DlgMajorfunction::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	m_CListCtrl.InsertColumn(um_MajorFuction_Ord, _T("ĞòºÅ"), LVCFMT_LEFT, 50);
-	m_CListCtrl.InsertColumn(um_MajorFuction_FunName, _T("º¯ÊıÃû³Æ"), LVCFMT_LEFT, 300);
-	m_CListCtrl.InsertColumn(um_MajorFuction_FunAddr, _T("º¯ÊıµØÖ·"), LVCFMT_LEFT, 120);
-	m_CListCtrl.InsertColumn(um_MajorFuction_Pos, _T("Î»ÖÃ"), LVCFMT_LEFT, 250);
-	m_CListCtrl.InsertColumn(um_MajorFuction_MoudlePath, _T("ËùÔÚÄ£¿éÂ·¾¶"), LVCFMT_LEFT, 250);
+	m_CListCtrl.InsertColumn(um_MajorFuction_Ord, _T("åºå·"), LVCFMT_LEFT, 50);
+	m_CListCtrl.InsertColumn(um_MajorFuction_FunName, _T("å‡½æ•°åç§°"), LVCFMT_LEFT, 300);
+	m_CListCtrl.InsertColumn(um_MajorFuction_FunAddr, _T("å‡½æ•°åœ°å€"), LVCFMT_LEFT, 120);
+	m_CListCtrl.InsertColumn(um_MajorFuction_Pos, _T("ä½ç½®"), LVCFMT_LEFT, 250);
+	m_CListCtrl.InsertColumn(um_MajorFuction_MoudlePath, _T("æ‰€åœ¨æ¨¡å—è·¯å¾„"), LVCFMT_LEFT, 250);
 	m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 
 	m_DriverMajorFunctionInfo.m_Object = (ULONG64)this;
@@ -70,7 +70,7 @@ BOOL DlgMajorfunction::OnInitDialog()
 
 	//OnDriverMajorFunctionRefresh();
 	return TRUE;  // return TRUE unless you set the focus to a control
-	// Òì³£: OCX ÊôĞÔÒ³Ó¦·µ»Ø FALSE
+	// å¼‚å¸¸: OCX å±æ€§é¡µåº”è¿”å› FALSE
 }
 
 void DlgMajorfunction::OnDriverMajorFunctionRefresh()
@@ -107,7 +107,7 @@ void DlgMajorfunction::InsertCtrlListControl(PCSysMajorFunctionInfo pCSysMajorFu
 		StrBuf.Format(L"%016I64X", pInfo->FunAddr);
 		m_CListCtrl.SetItemText(i, um_MajorFuction_FunAddr, StrBuf);
 
-		// Î»ÖÃÁĞ£ºPdbResolver ½âÎö·ûºÅ¡£ÓÅÏÈÓÃÇı¶¯´«»ØµÄ ModuleBase£¬Ã»Ôò resolver ²éÄÚºËÄ£¿é±í
+		// ä½ç½®åˆ—ï¼šPdbResolver è§£æç¬¦å·ã€‚ä¼˜å…ˆç”¨é©±åŠ¨ä¼ å›çš„ ModuleBaseï¼Œæ²¡åˆ™ resolver æŸ¥å†…æ ¸æ¨¡å—è¡¨
 		{
 			WCHAR resolved[256] = { 0 };
 			PdbResolver_Resolve(pInfo->FunAddr, pInfo->ModuleBase,
@@ -121,11 +121,11 @@ void DlgMajorfunction::InsertCtrlListControl(PCSysMajorFunctionInfo pCSysMajorFu
 		m_CListCtrl.SetItemText(i, um_MajorFuction_MoudlePath, FilePath.GetBuffer());
 
 		pCurList = pCurList->Blink;
-		//ÇåÀí×ÊÔ´
+		//æ¸…ç†èµ„æº
 		SIZE_T FreeSize = 0;
 		if (MyNtFreeVirtualMemory(GetCurrentProcess(), (LPVOID*)&pInfo, &FreeSize, MEM_RELEASE) != 0)
 		{
-			AfxMessageBox(L"ÊÍ·Å¿Õ¼äÊ§°Ü!");
+			AfxMessageBox(L"é‡Šæ”¾ç©ºé—´å¤±è´¥!");
 		}
 	} while (pCurList != &pCSysMajorFunctionInfo->List.List);
 

@@ -1,4 +1,4 @@
-#include "DefineArea.h"
+﻿#include "DefineArea.h"
 
 
 NTSTATUS ZwQuerySystemInformation(SYSTEM_INFORMATION_CLASS SystemInformationClass,

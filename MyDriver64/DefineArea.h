@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <fltKernel.h>
 #include <dontuse.h>
 #include <ntstrsafe.h>

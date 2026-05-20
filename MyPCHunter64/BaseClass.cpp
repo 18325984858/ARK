@@ -1,4 +1,4 @@
-#include "BaseClass.h"
+﻿#include "BaseClass.h"
 
 _MyCBaseDataObject::_MyCBaseDataObject()
 {

@@ -1,4 +1,4 @@
-// DlgHalTable.cpp: ÊµÏÖÎÄ¼ş
+ï»¿// DlgHalTable.cpp: å®ç°æ–‡ä»¶
 //
 
 #include "pch.h"
@@ -8,7 +8,7 @@
 #include "Thread.h"
 #include "PdbResolver.h"
 
-// DlgHalTable ¶Ô»°¿ò
+// DlgHalTable å¯¹è¯æ¡†
 
 IMPLEMENT_DYNAMIC(DlgHalTable, CDialogEx)
 
@@ -36,17 +36,17 @@ BEGIN_MESSAGE_MAP(DlgHalTable, CDialogEx)
 	ON_NOTIFY(NM_RCLICK, ID_DLG_KERNEL_MINIFILTERCALLBACK_LIST, &DlgHalTable::OnNMRClickDlgKernelMinifiltercallbackList)
 END_MESSAGE_MAP()
 
-// DlgHalTable ÏûÏ¢´¦Àí³ÌĞò
+// DlgHalTable æ¶ˆæ¯å¤„ç†ç¨‹åº
 
 void DlgHalTable::OnNMDblclkDlgKernelMinifiltercallbackTree(NMHDR* pNMHDR, LRESULT* pResult)
 {
-	// TODO: ÔÚ´ËÌí¼Ó¿Ø¼şÍ¨Öª´¦Àí³ÌĞò´úÂë
+	// TODO: åœ¨æ­¤æ·»åŠ æ§ä»¶é€šçŸ¥å¤„ç†ç¨‹åºä»£ç 
 	*pResult = 0;
 
-	//»ñÈ¡Ñ¡ÔñµÄ×Ó¼¯
+	//è·å–é€‰æ‹©çš„å­é›†
 	auto hSelectItem = m_CTreeCtrl.GetSelectedItem();
 
-	//»ñÈ¡°ó¶¨µÄÊı¾İ
+	//è·å–ç»‘å®šçš„æ•°æ®
 	int SelType = m_CTreeCtrl.GetItemData(hSelectItem);
 	switch (SelType)
 	{
@@ -57,10 +57,10 @@ void DlgHalTable::OnNMDblclkDlgKernelMinifiltercallbackTree(NMHDR* pNMHDR, LRESU
 			return;
 		}
 
-		//Ë¢ĞÂÏÔÊ¾µÄÊı¾İ
+		//åˆ·æ–°æ˜¾ç¤ºçš„æ•°æ®
 		OnHaltableRefresh();
 
-		//ÖØĞÂÉèÖÃÑ¡ÔñµÄµØ·½
+		//é‡æ–°è®¾ç½®é€‰æ‹©çš„åœ°æ–¹
 		nPerSel = um_HalTableDlgType_HalDispatchTable;
 	}
 	break;
@@ -73,10 +73,10 @@ void DlgHalTable::OnNMDblclkDlgKernelMinifiltercallbackTree(NMHDR* pNMHDR, LRESU
 
 		}
 
-		//Ë¢ĞÂÏÔÊ¾µÄÊı¾İ
+		//åˆ·æ–°æ˜¾ç¤ºçš„æ•°æ®
 		OnHaltableRefresh();
 
-		//ÖØĞÂÉèÖÃÑ¡ÔñµÄµØ·½
+		//é‡æ–°è®¾ç½®é€‰æ‹©çš„åœ°æ–¹
 		nPerSel = um_HalTableDlgType_HalPrivateDispatchTable;
 	}
 	break;
@@ -88,10 +88,10 @@ void DlgHalTable::OnNMDblclkDlgKernelMinifiltercallbackTree(NMHDR* pNMHDR, LRESU
 			return;
 		}
 
-		//Ë¢ĞÂÏÔÊ¾µÄÊı¾İ
+		//åˆ·æ–°æ˜¾ç¤ºçš„æ•°æ®
 		OnHaltableRefresh();
 
-		//ÖØĞÂÉèÖÃÑ¡ÔñµÄµØ·½
+		//é‡æ–°è®¾ç½®é€‰æ‹©çš„åœ°æ–¹
 		nPerSel = um_HalTableDlgType_HalAcpiDispatchTable;
 	}
 	break;
@@ -117,35 +117,35 @@ BOOL DlgHalTable::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	//³õÊ¼»¯Ê÷¿Ø¼ş
+	//åˆå§‹åŒ–æ ‘æ§ä»¶
 	m_CTreeCtrl.SetExtendedStyle(m_CTreeCtrl.GetExtendedStyle() | TVS_FULLROWSELECT | TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_SHOWSELALWAYS,
 		m_CTreeCtrl.GetExtendedStyle() | TVS_FULLROWSELECT | TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_SHOWSELALWAYS);
 
-	//´´½¨¸ù½Úµã
-	auto RootNode = m_CTreeCtrl.InsertItem(L"Hal»Øµ÷");
-	//´´½¨×Ó½Úµã1
+	//åˆ›å»ºæ ¹èŠ‚ç‚¹
+	auto RootNode = m_CTreeCtrl.InsertItem(L"Halå›è°ƒ");
+	//åˆ›å»ºå­èŠ‚ç‚¹1
 	auto ChildNode0 = m_CTreeCtrl.InsertItem(L"HalDispatchTable", RootNode);
 	m_CTreeCtrl.SetItemData(ChildNode0, um_HalTableDlgType_HalDispatchTable);
-	//´´½¨×Ó½Úµã2
+	//åˆ›å»ºå­èŠ‚ç‚¹2
 	auto ChildNode1 = m_CTreeCtrl.InsertItem(L"HalPrivateDispatchTable", RootNode);
 	m_CTreeCtrl.SetItemData(ChildNode1, um_HalTableDlgType_HalPrivateDispatchTable);
-	//´´½¨×Ó½Úµã2
+	//åˆ›å»ºå­èŠ‚ç‚¹2
 	auto ChildNode3 = m_CTreeCtrl.InsertItem(L"HalAcpiDispatchTable", RootNode);
 	m_CTreeCtrl.SetItemData(ChildNode3, um_HalTableDlgType_HalAcpiDispatchTable);
 
-	//³õÊ¼»¯List¿Ø¼ş
-	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_Order, _T("ĞòºÅ"), LVCFMT_LEFT, 70);
-	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_FunName, _T("º¯ÊıÃû³Æ"), LVCFMT_LEFT, 150);
-	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_CurFunAddr, _T("µ±Ç°º¯ÊıµØÖ·"), LVCFMT_LEFT, 125);
+	//åˆå§‹åŒ–Listæ§ä»¶
+	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_Order, _T("åºå·"), LVCFMT_LEFT, 70);
+	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_FunName, _T("å‡½æ•°åç§°"), LVCFMT_LEFT, 150);
+	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_CurFunAddr, _T("å½“å‰å‡½æ•°åœ°å€"), LVCFMT_LEFT, 125);
 	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_Hook, _T("HOOK"), LVCFMT_LEFT, 125);
-	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_SrcFunAddr, _T("Ô­Ê¼º¯ÊıµØÖ·"), LVCFMT_LEFT, 125);
-	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_Pos, _T("Î»ÖÃ"), LVCFMT_LEFT, 250);
-	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_CurModule, _T("µ±Ç°º¯ÊıËùÔÚÄ£¿éÂ·¾¶"), LVCFMT_LEFT, 300);
-	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_FileVender, _T("ÎÄ¼ş³§ÉÌ"), LVCFMT_LEFT, 125);
+	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_SrcFunAddr, _T("åŸå§‹å‡½æ•°åœ°å€"), LVCFMT_LEFT, 125);
+	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_Pos, _T("ä½ç½®"), LVCFMT_LEFT, 250);
+	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_CurModule, _T("å½“å‰å‡½æ•°æ‰€åœ¨æ¨¡å—è·¯å¾„"), LVCFMT_LEFT, 300);
+	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_FileVender, _T("æ–‡ä»¶å‚å•†"), LVCFMT_LEFT, 125);
 	m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
-	// Òì³£: OCX ÊôĞÔÒ³Ó¦·µ»Ø FALSE
+	// å¼‚å¸¸: OCX å±æ€§é¡µåº”è¿”å› FALSE
 }
 
 void DlgHalTable::OnHaltableRefresh()
@@ -166,13 +166,13 @@ void DlgHalTable::OnNMRClickDlgKernelMinifiltercallbackList(NMHDR* pNMHDR, LRESU
 
 void DlgHalTable::InsertCtrlListControl()
 {
-	//ÑéÖ¤µ±Ç°Ñ¡ÔñµÄÏî
+	//éªŒè¯å½“å‰é€‰æ‹©çš„é¡¹
 	if (nPerSel < 0 || nPerSel > 3)
 	{
 		return;
 	}
 
-	//·¢ËÍ°ü
+	//å‘é€åŒ…
 	PCHalFunTableInfo pCHalTableInfo = NULL;
 	if (!g_LoadDriver.SendMsg(um_Cmd_Enum_HalTable_info, (LPVOID)((nPerSel + 1) % 0x4), (LPVOID*)&pCHalTableInfo))
 	{
@@ -378,7 +378,7 @@ void DlgHalTable::InsertCtrlListControl()
 		StrBuf.Format(L"%016I64X", pInfo->pFunAddr);
 		m_CListCtrl.SetItemText(i, um_HalTableDlgInfo_CurFunAddr, StrBuf);
 
-		// Î»ÖÃ£ºPdbResolver ½âÎö·ûºÅÃû
+		// ä½ç½®ï¼šPdbResolver è§£æç¬¦å·å
 		{
 			WCHAR resolved[256] = { 0 };
 			PdbResolver_Resolve(pInfo->pFunAddr, 0, pInfo->ModulePath, resolved, _countof(resolved));
@@ -395,13 +395,13 @@ void DlgHalTable::InsertCtrlListControl()
 			m_CListCtrl.SetItemText(i, um_HalTableDlgInfo_FileVender, (LPWSTR)szDstFileName.GetString());
 		}
 
-		//»ñÈ¡ÏÂÒ»¸ö
+		//è·å–ä¸‹ä¸€ä¸ª
 		pCurList = pCurList->Blink;
-		//ÊÍ·Å×ÊÔ´
+		//é‡Šæ”¾èµ„æº
 		SIZE_T FreeSize = 0;
 		if (MyNtFreeVirtualMemory(GetCurrentProcess(), (LPVOID*)&pInfo, &FreeSize, MEM_RELEASE) != 0)
 		{
-			AfxMessageBox(L"ÊÍ·Å¿Õ¼äÊ§°Ü!");
+			AfxMessageBox(L"é‡Šæ”¾ç©ºé—´å¤±è´¥!");
 		}
 
 	} while (pCurList != &pCHalTableInfo->List.List);

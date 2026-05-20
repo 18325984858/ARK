@@ -1,4 +1,4 @@
-// DlgProcessThread.cpp: ÊµÏÖÎÄ¼ş
+ï»¿// DlgProcessThread.cpp: å®ç°æ–‡ä»¶
 //
 
 #include "pch.h"
@@ -7,7 +7,7 @@
 #include "DlgProcessThread.h"
 #include "Thread.h"
 
-// DlgProcessThread ¶Ô»°¿ò
+// DlgProcessThread å¯¹è¯æ¡†
 
 IMPLEMENT_DYNAMIC(DlgProcessThread, CDialogEx)
 
@@ -34,13 +34,13 @@ BEGIN_MESSAGE_MAP(DlgProcessThread, CDialogEx)
 	ON_COMMAND(ID_PROCESSTHREAD_REFRESH, &DlgProcessThread::OnProcessthreadRefresh)
 END_MESSAGE_MAP()
 
-// DlgProcessThread ÏûÏ¢´¦Àí³ÌĞò
+// DlgProcessThread æ¶ˆæ¯å¤„ç†ç¨‹åº
 
 void DlgProcessThread::OnRclickProcessThreadList(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	*pResult = 0;
 
-	// µ±Ç°Ñ¡ÖĞĞĞ
+	// å½“å‰é€‰ä¸­è¡Œ
 	POSITION p = m_CListCtrl.GetFirstSelectedItemPosition();
 	int sel = (p != NULL) ? (int)m_CListCtrl.GetNextSelectedItem(p) : -1;
 	m_SelectedTid = 0;
@@ -50,19 +50,19 @@ void DlgProcessThread::OnRclickProcessThreadList(NMHDR* pNMHDR, LRESULT* pResult
 		m_SelectedTid = _wcstoui64(tidStr, 0, 10);
 	}
 
-	// ×ÔÊÊÓ¦"¸´ÖÆ" ÁĞÃû£¬ÔÙµş¼Ó ÔİÍ£/»Ö¸´/É±ËÀ/Ë¢ĞÂ
+	// è‡ªé€‚åº”"å¤åˆ¶" åˆ—åï¼Œå†å åŠ  æš‚åœ/æ¢å¤/æ€æ­»/åˆ·æ–°
 	enum { kCmdRefresh = 1, kCmdSuspend, kCmdResume, kCmdKill, kCmdCopyBase = 100 };
 
 	CMenu menu;
 	menu.CreatePopupMenu();
 
 	int nCols = AppendCopyColumnsSubmenu(menu, &m_CListCtrl, kCmdCopyBase, sel >= 0);
-	menu.AppendMenuW(MF_STRING, kCmdRefresh, L"Ë¢ĞÂ");
+	menu.AppendMenuW(MF_STRING, kCmdRefresh, L"åˆ·æ–°");
 	menu.AppendMenuW(MF_SEPARATOR, 0, (LPCTSTR)NULL);
 	UINT actionFlags = (m_SelectedTid != 0) ? MF_STRING : (MF_STRING | MF_GRAYED);
-	menu.AppendMenuW(actionFlags, kCmdSuspend, L"ÔİÍ£Ïß³Ì");
-	menu.AppendMenuW(actionFlags, kCmdResume, L"»Ö¸´Ïß³Ì");
-	menu.AppendMenuW(actionFlags, kCmdKill, L"É±ËÀÏß³Ì");
+	menu.AppendMenuW(actionFlags, kCmdSuspend, L"æš‚åœçº¿ç¨‹");
+	menu.AppendMenuW(actionFlags, kCmdResume, L"æ¢å¤çº¿ç¨‹");
+	menu.AppendMenuW(actionFlags, kCmdKill, L"æ€æ­»çº¿ç¨‹");
 
 	POINT pt; GetCursorPos(&pt);
 	UINT cmd = menu.TrackPopupMenu(TPM_LEFTBUTTON | TPM_RETURNCMD | TPM_NONOTIFY, pt.x, pt.y, this);
@@ -100,23 +100,23 @@ BOOL DlgProcessThread::OnInitDialog()
 	SetWindowText(m_StrProcessName);
 
 	CDialogEx::OnInitDialog();
-	m_CListCtrl.InsertColumn(um_Thread_Module, _T("Ä£¿é"), LVCFMT_LEFT, 100);
-	m_CListCtrl.InsertColumn(um_Thread_Id, _T("Ïß³ÌID"), LVCFMT_LEFT, 75);
-	m_CListCtrl.InsertColumn(um_Thread_Object, _T("Ïß³Ì¶ÔÏó"), LVCFMT_LEFT, 130);
+	m_CListCtrl.InsertColumn(um_Thread_Module, _T("æ¨¡å—"), LVCFMT_LEFT, 100);
+	m_CListCtrl.InsertColumn(um_Thread_Id, _T("çº¿ç¨‹ID"), LVCFMT_LEFT, 75);
+	m_CListCtrl.InsertColumn(um_Thread_Object, _T("çº¿ç¨‹å¯¹è±¡"), LVCFMT_LEFT, 130);
 	m_CListCtrl.InsertColumn(um_Thread_Teb, _T("TEB"), LVCFMT_LEFT, 130);
-	m_CListCtrl.InsertColumn(um_Thread_Type, _T("Ïß³ÌÀàĞÍ"), LVCFMT_LEFT, 80);
-	m_CListCtrl.InsertColumn(um_Thread_StartAddr, _T("Èë¿ÚµØÖ·"), LVCFMT_LEFT, 130);
-	m_CListCtrl.InsertColumn(um_Thread_Priority, _T("ÓÅÏÈ¼¶"), LVCFMT_LEFT, 75);
-	m_CListCtrl.InsertColumn(um_Thread_SwitchCount, _T("ÇĞ»»´ÎÊı"), LVCFMT_LEFT, 75);
-	m_CListCtrl.InsertColumn(um_Thread_State, _T("×´Ì¬"), LVCFMT_LEFT, 75);
-	m_CListCtrl.InsertColumn(um_Thread_CreateTime, _T("´´½¨Ê±¼ä"), LVCFMT_LEFT, 350);
-	m_CListCtrl.InsertColumn(um_Thread_CompanyName, _T("¹«Ë¾Ãû"), LVCFMT_LEFT, 100);
+	m_CListCtrl.InsertColumn(um_Thread_Type, _T("çº¿ç¨‹ç±»å‹"), LVCFMT_LEFT, 80);
+	m_CListCtrl.InsertColumn(um_Thread_StartAddr, _T("å…¥å£åœ°å€"), LVCFMT_LEFT, 130);
+	m_CListCtrl.InsertColumn(um_Thread_Priority, _T("ä¼˜å…ˆçº§"), LVCFMT_LEFT, 75);
+	m_CListCtrl.InsertColumn(um_Thread_SwitchCount, _T("åˆ‡æ¢æ¬¡æ•°"), LVCFMT_LEFT, 75);
+	m_CListCtrl.InsertColumn(um_Thread_State, _T("çŠ¶æ€"), LVCFMT_LEFT, 75);
+	m_CListCtrl.InsertColumn(um_Thread_CreateTime, _T("åˆ›å»ºæ—¶é—´"), LVCFMT_LEFT, 350);
+	m_CListCtrl.InsertColumn(um_Thread_CompanyName, _T("å…¬å¸å"), LVCFMT_LEFT, 100);
 	m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 
 	OnProcessthreadRefresh();
 
 	return TRUE;  // return TRUE unless you set the focus to a control
-	// Òì³£: OCX ÊôĞÔÒ³Ó¦·µ»Ø FALSE
+	// å¼‚å¸¸: OCX å±æ€§é¡µåº”è¿”å› FALSE
 }
 
 void DlgProcessThread::OnProcessthreadRefresh()
@@ -133,7 +133,7 @@ void DlgProcessThread::InsertCtrlListControl(PCProcessThreadInfo pInfo)
 		return;
 	}
 
-	CString ThreadState[9] = { L"´´½¨",L"¾ÍĞ÷",L"ÔËĞĞ",L"´ıÃü",L"½áÊø",L"µÈ´ı",L"¹ı¶È",L"ÑÓ³Ù",L"ÃÅµÈ´ı" };//´æ´¢Ïß³Ì×´Ì¬
+	CString ThreadState[9] = { L"åˆ›å»º",L"å°±ç»ª",L"è¿è¡Œ",L"å¾…å‘½",L"ç»“æŸ",L"ç­‰å¾…",L"è¿‡åº¦",L"å»¶è¿Ÿ",L"é—¨ç­‰å¾…" };//å­˜å‚¨çº¿ç¨‹çŠ¶æ€
 
 	PCLIST_ENTRY pList = &pInfo->List.List;
 
@@ -168,17 +168,17 @@ void DlgProcessThread::InsertCtrlListControl(PCProcessThreadInfo pInfo)
 
 			if (ThreadGuiFlag == 0)
 			{
-				StrBuf = L"Õı³£Ïß³Ì";
+				StrBuf = L"æ­£å¸¸çº¿ç¨‹";
 			}
 			else
 			{
 				if (ThreadGuiFlag & 0x1)
 				{
-					StrBuf = L"GUIÏß³Ì";
+					StrBuf = L"GUIçº¿ç¨‹";
 				}
 				if (ThreadGuiFlag & 0x2)
 				{
-					StrBuf = L"ÊÜÏŞGUIÏß³Ì";
+					StrBuf = L"å—é™GUIçº¿ç¨‹";
 				}
 
 			}
@@ -210,13 +210,13 @@ void DlgProcessThread::InsertCtrlListControl(PCProcessThreadInfo pInfo)
 			this->GetCompanyName(szSrcFilePatch, szDstFilePatch);
 			m_CListCtrl.SetItemText(i, um_Thread_CompanyName, szDstFilePatch.GetString());
 		}
-		//»ñÈ¡ÏÂÒ»¸ö½Úµã
+		//è·å–ä¸‹ä¸€ä¸ªèŠ‚ç‚¹
 		pList = pList->Blink;
-		//ÊÍ·Åµ±Ç°¿Õ¼ä
+		//é‡Šæ”¾å½“å‰ç©ºé—´
 		SIZE_T FreeSize = 0;
 		if (MyNtFreeVirtualMemory(GetCurrentProcess(), (LPVOID*)&pProcessThreadInfo, &FreeSize, MEM_RELEASE) != 0)
 		{
-			AfxMessageBox(L"ÊÍ·Å¿Õ¼äÊ§°Ü!");
+			AfxMessageBox(L"é‡Šæ”¾ç©ºé—´å¤±è´¥!");
 		}
 
 	} while (pList != &pInfo->List.List);

@@ -1,4 +1,4 @@
-// DlgSsdt.cpp: ÊµÏÖÎÄ¼ş
+ï»¿// DlgSsdt.cpp: å®ç°æ–‡ä»¶
 //
 
 #include "pch.h"
@@ -8,7 +8,7 @@
 #include "Thread.h"
 #include "LoadPe.h"
 #include "MyPCHunter64Dlg.h"
-// DlgSsdt ¶Ô»°¿ò
+// DlgSsdt å¯¹è¯æ¡†
 UCHAR g_HookStateFlags[SSDT_MAX_NUMBER] = { 0 };
 
 IMPLEMENT_DYNAMIC(DlgSsdt, CDialogEx)
@@ -44,12 +44,12 @@ BEGIN_MESSAGE_MAP(DlgSsdt, CDialogEx)
 	ON_COMMAND(ID_SSDT_COPY_MOUDLEPATH, &DlgSsdt::OnSsdtCopyMoudlepath)
 END_MESSAGE_MAP()
 
-// DlgSsdt ÏûÏ¢´¦Àí³ÌĞò
+// DlgSsdt æ¶ˆæ¯å¤„ç†ç¨‹åº
 
 void DlgSsdt::OnNMRClickSsdtList(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	// TODO: ÔÚ´ËÌí¼Ó¿Ø¼şÍ¨Öª´¦Àí³ÌĞò´úÂë
+	// TODO: åœ¨æ­¤æ·»åŠ æ§ä»¶é€šçŸ¥å¤„ç†ç¨‹åºä»£ç 
 	*pResult = 0;
 
 	if (m_CListCtrl.GetItemCount() <= 0)
@@ -60,7 +60,7 @@ void DlgSsdt::OnNMRClickSsdtList(NMHDR* pNMHDR, LRESULT* pResult)
 	CMenu menu;
 	menu.LoadMenu(ID_MENU_SSDT);
 	CPoint point;
-	GetCursorPos(&point);//»ñÈ¡µ±Ç°µÄÓÎ±ê
+	GetCursorPos(&point);//è·å–å½“å‰çš„æ¸¸æ ‡
 
 	POSITION selPos = m_CListCtrl.GetFirstSelectedItemPosition();
 	bool hasSel = (selPos != NULL);
@@ -68,17 +68,17 @@ void DlgSsdt::OnNMRClickSsdtList(NMHDR* pNMHDR, LRESULT* pResult)
 
 	if (hasSel)
 	{
-		//»ñÈ¡º¯ÊıÃû³Æ
+		//è·å–å‡½æ•°åç§°
 		CString FunName = m_CListCtrl.GetItemText((int)Index, um_SSDT_FunctionName);
 		CString FunName1;
 		FunName1.Format(L"Hook %ws", FunName.GetBuffer());
 		menu.ModifyMenu(ID_SSDT_HOOK, MF_BYCOMMAND | MF_STRING, ID_SSDT_HOOK, FunName1);
 	}
 
-	//»¹Ô­
+	//è¿˜åŸ
 	if (!hasSel)
 	{
-		// Î´Ñ¡ÖĞÈÎºÎĞĞ£ºHook / »¹Ô­ Hook ¶¼²»ÄÜ²Ù×÷
+		// æœªé€‰ä¸­ä»»ä½•è¡Œï¼šHook / è¿˜åŸ Hook éƒ½ä¸èƒ½æ“ä½œ
 		menu.EnableMenuItem(ID_SSDT_HOOK,       MF_GRAYED | MF_BYCOMMAND);
 		menu.EnableMenuItem(ID_SSDT_RETURNHOOK, MF_GRAYED | MF_BYCOMMAND);
 	}
@@ -109,19 +109,19 @@ BOOL DlgSsdt::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	m_CListCtrl.InsertColumn(um_SSDT_Order, _T("ĞòºÅ"), LVCFMT_LEFT, 50);
-	m_CListCtrl.InsertColumn(um_SSDT_ServerNumber, _T("·şÎñºÅ"), LVCFMT_LEFT, 60);
-	m_CListCtrl.InsertColumn(um_SSDT_FunctionName, _T("º¯ÊıÃû³Æ"), LVCFMT_LEFT, 400);
-	m_CListCtrl.InsertColumn(um_SSDT_KernelAddr, _T("µ±Ç°ÄÚºË²ãµØÖ·"), LVCFMT_LEFT, 125);
-	m_CListCtrl.InsertColumn(um_SSDT_SrcKernelAddr, _T("Ô­ÄÚºË²ãµØÖ·"), LVCFMT_LEFT, 125);
-	m_CListCtrl.InsertColumn(um_SSDT_UserAddr, _T("ÓÃ»§²ãº¯ÊıµØÖ·"), LVCFMT_LEFT, 125);
-	m_CListCtrl.InsertColumn(um_SSDT_Path, _T("º¯ÊıËùÔÚÄ£¿éÎ»ÖÃ"), LVCFMT_LEFT, 300);
+	m_CListCtrl.InsertColumn(um_SSDT_Order, _T("åºå·"), LVCFMT_LEFT, 50);
+	m_CListCtrl.InsertColumn(um_SSDT_ServerNumber, _T("æœåŠ¡å·"), LVCFMT_LEFT, 60);
+	m_CListCtrl.InsertColumn(um_SSDT_FunctionName, _T("å‡½æ•°åç§°"), LVCFMT_LEFT, 400);
+	m_CListCtrl.InsertColumn(um_SSDT_KernelAddr, _T("å½“å‰å†…æ ¸å±‚åœ°å€"), LVCFMT_LEFT, 125);
+	m_CListCtrl.InsertColumn(um_SSDT_SrcKernelAddr, _T("åŸå†…æ ¸å±‚åœ°å€"), LVCFMT_LEFT, 125);
+	m_CListCtrl.InsertColumn(um_SSDT_UserAddr, _T("ç”¨æˆ·å±‚å‡½æ•°åœ°å€"), LVCFMT_LEFT, 125);
+	m_CListCtrl.InsertColumn(um_SSDT_Path, _T("å‡½æ•°æ‰€åœ¨æ¨¡å—ä½ç½®"), LVCFMT_LEFT, 300);
 	m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 
 	OnSsdtRefresh();
 
 	return TRUE;  // return TRUE unless you set the focus to a control
-	// Òì³£: OCX ÊôĞÔÒ³Ó¦·µ»Ø FALSE
+	// å¼‚å¸¸: OCX å±æ€§é¡µåº”è¿”å› FALSE
 }
 
 void DlgSsdt::OnSize(UINT nType, int cx, int cy)
@@ -145,20 +145,20 @@ void DlgSsdt::InsertCtrlListControl(PCSsdtInfo pSsdtInfo)
 {
 	LoadPEFile loadpe;
 
-	//¼ÓÔØPE »ñÈ¡º¯ÊıÃû³Æ
-	if (loadpe.ReadUserDefineDllToBuffer(L"C:\\Windows\\SysWOW64\\ntdll.dll"))//¼ÓÔØ32Î»ntdll.dll
+	//åŠ è½½PE è·å–å‡½æ•°åç§°
+	if (loadpe.ReadUserDefineDllToBuffer(L"C:\\Windows\\SysWOW64\\ntdll.dll"))//åŠ è½½32ä½ntdll.dll
 	{
 		loadpe.EnumNtdllPeExportTable((PLONG64)pSsdtInfo, NULL);
 	}
 	else
 	{
-		if (loadpe.ReadUserDefineDllToBuffer(L"C:\\Windows\\System32\\ntdll.dll"))//Èç¼ÓÔØ32Î»Ê§°Ü,³¢ÊÔ¼ÓÔØ64Î»
+		if (loadpe.ReadUserDefineDllToBuffer(L"C:\\Windows\\System32\\ntdll.dll"))//å¦‚åŠ è½½32ä½å¤±è´¥,å°è¯•åŠ è½½64ä½
 		{
 			loadpe.EnumNtdllPeExportTable((PLONG64)pSsdtInfo, NULL);
 		}
 		else
 		{
-			AfxMessageBox(_T("ntdll.dllÄ£¿é¼ÓÔØÊ§°Ü!"));
+			AfxMessageBox(_T("ntdll.dllæ¨¡å—åŠ è½½å¤±è´¥!"));
 		}
 	}
 
@@ -194,7 +194,7 @@ void DlgSsdt::InsertCtrlListControl(PCSsdtInfo pSsdtInfo)
 		CString FilePath = PathTransForm(pProcessVadInfo->Path);
 		m_CListCtrl.SetItemText(i, um_SSDT_Path, FilePath.GetBuffer());
 
-		//ÅĞ¶ÏÔ­µØÖ·º¯Êı,ÊÇ·ñºÍµ±Ç°µØÖ·Ò»Ñù
+		//åˆ¤æ–­åŸåœ°å€å‡½æ•°,æ˜¯å¦å’Œå½“å‰åœ°å€ä¸€æ ·
 		if (pProcessVadInfo->SrcNtFunAddr != pProcessVadInfo->NtFunAddr)
 		{
 			m_CListCtrl.SetItemData(i, TRUE);
@@ -204,13 +204,13 @@ void DlgSsdt::InsertCtrlListControl(PCSsdtInfo pSsdtInfo)
 			m_CListCtrl.SetItemData(i, FALSE);
 		}
 
-		//Ö¸ÏòÏÂÒ»¸ö
+		//æŒ‡å‘ä¸‹ä¸€ä¸ª
 		pCurList = pCurList->Blink;
 
 		SIZE_T FreeSize = 0;
 		if (MyNtFreeVirtualMemory(GetCurrentProcess(), (LPVOID*)&pProcessVadInfo, &FreeSize, MEM_RELEASE) != 0)
 		{
-			AfxMessageBox(L"ÊÍ·Å¿Õ¼äÊ§°Ü!");
+			AfxMessageBox(L"é‡Šæ”¾ç©ºé—´å¤±è´¥!");
 		}
 
 	} while (pCurList != &pSsdtInfo->List.List);
@@ -218,14 +218,14 @@ void DlgSsdt::InsertCtrlListControl(PCSsdtInfo pSsdtInfo)
 
 void DlgSsdt::OnSsdtHook()
 {
-	//»ñÈ¡Ë÷Òı
+	//è·å–ç´¢å¼•
 	ULONG64 Index = (int)m_CListCtrl.GetFirstSelectedItemPosition() - 1;
 	if (Index < 0)
 	{
 		return;
 	}
 
-	// TODO: ÔÚ´ËÌí¼ÓÃüÁî´¦Àí³ÌĞò´úÂë
+	// TODO: åœ¨æ­¤æ·»åŠ å‘½ä»¤å¤„ç†ç¨‹åºä»£ç 
 	if (!g_CreateFlagsDlgProcessMonitor)
 	{
 		g_DlgProcessMonitor.Create(ID_DIALOG_SSDT_MONITOR);
@@ -236,7 +236,7 @@ void DlgSsdt::OnSsdtHook()
 		g_DlgProcessMonitor.ShowWindow(1);
 	}
 
-	//»ñÈ¡µ±Ç°ÊÇ·ñ±»HookÁË
+	//è·å–å½“å‰æ˜¯å¦è¢«Hookäº†
 	UCHAR Flags = g_HookStateFlags[Index];
 	if (!Flags)
 	{
@@ -247,7 +247,7 @@ void DlgSsdt::OnSsdtHook()
 		}
 
 		g_ThreadPool.AddTask(new _CThreadPack{ _LoadDriver::Um_UserCallBackType_UserHookSsdtTable,(PVOID64)pInfo });
-		//±êÖ¾µ±Ç°ÎªÕæ
+		//æ ‡å¿—å½“å‰ä¸ºçœŸ
 		m_CListCtrl.SetItemData(Index, (DWORD_PTR)1);
 
 		if (g_CreateFlagsDlgProcessMonitor)
@@ -282,7 +282,7 @@ void DlgSsdt::OnSsdtReturnhook()
 
 	if (g_HookStateFlags[Index])
 	{
-		//»¹Ô­Hook
+		//è¿˜åŸHook
 
 		PCAlterHookSsdtInfo pInfo = new CAlterHookSsdtInfo;
 		if (!pInfo)

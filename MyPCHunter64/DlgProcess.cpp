@@ -1,4 +1,4 @@
-// DlgProcess.cpp: ÊµÏÖÎÄ¼ş
+ï»¿// DlgProcess.cpp: å®ç°æ–‡ä»¶
 //
 #define _CRT_NON_CONFORMING_SWPRINTFS
 #include "pch.h"
@@ -10,7 +10,7 @@
 #include "DlgProcessVad.h"
 #include "DlgProcessThread.h"
 #include "DlgProcessModule.h"
-// DlgProcess ¶Ô»°¿ò
+// DlgProcess å¯¹è¯æ¡†
 
 IMPLEMENT_DYNAMIC(DlgProcess, CDialogEx)
 
@@ -59,29 +59,29 @@ BEGIN_MESSAGE_MAP(DlgProcess, CDialogEx)
 	ON_COMMAND(ID_PROCESS_NP, &DlgProcess::OnProcessNp)
 END_MESSAGE_MAP()
 
-// DlgProcess ÏûÏ¢´¦Àí³ÌĞò
+// DlgProcess æ¶ˆæ¯å¤„ç†ç¨‹åº
 
 BOOL DlgProcess::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	m_CListCtrl.InsertColumn(um_Process_Name, _T("Ó³ÏñÃû³Æ"), LVCFMT_LEFT, 130);
-	m_CListCtrl.InsertColumn(um_Process_Id, _T("½ø³ÌID"), LVCFMT_LEFT, 50);
-	m_CListCtrl.InsertColumn(um_Process_ParentId, _T("¸¸½ø³ÌID"), LVCFMT_LEFT, 50);
-	m_CListCtrl.InsertColumn(um_Process_SessionId, _T("»á»°ID"), LVCFMT_LEFT, 50);
-	m_CListCtrl.InsertColumn(um_Process_UserName, _T("ÓÃ»§Ãû"), LVCFMT_LEFT, 75);
-	m_CListCtrl.InsertColumn(um_Process_FilePath, _T("Ó³ÏñÂ·¾¶"), LVCFMT_LEFT, 350);
+	m_CListCtrl.InsertColumn(um_Process_Name, _T("æ˜ åƒåç§°"), LVCFMT_LEFT, 130);
+	m_CListCtrl.InsertColumn(um_Process_Id, _T("è¿›ç¨‹ID"), LVCFMT_LEFT, 50);
+	m_CListCtrl.InsertColumn(um_Process_ParentId, _T("çˆ¶è¿›ç¨‹ID"), LVCFMT_LEFT, 50);
+	m_CListCtrl.InsertColumn(um_Process_SessionId, _T("ä¼šè¯ID"), LVCFMT_LEFT, 50);
+	m_CListCtrl.InsertColumn(um_Process_UserName, _T("ç”¨æˆ·å"), LVCFMT_LEFT, 75);
+	m_CListCtrl.InsertColumn(um_Process_FilePath, _T("æ˜ åƒè·¯å¾„"), LVCFMT_LEFT, 350);
 	m_CListCtrl.InsertColumn(um_Process_Object, _T("EPROCESS"), LVCFMT_LEFT, 125);
-	m_CListCtrl.InsertColumn(um_Process_VisitState, _T("Ó¦ÓÃ²ã·ÃÎÊ×´Ì¬"), LVCFMT_LEFT, 125);
-	m_CListCtrl.InsertColumn(um_Process_FileFirm, _T("ÎÄ¼ş³§ÉÌ"), LVCFMT_LEFT, 125);
-	m_CListCtrl.InsertColumn(um_Process_DebugState, _T("µ÷ÊÔ×´Ì¬"), LVCFMT_LEFT, 70);
-	m_CListCtrl.InsertColumn(um_Process_Architecture, _T("¼Ü¹¹"), LVCFMT_LEFT, 70);
-	m_CListCtrl.InsertColumn(um_Process_RunTime, _T("¿ªÊ¼ÔËĞĞÊ±¼ä"), LVCFMT_LEFT, 165);
-	m_CListCtrl.InsertColumn(um_Process_Param, _T("²ÎÊı"), LVCFMT_LEFT, 2000);
+	m_CListCtrl.InsertColumn(um_Process_VisitState, _T("åº”ç”¨å±‚è®¿é—®çŠ¶æ€"), LVCFMT_LEFT, 125);
+	m_CListCtrl.InsertColumn(um_Process_FileFirm, _T("æ–‡ä»¶å‚å•†"), LVCFMT_LEFT, 125);
+	m_CListCtrl.InsertColumn(um_Process_DebugState, _T("è°ƒè¯•çŠ¶æ€"), LVCFMT_LEFT, 70);
+	m_CListCtrl.InsertColumn(um_Process_Architecture, _T("æ¶æ„"), LVCFMT_LEFT, 70);
+	m_CListCtrl.InsertColumn(um_Process_RunTime, _T("å¼€å§‹è¿è¡Œæ—¶é—´"), LVCFMT_LEFT, 165);
+	m_CListCtrl.InsertColumn(um_Process_Param, _T("å‚æ•°"), LVCFMT_LEFT, 2000);
 	m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 
 	return TRUE;
-	// Òì³£: OCX ÊôĞÔÒ³Ó¦·µ»Ø FALSE
+	// å¼‚å¸¸: OCX å±æ€§é¡µåº”è¿”å› FALSE
 }
 
 void DlgProcess::OnSize(UINT nType, int cx, int cy)
@@ -96,18 +96,18 @@ void DlgProcess::OnSize(UINT nType, int cx, int cy)
 void DlgProcess::OnNMRClickControlProcessList(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	// TODO: ÔÚ´ËÌí¼Ó¿Ø¼şÍ¨Öª´¦Àí³ÌĞò´úÂë
+	// TODO: åœ¨æ­¤æ·»åŠ æ§ä»¶é€šçŸ¥å¤„ç†ç¨‹åºä»£ç 
 	*pResult = 0;
 
 	CMenu menu;
 	POINT point = { 0 };
 
-	GetCursorPos(&point);//»ñÈ¡µ±Ç°µÄÓÎ±ê
-	menu.LoadMenuW(ID_MENU_PROCESS);//¼ÓÔØ²Ëµ¥×ÊÔ´
+	GetCursorPos(&point);//è·å–å½“å‰çš„æ¸¸æ ‡
+	menu.LoadMenuW(ID_MENU_PROCESS);//åŠ è½½èœå•èµ„æº
 	CMenu* pPopup = menu.GetSubMenu(0);//
 
-	POSITION FristIndex = m_CListCtrl.GetFirstSelectedItemPosition();//»ñÈ¡Ñ¡ÖĞĞĞµÄĞĞÊı  pos = ĞĞÊı - 1
-	int TempIndex = (int)FristIndex - 1;//´æ´¢µÚÒ»´ÎµÄË÷ÒıÎ»ÖÃ
+	POSITION FristIndex = m_CListCtrl.GetFirstSelectedItemPosition();//è·å–é€‰ä¸­è¡Œçš„è¡Œæ•°  pos = è¡Œæ•° - 1
+	int TempIndex = (int)FristIndex - 1;//å­˜å‚¨ç¬¬ä¸€æ¬¡çš„ç´¢å¼•ä½ç½®
 
 	if (this->m_ThreadFlags == 1)
 	{
@@ -126,28 +126,28 @@ void DlgProcess::OnNMRClickControlProcessList(NMHDR* pNMHDR, LRESULT* pResult)
 	CString explorerPath;
 	UINT explorerCmd = AppendOpenInExplorerItem(*pPopup, &m_CListCtrl, explorerPath);
 
-	// --- ¶¯Ì¬×·¼Ó£ºÔİÍ£/»Ö¸´½ø³Ì / ĞŞ¸ÄÓÅÏÈ¼¶ / CPUÇ×ºÍĞÔ / ¹şÏ£ / Ç©Ãû ---
+	// --- åŠ¨æ€è¿½åŠ ï¼šæš‚åœ/æ¢å¤è¿›ç¨‹ / ä¿®æ”¹ä¼˜å…ˆçº§ / CPUäº²å’Œæ€§ / å“ˆå¸Œ / ç­¾å ---
 	DWORD pid = 0;
 	{
 		CString sPid = m_CListCtrl.GetItemText((int)FristIndex - 1, um_Process_Id);
 		pid = (DWORD)_wtoi(sPid);
 	}
 	CString procPath = m_CListCtrl.GetItemText((int)FristIndex - 1, um_Process_FilePath);
-	BOOL hasPid = (FristIndex > 0 && pid > 4);  // ²»ÔÊĞí²Ù×÷ System(4)/Idle
+	BOOL hasPid = (FristIndex > 0 && pid > 4);  // ä¸å…è®¸æ“ä½œ System(4)/Idle
 	BOOL hasPath = (!procPath.IsEmpty() && procPath != L"--");
 
 	const UINT kProcSuspend  = 9200;
 	const UINT kProcResume   = 9201;
 	const UINT kProcHash     = 9202;
 	const UINT kProcVerify   = 9203;
-	const UINT kPrioBase     = 9210;  // 6 Ïî
+	const UINT kPrioBase     = 9210;  // 6 é¡¹
 	const UINT kPrioIdle     = kPrioBase + 0;
 	const UINT kPrioBelow    = kPrioBase + 1;
 	const UINT kPrioNormal   = kPrioBase + 2;
 	const UINT kPrioAbove    = kPrioBase + 3;
 	const UINT kPrioHigh     = kPrioBase + 4;
 	const UINT kPrioRealTime = kPrioBase + 5;
-	const UINT kAffinityBase = 9220;  // 9220=È«²¿, 9221=½ö0ºÅ, 9222=½ö1ºÅ ... ×î¶à 8 ¸öºË
+	const UINT kAffinityBase = 9220;  // 9220=å…¨éƒ¨, 9221=ä»…0å·, 9222=ä»…1å· ... æœ€å¤š 8 ä¸ªæ ¸
 
 	CMenu prioSub;
 	prioSub.CreatePopupMenu();
@@ -161,27 +161,27 @@ void DlgProcess::OnNMRClickControlProcessList(NMHDR* pNMHDR, LRESULT* pResult)
 	SYSTEM_INFO si = { 0 };
 	GetSystemInfo(&si);
 	DWORD cpuCount = si.dwNumberOfProcessors;
-	if (cpuCount > 8) cpuCount = 8; // ½öÉú³É 8 ÏîÒÔ±£³Ö²Ëµ¥¼ò½à
+	if (cpuCount > 8) cpuCount = 8; // ä»…ç”Ÿæˆ 8 é¡¹ä»¥ä¿æŒèœå•ç®€æ´
 
 	CMenu affSub;
 	affSub.CreatePopupMenu();
-	affSub.AppendMenuW(MF_STRING | (hasPid ? 0 : MF_GRAYED), kAffinityBase, L"ËùÓĞ´¦ÀíÆ÷");
+	affSub.AppendMenuW(MF_STRING | (hasPid ? 0 : MF_GRAYED), kAffinityBase, L"æ‰€æœ‰å¤„ç†å™¨");
 	for (DWORD c = 0; c < cpuCount; ++c)
 	{
-		CString label; label.Format(L"½ö CPU %u", c);
+		CString label; label.Format(L"ä»… CPU %u", c);
 		affSub.AppendMenuW(MF_STRING | (hasPid ? 0 : MF_GRAYED), kAffinityBase + 1 + c, label);
 	}
 
 	pPopup->AppendMenuW(MF_SEPARATOR, 0, (LPCTSTR)NULL);
-	pPopup->AppendMenuW(MF_STRING | (hasPid ? 0 : MF_GRAYED), kProcSuspend, L"ÔİÍ£½ø³Ì");
-	pPopup->AppendMenuW(MF_STRING | (hasPid ? 0 : MF_GRAYED), kProcResume,  L"»Ö¸´½ø³Ì");
-	pPopup->AppendMenuW(MF_POPUP  | (hasPid ? 0 : MF_GRAYED), (UINT_PTR)prioSub.GetSafeHmenu(), L"ĞŞ¸ÄÓÅÏÈ¼¶");
-	pPopup->AppendMenuW(MF_POPUP  | (hasPid ? 0 : MF_GRAYED), (UINT_PTR)affSub.GetSafeHmenu(),  L"ÉèÖÃ CPU Ç×ºÍĞÔ");
+	pPopup->AppendMenuW(MF_STRING | (hasPid ? 0 : MF_GRAYED), kProcSuspend, L"æš‚åœè¿›ç¨‹");
+	pPopup->AppendMenuW(MF_STRING | (hasPid ? 0 : MF_GRAYED), kProcResume,  L"æ¢å¤è¿›ç¨‹");
+	pPopup->AppendMenuW(MF_POPUP  | (hasPid ? 0 : MF_GRAYED), (UINT_PTR)prioSub.GetSafeHmenu(), L"ä¿®æ”¹ä¼˜å…ˆçº§");
+	pPopup->AppendMenuW(MF_POPUP  | (hasPid ? 0 : MF_GRAYED), (UINT_PTR)affSub.GetSafeHmenu(),  L"è®¾ç½® CPU äº²å’Œæ€§");
 	prioSub.Detach();
 	affSub.Detach();
 	pPopup->AppendMenuW(MF_SEPARATOR, 0, (LPCTSTR)NULL);
-	pPopup->AppendMenuW(MF_STRING | (hasPath ? 0 : MF_GRAYED), kProcHash,   L"¼ÆËã MD5 / SHA1 / SHA256");
-	pPopup->AppendMenuW(MF_STRING | (hasPath ? 0 : MF_GRAYED), kProcVerify, L"¼ì²éÊı×ÖÇ©Ãû");
+	pPopup->AppendMenuW(MF_STRING | (hasPath ? 0 : MF_GRAYED), kProcHash,   L"è®¡ç®— MD5 / SHA1 / SHA256");
+	pPopup->AppendMenuW(MF_STRING | (hasPath ? 0 : MF_GRAYED), kProcVerify, L"æ£€æŸ¥æ•°å­—ç­¾å");
 
 	UINT cmd = pPopup->TrackPopupMenu(TPM_LEFTBUTTON | TPM_RETURNCMD, point.x, point.y, this);
 	if (HandleOpenInExplorerCmd(cmd, explorerCmd, explorerPath))
@@ -199,7 +199,7 @@ void DlgProcess::OnNMRClickControlProcessList(NMHDR* pNMHDR, LRESULT* pResult)
 			GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "NtSuspendProcess");
 		HANDLE h = OpenProc(PROCESS_SUSPEND_RESUME);
 		if (pfn && h) { pfn(h); CloseHandle(h); }
-		else ::MessageBoxW(GetSafeHwnd(), L"ÎŞ·¨´ò¿ª½ø³Ì»ò»ñÈ¡ NtSuspendProcess¡£", L"ÌáÊ¾", MB_OK | MB_ICONWARNING);
+		else ::MessageBoxW(GetSafeHwnd(), L"æ— æ³•æ‰“å¼€è¿›ç¨‹æˆ–è·å– NtSuspendProcessã€‚", L"æç¤º", MB_OK | MB_ICONWARNING);
 		return;
 	}
 	if (cmd == kProcResume && hasPid)
@@ -209,7 +209,7 @@ void DlgProcess::OnNMRClickControlProcessList(NMHDR* pNMHDR, LRESULT* pResult)
 			GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "NtResumeProcess");
 		HANDLE h = OpenProc(PROCESS_SUSPEND_RESUME);
 		if (pfn && h) { pfn(h); CloseHandle(h); }
-		else ::MessageBoxW(GetSafeHwnd(), L"ÎŞ·¨´ò¿ª½ø³Ì»ò»ñÈ¡ NtResumeProcess¡£", L"ÌáÊ¾", MB_OK | MB_ICONWARNING);
+		else ::MessageBoxW(GetSafeHwnd(), L"æ— æ³•æ‰“å¼€è¿›ç¨‹æˆ–è·å– NtResumeProcessã€‚", L"æç¤º", MB_OK | MB_ICONWARNING);
 		return;
 	}
 	if (cmd >= kPrioBase && cmd <= kPrioRealTime && hasPid)
@@ -227,9 +227,9 @@ void DlgProcess::OnNMRClickControlProcessList(NMHDR* pNMHDR, LRESULT* pResult)
 		{
 			BOOL ok = SetPriorityClass(h, prioMap[cmd - kPrioBase]);
 			CloseHandle(h);
-			if (!ok) ::MessageBoxW(GetSafeHwnd(), L"ÉèÖÃÓÅÏÈ¼¶Ê§°Ü¡£", L"ÌáÊ¾", MB_OK | MB_ICONWARNING);
+			if (!ok) ::MessageBoxW(GetSafeHwnd(), L"è®¾ç½®ä¼˜å…ˆçº§å¤±è´¥ã€‚", L"æç¤º", MB_OK | MB_ICONWARNING);
 		}
-		else ::MessageBoxW(GetSafeHwnd(), L"ÎŞ·¨ÒÔ PROCESS_SET_INFORMATION ´ò¿ª½ø³Ì¡£", L"ÌáÊ¾", MB_OK | MB_ICONWARNING);
+		else ::MessageBoxW(GetSafeHwnd(), L"æ— æ³•ä»¥ PROCESS_SET_INFORMATION æ‰“å¼€è¿›ç¨‹ã€‚", L"æç¤º", MB_OK | MB_ICONWARNING);
 		return;
 	}
 	if (cmd >= kAffinityBase && cmd <= kAffinityBase + 8 && hasPid)
@@ -252,9 +252,9 @@ void DlgProcess::OnNMRClickControlProcessList(NMHDR* pNMHDR, LRESULT* pResult)
 		{
 			BOOL ok = SetProcessAffinityMask(h, mask);
 			CloseHandle(h);
-			if (!ok) ::MessageBoxW(GetSafeHwnd(), L"ÉèÖÃÇ×ºÍĞÔÊ§°Ü¡£", L"ÌáÊ¾", MB_OK | MB_ICONWARNING);
+			if (!ok) ::MessageBoxW(GetSafeHwnd(), L"è®¾ç½®äº²å’Œæ€§å¤±è´¥ã€‚", L"æç¤º", MB_OK | MB_ICONWARNING);
 		}
-		else ::MessageBoxW(GetSafeHwnd(), L"ÎŞ·¨ÒÔ PROCESS_SET_INFORMATION ´ò¿ª½ø³Ì¡£", L"ÌáÊ¾", MB_OK | MB_ICONWARNING);
+		else ::MessageBoxW(GetSafeHwnd(), L"æ— æ³•ä»¥ PROCESS_SET_INFORMATION æ‰“å¼€è¿›ç¨‹ã€‚", L"æç¤º", MB_OK | MB_ICONWARNING);
 		return;
 	}
 	if (cmd == kProcHash && hasPath)   { ShowFileHashesDialog(GetSafeHwnd(), procPath); return; }
@@ -280,7 +280,7 @@ void DlgProcess::InsertCtrlListControl(PCProcessInfo Processinfo)
 			PCProcessInfo pProcessInfo = (PCProcessInfo)pList;
 			{
 				////////////////////////////////////////////////////////
-				//»ñÈ¡µ±Ç°ÏµÍ³ÓÃ»§Ãû
+				//è·å–å½“å‰ç³»ç»Ÿç”¨æˆ·å
 				PWCHAR szwHostName = nullptr;
 				DWORD  nHoustLength = 0;
 
@@ -294,7 +294,7 @@ void DlgProcess::InsertCtrlListControl(PCProcessInfo Processinfo)
 				}
 
 				///////////////////////////////////////////////////////////////////////////////
-				//²åÈë½ø³ÌÃû×Ö
+				//æ’å…¥è¿›ç¨‹åå­—
 				WCHAR WImageBaseName[MAX_PATH] = { 0 };
 				PWCHAR CurrentPathName = NULL;
 				PWCHAR CurrentPos = NULL;
@@ -349,28 +349,28 @@ void DlgProcess::InsertCtrlListControl(PCProcessInfo Processinfo)
 			insertdata:
 				m_CListCtrl.InsertItem(i, WImageBaseName);
 				///////////////////////////////////////////////////////////////////////////////
-				//²åÈë½ø³ÌID
+				//æ’å…¥è¿›ç¨‹ID
 				WCHAR str_ID[256] = { 0 };
 				wsprintf(str_ID, L"%d", pProcessInfo->ProcessId);
 				m_CListCtrl.SetItemText(i, um_Process_Id, str_ID);
 				///////////////////////////////////////////////////////////////////////////////
 
 				///////////////////////////////////////////////////////////////////////////////
-				 //²åÈë¸¸½ø³ÌID
+				 //æ’å…¥çˆ¶è¿›ç¨‹ID
 				WCHAR str_PID[256] = { 0 };
 				wsprintf(str_PID, L"%d", pProcessInfo->ParentPId);
 				m_CListCtrl.SetItemText(i, um_Process_ParentId, str_PID);
 				///////////////////////////////////////////////////////////////////////////////
 
 				///////////////////////////////////////////////////////////////////////////////
-				 //²åÈë»á»°ID
+				 //æ’å…¥ä¼šè¯ID
 				WCHAR str_Session[256] = { 0 };
 				wsprintf(str_Session, L"%d", pProcessInfo->Session);
 				m_CListCtrl.SetItemText(i, um_Process_SessionId, str_Session);
 				///////////////////////////////////////////////////////////////////////////////
 
 				///////////////////////////////////////////////////////////////////////////////
-				 //²åÈë½ø³ÌÓÃ»§Ãû
+				 //æ’å…¥è¿›ç¨‹ç”¨æˆ·å
 				if (wmemcmp(szwHostName, pProcessInfo->UserName, nHoustLength + 2) == 0)
 				{
 					m_CListCtrl.SetItemText(i, um_Process_UserName, TEXT("SYSTEM"));
@@ -382,7 +382,7 @@ void DlgProcess::InsertCtrlListControl(PCProcessInfo Processinfo)
 				///////////////////////////////////////////////////////////////////////////////
 
 				///////////////////////////////////////////////////////////////////////////////
-				//²åÈë½ø³ÌËùÔÚÂ·¾¶
+				//æ’å…¥è¿›ç¨‹æ‰€åœ¨è·¯å¾„
 				if (pProcessInfo->FullFileName[0] != 0 && pProcessInfo->FullFileName[1] != 0)
 				{
 					m_CListCtrl.SetItemText(i, um_Process_FilePath, pProcessInfo->FullFileName);
@@ -403,33 +403,33 @@ void DlgProcess::InsertCtrlListControl(PCProcessInfo Processinfo)
 				///////////////////////////////////////////////////////////////////////////////
 
 				///////////////////////////////////////////////////////////////////////////////
-				//²åÈë½ø³ÌEPROCESS
+				//æ’å…¥è¿›ç¨‹EPROCESS
 				WCHAR str_Eprocess[256] = { 0 };
 				wsprintf(str_Eprocess, L"%I64X", (ULONG64)pProcessInfo->Eprocess);
 				m_CListCtrl.SetItemText(i, um_Process_Object, str_Eprocess);
 				///////////////////////////////////////////////////////////////////////////////
 
 				///////////////////////////////////////////////////////////////////////////////
-				//ÅĞ¶ÏÊÇ·ñÊÇÊÜ±£»¤µÄ½ø³Ì
-				m_CListCtrl.SetItemText(i, um_Process_VisitState, (ULONG64)pProcessInfo->IsUserVisit ? TEXT("¾Ü¾ø") : TEXT("--"));
+				//åˆ¤æ–­æ˜¯å¦æ˜¯å—ä¿æŠ¤çš„è¿›ç¨‹
+				m_CListCtrl.SetItemText(i, um_Process_VisitState, (ULONG64)pProcessInfo->IsUserVisit ? TEXT("æ‹’ç»") : TEXT("--"));
 				///////////////////////////////////////////////////////////////////////////////
 
 				///////////////////////////////////////////////////////////////////////////////
-				//²åÈë½ø³ÌÎÄ¼ş³§ÉÌ
+				//æ’å…¥è¿›ç¨‹æ–‡ä»¶å‚å•†
 				CString szDstFileName;
 				m_CListCtrl.SetItemText(i, um_Process_FileFirm, this->GetCompanyName(StrFilePath, szDstFileName) ? (LPWSTR)szDstFileName.GetString() : TEXT("--"));
 				///////////////////////////////////////////////////////////////////////////////
 
 				///////////////////////////////////////////////////////////////////////////////
-				//ÅĞ¶ÏÊÇ·ñÊÇµ÷ÊÔ×´Ì¬
-				m_CListCtrl.SetItemText(i, um_Process_DebugState, pProcessInfo->DebugPort ? TEXT("µ÷ÊÔÖĞ") : TEXT("--"));
+				//åˆ¤æ–­æ˜¯å¦æ˜¯è°ƒè¯•çŠ¶æ€
+				m_CListCtrl.SetItemText(i, um_Process_DebugState, pProcessInfo->DebugPort ? TEXT("è°ƒè¯•ä¸­") : TEXT("--"));
 				///////////////////////////////////////////////////////////////////////////////
 
-				//²åÈë¼Ü¹¹
+				//æ’å…¥æ¶æ„
 				m_CListCtrl.SetItemText(i, um_Process_Architecture, pProcessInfo->Is64Process ? TEXT("x64") : TEXT("x32"));
 
 				///////////////////////////////////////////////////////////////////////////////
-				//²åÈë½ø³Ì´´½¨Ê±¼ä
+				//æ’å…¥è¿›ç¨‹åˆ›å»ºæ—¶é—´
 				WCHAR str_CreateTime[256] = { 0 };
 				wsprintf(str_CreateTime, L"%d/%d/%d--%d:%d:%d:%d",
 					(USHORT)pProcessInfo->CreateTime.Year,
@@ -443,19 +443,19 @@ void DlgProcess::InsertCtrlListControl(PCProcessInfo Processinfo)
 				///////////////////////////////////////////////////////////////////////////////
 
 				///////////////////////////////////////////////////////////////////////////////
-				//²åÈë½ø³ÌÃüÁîĞĞ²ÎÊı
+				//æ’å…¥è¿›ç¨‹å‘½ä»¤è¡Œå‚æ•°
 				m_CListCtrl.SetItemText(i, um_Process_Param, pProcessInfo->CommandLine);
 				///////////////////////////////////////////////////////////////////////////////
 			}
 
-			//»ñÈ¡ÏÂÒ»¸ö½Úµã
+			//è·å–ä¸‹ä¸€ä¸ªèŠ‚ç‚¹
 			pList = pList->Blink;
 			i++;
-			//ÊÍ·Åµ±Ç°¿Õ¼ä
+			//é‡Šæ”¾å½“å‰ç©ºé—´
 			SIZE_T FreeSize = 0;
 			if (MyNtFreeVirtualMemory(GetCurrentProcess(), (LPVOID*)&pProcessInfo, &FreeSize, MEM_RELEASE) != 0)
 			{
-				AfxMessageBox(L"ÊÍ·Å¿Õ¼äÊ§°Ü!");
+				AfxMessageBox(L"é‡Šæ”¾ç©ºé—´å¤±è´¥!");
 			}
 
 		} while (pList != NULL && pList != &Processinfo->HandleInfo.List.List);
@@ -464,7 +464,7 @@ void DlgProcess::InsertCtrlListControl(PCProcessInfo Processinfo)
 
 void DlgProcess::OnDriverRefresh()
 {
-	// TODO: ÔÚ´ËÌí¼ÓÃüÁî´¦Àí³ÌĞò´úÂë
+	// TODO: åœ¨æ­¤æ·»åŠ å‘½ä»¤å¤„ç†ç¨‹åºä»£ç 
 	m_CListCtrl.DeleteAllItems();
 
 	g_ThreadPool.AddTask(new _CThreadPack{ _LoadDriver::Um_UserCallBackType_UserEnumProcessInfo, this });
@@ -472,34 +472,34 @@ void DlgProcess::OnDriverRefresh()
 
 void DlgProcess::OnProcessVad()
 {
-	POSITION pos = m_CListCtrl.GetFirstSelectedItemPosition() - 1;//»ñÈ¡Ñ¡ÖĞĞĞµÄĞĞÊı  pos = ĞĞÊı - 1
+	POSITION pos = m_CListCtrl.GetFirstSelectedItemPosition() - 1;//è·å–é€‰ä¸­è¡Œçš„è¡Œæ•°  pos = è¡Œæ•° - 1
 
 	DlgProcessVad Dlg(m_CListCtrl.GetItemText((int)pos, um_Process_Object),
 		m_CListCtrl.GetItemText((int)pos, um_Process_Name),
-		m_CListCtrl.GetItemText((int)pos, um_Process_Architecture));//ÉèÖÃEPROCESSSºÍ½ø³ÌÃû»¹ÓĞ¼Ü¹¹
+		m_CListCtrl.GetItemText((int)pos, um_Process_Architecture));//è®¾ç½®EPROCESSSå’Œè¿›ç¨‹åè¿˜æœ‰æ¶æ„
 
 	Dlg.DoModal();
 }
 
 void DlgProcess::OnProcessHandle()
 {
-	POSITION pos = m_CListCtrl.GetFirstSelectedItemPosition() - 1;//»ñÈ¡Ñ¡ÖĞĞĞµÄĞĞÊı  pos = ĞĞÊı - 1
-	DlgProcessHandle Dlg(m_CListCtrl.GetItemText((int)pos, um_Process_Object), m_CListCtrl.GetItemText((int)pos, um_Process_Name));//ÉèÖÃEPROCESSSºÍ½ø³ÌÃû
+	POSITION pos = m_CListCtrl.GetFirstSelectedItemPosition() - 1;//è·å–é€‰ä¸­è¡Œçš„è¡Œæ•°  pos = è¡Œæ•° - 1
+	DlgProcessHandle Dlg(m_CListCtrl.GetItemText((int)pos, um_Process_Object), m_CListCtrl.GetItemText((int)pos, um_Process_Name));//è®¾ç½®EPROCESSSå’Œè¿›ç¨‹å
 	Dlg.DoModal();
 }
 
 void DlgProcess::OnProcessThread()
 {
-	POSITION pos = m_CListCtrl.GetFirstSelectedItemPosition() - 1;//»ñÈ¡Ñ¡ÖĞĞĞµÄĞĞÊı  pos = ĞĞÊı - 1
-	DlgProcessThread Dlg(m_CListCtrl.GetItemText((int)pos, um_Process_Object), m_CListCtrl.GetItemText((int)pos, um_Process_Name));//ÉèÖÃEPROCESSSºÍ½ø³ÌÃû
+	POSITION pos = m_CListCtrl.GetFirstSelectedItemPosition() - 1;//è·å–é€‰ä¸­è¡Œçš„è¡Œæ•°  pos = è¡Œæ•° - 1
+	DlgProcessThread Dlg(m_CListCtrl.GetItemText((int)pos, um_Process_Object), m_CListCtrl.GetItemText((int)pos, um_Process_Name));//è®¾ç½®EPROCESSSå’Œè¿›ç¨‹å
 	Dlg.DoModal();
 
 }
 
 void DlgProcess::OnProcessModule()
 {
-	POSITION pos = m_CListCtrl.GetFirstSelectedItemPosition() - 1;//»ñÈ¡Ñ¡ÖĞĞĞµÄĞĞÊı  pos = ĞĞÊı - 1
-	DlgProcessModule Dlg(m_CListCtrl.GetItemText((int)pos, um_Process_Object), m_CListCtrl.GetItemText((int)pos, um_Process_Name));//ÉèÖÃEPROCESSSºÍ½ø³ÌÃû
+	POSITION pos = m_CListCtrl.GetFirstSelectedItemPosition() - 1;//è·å–é€‰ä¸­è¡Œçš„è¡Œæ•°  pos = è¡Œæ•° - 1
+	DlgProcessModule Dlg(m_CListCtrl.GetItemText((int)pos, um_Process_Object), m_CListCtrl.GetItemText((int)pos, um_Process_Name));//è®¾ç½®EPROCESSSå’Œè¿›ç¨‹å
 	Dlg.DoModal();
 }
 
@@ -565,7 +565,7 @@ void DlgProcess::OnProcessMenuCopyParam()
 
 void DlgProcess::OnProcessMenuCopyOpenfile()
 {
-	POSITION pos = m_CListCtrl.GetFirstSelectedItemPosition();//»ñÈ¡Ñ¡ÖĞĞĞµÄĞĞÊı  pos = ĞĞÊı - 1
+	POSITION pos = m_CListCtrl.GetFirstSelectedItemPosition();//è·å–é€‰ä¸­è¡Œçš„è¡Œæ•°  pos = è¡Œæ•° - 1
 	int index = (int)pos - 1;
 	do
 	{
@@ -575,9 +575,9 @@ void DlgProcess::OnProcessMenuCopyOpenfile()
 		wcscat_s(FilePath, MAX_PATH, w_str.GetBuffer());
 		if ((int)ShellExecute(NULL, L"open", L"explorer.exe", FilePath, NULL, SW_SHOWNORMAL) < 32)
 		{
-			MessageBoxW(_T("ÎÄ¼ş²»´æÔÚ»òÒÑ±»É¾³ı!"), MB_OK);
+			MessageBoxW(_T("æ–‡ä»¶ä¸å­˜åœ¨æˆ–å·²è¢«åˆ é™¤!"), MB_OK);
 		}
-		w_str.ReleaseBuffer();//ÊÍ·ÅÄÚ´æ
+		w_str.ReleaseBuffer();//é‡Šæ”¾å†…å­˜
 
 		index = m_CListCtrl.GetNextSelectedItem(pos) + 1;
 	} while (pos);
@@ -585,10 +585,10 @@ void DlgProcess::OnProcessMenuCopyOpenfile()
 
 void DlgProcess::OnProcessMenuCopyAttribute()
 {
-	// TODO: ÔÚ´ËÌí¼ÓÃüÁî´¦Àí³ÌĞò´úÂë
+	// TODO: åœ¨æ­¤æ·»åŠ å‘½ä»¤å¤„ç†ç¨‹åºä»£ç 
 	//WCHAR filePath[MAX_PATH] = { 0 };
 
-	POSITION pos = m_CListCtrl.GetFirstSelectedItemPosition() - 1;//»ñÈ¡Ñ¡ÖĞĞĞµÄĞĞÊı  pos = ĞĞÊı - 1
+	POSITION pos = m_CListCtrl.GetFirstSelectedItemPosition() - 1;//è·å–é€‰ä¸­è¡Œçš„è¡Œæ•°  pos = è¡Œæ•° - 1
 	CString FilePath = m_CListCtrl.GetItemText((int)pos, 5);
 	SHELLEXECUTEINFOW info = { 0 };
 	info.cbSize = sizeof info;
@@ -601,10 +601,10 @@ void DlgProcess::OnProcessMenuCopyAttribute()
 	switch (ShellExecuteExW(&info))
 	{
 	case SE_ERR_FNF:
-		MessageBox(TEXT("ÕÒ²»µ½ÎÄ¼ş"), NULL, MB_OK | MB_ICONERROR);
+		MessageBox(TEXT("æ‰¾ä¸åˆ°æ–‡ä»¶"), NULL, MB_OK | MB_ICONERROR);
 		break;
 	case SE_ERR_PNF:
-		MessageBox(TEXT("ÕÒ²»µ½Â·¾¶"), NULL, MB_OK | MB_ICONERROR);
+		MessageBox(TEXT("æ‰¾ä¸åˆ°è·¯å¾„"), NULL, MB_OK | MB_ICONERROR);
 		break;
 	}
 }
@@ -617,29 +617,29 @@ void DlgProcess::OnProcessKillprocess()
 
 void DlgProcess::ProcessKillprocess()
 {
-	POSITION FristIndex = m_CListCtrl.GetFirstSelectedItemPosition();//»ñÈ¡Ñ¡ÖĞĞĞµÄĞĞÊı  pos = ĞĞÊı - 1
-	int TempIndex = (int)FristIndex - 1;//´æ´¢µÚÒ»´ÎµÄË÷ÒıÎ»ÖÃ
+	POSITION FristIndex = m_CListCtrl.GetFirstSelectedItemPosition();//è·å–é€‰ä¸­è¡Œçš„è¡Œæ•°  pos = è¡Œæ•° - 1
+	int TempIndex = (int)FristIndex - 1;//å­˜å‚¨ç¬¬ä¸€æ¬¡çš„ç´¢å¼•ä½ç½®
 
 	CString Eprocess = m_CListCtrl.GetItemText(TempIndex, um_Process_Object);
 
-	//::MessageBoxW(NULL, Eprocess, L"ÌáÊ¾", MB_OK);
+	//::MessageBoxW(NULL, Eprocess, L"æç¤º", MB_OK);
 	ULONG64 dqRet = g_LoadDriver.SendMsg(um_Cmd_KillProcess_info, (PVOID)_wcstoui64(Eprocess.GetBuffer(), 0, 16), NULL);
 	if (dqRet == 0)
 	{
-		::MessageBoxW(NULL, L"Ç¿ÖÆ½áÊø½ø³Ì³É¹¦!", L"ÌáÊ¾", MB_OK);
+		::MessageBoxW(NULL, L"å¼ºåˆ¶ç»“æŸè¿›ç¨‹æˆåŠŸ!", L"æç¤º", MB_OK);
 	}
 	else
 	{
-		::MessageBoxW(NULL, L"Ç¿ÖÆ½áÊø½ø³ÌÊ§°Ü!", L"ÌáÊ¾", MB_OK);
+		::MessageBoxW(NULL, L"å¼ºåˆ¶ç»“æŸè¿›ç¨‹å¤±è´¥!", L"æç¤º", MB_OK);
 	}
 }
 
 void DlgProcess::OnProcessClearProtection()
 {
-	// TODO: ÔÚ´ËÌí¼ÓÃüÁî´¦Àí³ÌĞò´úÂë
+	// TODO: åœ¨æ­¤æ·»åŠ å‘½ä»¤å¤„ç†ç¨‹åºä»£ç 
 
-	POSITION FristIndex = m_CListCtrl.GetFirstSelectedItemPosition();//»ñÈ¡Ñ¡ÖĞĞĞµÄĞĞÊı  pos = ĞĞÊı - 1
-	int TempIndex = (int)FristIndex - 1;//´æ´¢µÚÒ»´ÎµÄË÷ÒıÎ»ÖÃ
+	POSITION FristIndex = m_CListCtrl.GetFirstSelectedItemPosition();//è·å–é€‰ä¸­è¡Œçš„è¡Œæ•°  pos = è¡Œæ•° - 1
+	int TempIndex = (int)FristIndex - 1;//å­˜å‚¨ç¬¬ä¸€æ¬¡çš„ç´¢å¼•ä½ç½®
 
 	CString Eprocess = m_CListCtrl.GetItemText(TempIndex, um_Process_Object);
 
@@ -652,10 +652,10 @@ void DlgProcess::OnProcessClearProtection()
 
 void DlgProcess::OnProcessPpl()
 {
-	// TODO: ÔÚ´ËÌí¼ÓÃüÁî´¦Àí³ÌĞò´úÂë
+	// TODO: åœ¨æ­¤æ·»åŠ å‘½ä»¤å¤„ç†ç¨‹åºä»£ç 
 
-	POSITION FristIndex = m_CListCtrl.GetFirstSelectedItemPosition();//»ñÈ¡Ñ¡ÖĞĞĞµÄĞĞÊı  pos = ĞĞÊı - 1
-	int TempIndex = (int)FristIndex - 1;//´æ´¢µÚÒ»´ÎµÄË÷ÒıÎ»ÖÃ
+	POSITION FristIndex = m_CListCtrl.GetFirstSelectedItemPosition();//è·å–é€‰ä¸­è¡Œçš„è¡Œæ•°  pos = è¡Œæ•° - 1
+	int TempIndex = (int)FristIndex - 1;//å­˜å‚¨ç¬¬ä¸€æ¬¡çš„ç´¢å¼•ä½ç½®
 
 	CString Eprocess = m_CListCtrl.GetItemText(TempIndex, um_Process_Object);
 
@@ -671,8 +671,8 @@ void DlgProcess::OnProcessPpl()
 void DlgProcess::OnProcessPp()
 {
 
-	POSITION FristIndex = m_CListCtrl.GetFirstSelectedItemPosition();//»ñÈ¡Ñ¡ÖĞĞĞµÄĞĞÊı  pos = ĞĞÊı - 1
-	int TempIndex = (int)FristIndex - 1;//´æ´¢µÚÒ»´ÎµÄË÷ÒıÎ»ÖÃ
+	POSITION FristIndex = m_CListCtrl.GetFirstSelectedItemPosition();//è·å–é€‰ä¸­è¡Œçš„è¡Œæ•°  pos = è¡Œæ•° - 1
+	int TempIndex = (int)FristIndex - 1;//å­˜å‚¨ç¬¬ä¸€æ¬¡çš„ç´¢å¼•ä½ç½®
 
 	CString Eprocess = m_CListCtrl.GetItemText(TempIndex, um_Process_Object);
 
@@ -688,8 +688,8 @@ void DlgProcess::OnProcessPp()
 void DlgProcess::OnProcessNp()
 {
 
-	POSITION FristIndex = m_CListCtrl.GetFirstSelectedItemPosition();//»ñÈ¡Ñ¡ÖĞĞĞµÄĞĞÊı  pos = ĞĞÊı - 1
-	int TempIndex = (int)FristIndex - 1;//´æ´¢µÚÒ»´ÎµÄË÷ÒıÎ»ÖÃ
+	POSITION FristIndex = m_CListCtrl.GetFirstSelectedItemPosition();//è·å–é€‰ä¸­è¡Œçš„è¡Œæ•°  pos = è¡Œæ•° - 1
+	int TempIndex = (int)FristIndex - 1;//å­˜å‚¨ç¬¬ä¸€æ¬¡çš„ç´¢å¼•ä½ç½®
 
 	CString Eprocess = m_CListCtrl.GetItemText(TempIndex, um_Process_Object);
 

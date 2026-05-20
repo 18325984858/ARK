@@ -1,4 +1,4 @@
-// DlgEnumRegistry.cpp: ÊµÏÖÎÄ¼ş
+ï»¿// DlgEnumRegistry.cpp: å®ç°æ–‡ä»¶
 //
 #define _CRT_NON_CONFORMING_SWPRINTFS
 #include "pch.h"
@@ -7,7 +7,7 @@
 #include "DlgEnumRegistry.h"
 #include "Thread.h"
 
-// DlgEnumRegistry ¶Ô»°¿ò
+// DlgEnumRegistry å¯¹è¯æ¡†
 
 IMPLEMENT_DYNAMIC(DlgEnumRegistry, CDialogEx)
 
@@ -33,7 +33,7 @@ BEGIN_MESSAGE_MAP(DlgEnumRegistry, CDialogEx)
 	ON_NOTIFY(NM_DBLCLK, ID_ENUMREGSITRY_TREE, &DlgEnumRegistry::OnNMDblclkEnumregsitryTree)
 END_MESSAGE_MAP()
 
-// DlgEnumRegistry ÏûÏ¢´¦Àí³ÌĞò
+// DlgEnumRegistry æ¶ˆæ¯å¤„ç†ç¨‹åº
 
 void DlgEnumRegistry::OnSize(UINT nType, int cx, int cy)
 {
@@ -47,7 +47,7 @@ void DlgEnumRegistry::OnSize(UINT nType, int cx, int cy)
 	m_CTreeCtrl.SetWindowPos(NULL, 0, 0, fwidth, rect.Height(), SWP_NOZORDER);
 	m_CListCtrl.SetWindowPos(NULL, fwidth, 0, rect.Width() - fwidth, rect.Height(), SWP_NOZORDER);
 
-	// TODO: ÔÚ´Ë´¦Ìí¼ÓÏûÏ¢´¦Àí³ÌĞò´úÂë
+	// TODO: åœ¨æ­¤å¤„æ·»åŠ æ¶ˆæ¯å¤„ç†ç¨‹åºä»£ç 
 }
 
 BOOL DlgEnumRegistry::OnInitDialog()
@@ -57,12 +57,12 @@ BOOL DlgEnumRegistry::OnInitDialog()
 	InitControl();
 
 	return TRUE;  // return TRUE unless you set the focus to a control
-	// Òì³£: OCX ÊôĞÔÒ³Ó¦·µ»Ø FALSE
+	// å¼‚å¸¸: OCX å±æ€§é¡µåº”è¿”å› FALSE
 }
 
 ULONG64 DlgEnumRegistry::InitControl()
 {
-	//³õÊ¼»¯Tree¿Ø¼ş
+	//åˆå§‹åŒ–Treeæ§ä»¶
 	m_CTreeCtrl.SetExtendedStyle(m_CTreeCtrl.GetExtendedStyle() | TVS_FULLROWSELECT | TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_SHOWSELALWAYS, m_CTreeCtrl.GetExtendedStyle() | TVS_FULLROWSELECT | TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_SHOWSELALWAYS);
 
 	CString TreeValue[] = { L"\\Registry\\Machine\\",L"\\Registry\\User\\" };
@@ -76,7 +76,7 @@ ULONG64 DlgEnumRegistry::InitControl()
 	}
 
 	m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
-	CString ListTitle[] = { L"Ãû³Æ",L"ÀàĞÍ",L"Êı¾İ" };
+	CString ListTitle[] = { L"åç§°",L"ç±»å‹",L"æ•°æ®" };
 	for (int i = 0; i < sizeof(ListTitle) / sizeof(CString); i++)
 	{
 		m_CListCtrl.InsertColumn(i, ListTitle[i]);
@@ -87,44 +87,44 @@ ULONG64 DlgEnumRegistry::InitControl()
 
 void DlgEnumRegistry::DelTreeChild(HTREEITEM pNode)
 {
-	auto CurrentChild = m_CTreeCtrl.GetChildItem(pNode); /*»ñÈ¡×Ó¼¯*/
+	auto CurrentChild = m_CTreeCtrl.GetChildItem(pNode); /*è·å–å­é›†*/
 
 	while (CurrentChild != NULL)
 	{
-		/*»ñÈ¡°ó¶¨µÄÊı¾İ,²¢ÊÍ·Å¿Õ¼ä*/
+		/*è·å–ç»‘å®šçš„æ•°æ®,å¹¶é‡Šæ”¾ç©ºé—´*/
 		CString* pStr = (CString*)m_CTreeCtrl.GetItemData(CurrentChild);
 
 		if (pStr != NULL)
 		{
-			delete pStr; //ÊÍ·Å¿ª±ÙµÄ¿Õ¼ä
+			delete pStr; //é‡Šæ”¾å¼€è¾Ÿçš„ç©ºé—´
 		}
 
-		/*±¸·İÒªÉ¾³ıµÄÎ»ÖÃ*/
+		/*å¤‡ä»½è¦åˆ é™¤çš„ä½ç½®*/
 		auto Del = CurrentChild;
 
-		/*»ñÈ¡ÏÂÒ»¸öÍ¬¼¶µÄÊı¾İ*/
+		/*è·å–ä¸‹ä¸€ä¸ªåŒçº§çš„æ•°æ®*/
 		CurrentChild = m_CTreeCtrl.GetNextSiblingItem(CurrentChild);
 
-		/*É¾³ı*/
+		/*åˆ é™¤*/
 		m_CTreeCtrl.DeleteItem(Del);
 	}
 }
 
 void DlgEnumRegistry::InsertCtrlListControl()
 {
-	//»ñÈ¡Ñ¡ÔñµÄÏî
+	//è·å–é€‰æ‹©çš„é¡¹
 	auto hSelectItem = m_CTreeCtrl.GetSelectedItem();
 
-	//»ñÈ¡°ó¶¨µÄÊı¾İ
+	//è·å–ç»‘å®šçš„æ•°æ®
 	CString* pStr = (CString*)m_CTreeCtrl.GetItemData(hSelectItem);
 
 	CString strtmp = pStr->GetString();
-	//ÅĞ¶ÏÊÇ·ñÊÇÄ¿Â¼²»ÊÇ·µ»Ø
+	//åˆ¤æ–­æ˜¯å¦æ˜¯ç›®å½•ä¸æ˜¯è¿”å›
 
-	DelTreeChild(hSelectItem);/*É¾³ıµ±Ç°Ñ¡Ôñ½ÚµãµÄËùÓĞº¢×Ó*/
-	m_CListCtrl.DeleteAllItems();//É¾³ıÈ«²¿Êı¾İ
+	DelTreeChild(hSelectItem);/*åˆ é™¤å½“å‰é€‰æ‹©èŠ‚ç‚¹çš„æ‰€æœ‰å­©å­*/
+	m_CListCtrl.DeleteAllItems();//åˆ é™¤å…¨éƒ¨æ•°æ®
 
-	//·¢ËÍÏûÏ¢
+	//å‘é€æ¶ˆæ¯
 	PCRegistryInfo pRegistryInfo = NULL;
 	g_LoadDriver.SendMsg(um_Cmd_Enum_Registry_info, strtmp.GetBuffer(), (PVOID64*)&pRegistryInfo);
 
@@ -146,13 +146,13 @@ void DlgEnumRegistry::InsertCtrlListControl()
 
 		if (pCurRegistryInfo->nType == 0)
 		{
-			//0Îª _KeyInfo½á¹¹
+			//0ä¸º _KeyInfoç»“æ„
 			//CRegistryInfo::Reserve1::_KeyInfo* pKey = (CRegistryInfo::Reserve1::_KeyInfo*)((ULONG64)pCurRegistryInfo + sizeof(CLIST_ENTRY) + (sizeof(ULONG64) * 2));
-			//²åÈëµ½TreeÖĞ
+			//æ’å…¥åˆ°Treeä¸­
 
-						//Ä¿Â¼²åÈëµ½Tree¿Ø¼şÖĞ
+						//ç›®å½•æ’å…¥åˆ°Treeæ§ä»¶ä¸­
 			CString* pNewFilePath = new CString();
-			//Æ´½Ó×Ö·û´®  
+			//æ‹¼æ¥å­—ç¬¦ä¸²  
 			pNewFilePath->Format(L"%ws%ws\\", strtmp.GetBuffer(), pCurRegistryInfo->KeyName);
 
 			TVINSERTSTRUCTW tvInsertTree = { 0 };
@@ -165,18 +165,18 @@ void DlgEnumRegistry::InsertCtrlListControl()
 			tvInsertTree.itemex.cChildren = 1;
 
 			auto hCurrentItem = m_CTreeCtrl.InsertItem(&tvInsertTree);
-			/*ÉèÖÃÓëµ±Ç°ĞĞ°ó¶¨µÄÊı¾İ*/
+			/*è®¾ç½®ä¸å½“å‰è¡Œç»‘å®šçš„æ•°æ®*/
 			m_CTreeCtrl.SetItemData(hCurrentItem, (DWORD_PTR)pNewFilePath);
 		}
 		else
 		{
-			//1Îª _ValueInfo½á¹¹
+			//1ä¸º _ValueInfoç»“æ„
 			//CRegistryInfo::Reserve1::_ValueInfo* pValue = (CRegistryInfo::Reserve1::_ValueInfo*)((ULONG64)pCurRegistryInfo + sizeof(CLIST_ENTRY) + (sizeof(ULONG64) * 2));
-			//²åÈëµ½List¿Ø¼şÖĞ
+			//æ’å…¥åˆ°Listæ§ä»¶ä¸­
 
 			if (pCurRegistryInfo->ValueName[0] == 0 && pCurRegistryInfo->ValueName[1] == 0)
 			{
-				m_CListCtrl.InsertItem(0, L"Ä¬ÈÏ");
+				m_CListCtrl.InsertItem(0, L"é»˜è®¤");
 			}
 			else
 			{
@@ -218,7 +218,7 @@ void DlgEnumRegistry::InsertCtrlListControl()
 				break;
 
 			default:
-				m_CListCtrl.SetItemText(0, 1, L"ÆäËü");
+				m_CListCtrl.SetItemText(0, 1, L"å…¶å®ƒ");
 				for (int i = 0; i < sizeof(pCurRegistryInfo->ValueData); i++)
 				{
 					if (pCurRegistryInfo->ValueData[i] == 0)
@@ -234,24 +234,24 @@ void DlgEnumRegistry::InsertCtrlListControl()
 		pCurList = pCurList->Flink;
 		if (MyNtFreeVirtualMemory(GetCurrentProcess(), (LPVOID*)&pCurRegistryInfo, &FreeSize, MEM_RELEASE) != 0)
 		{
-			AfxMessageBox(L"ÊÍ·Å¿Õ¼äÊ§°Ü!");
+			AfxMessageBox(L"é‡Šæ”¾ç©ºé—´å¤±è´¥!");
 		}
 	} while (pCurList != &pRegistryInfo->List);
 }
 
 void DlgEnumRegistry::OnNMDblclkEnumregsitryTree(NMHDR* pNMHDR, LRESULT* pResult)
 {
-	// TODO: ÔÚ´ËÌí¼Ó¿Ø¼şÍ¨Öª´¦Àí³ÌĞò´úÂë
+	// TODO: åœ¨æ­¤æ·»åŠ æ§ä»¶é€šçŸ¥å¤„ç†ç¨‹åºä»£ç 
 	*pResult = 0;
 
-	//»ñÈ¡Ñ¡ÔñµÄÏî
+	//è·å–é€‰æ‹©çš„é¡¹
 	auto hSelectItem = m_CTreeCtrl.GetSelectedItem();
-	if (hSelectItem == NULL) //µ±Ã»ÓĞ°ó¶¨µÄÊı¾İÊ±·µ»Ø 
+	if (hSelectItem == NULL) //å½“æ²¡æœ‰ç»‘å®šçš„æ•°æ®æ—¶è¿”å› 
 	{
 		return;
 	}
 
-	//»ñÈ¡°ó¶¨µÄÊı¾İ
+	//è·å–ç»‘å®šçš„æ•°æ®
 	CString* pStr = (CString*)m_CTreeCtrl.GetItemData(hSelectItem);
 	if (pStr == NULL)
 	{
@@ -259,7 +259,7 @@ void DlgEnumRegistry::OnNMDblclkEnumregsitryTree(NMHDR* pNMHDR, LRESULT* pResult
 	}
 
 	CString strtmp = pStr->GetString();
-	//ÅĞ¶ÏÊÇ·ñÊÇÄ¿Â¼²»ÊÇ·µ»Ø
+	//åˆ¤æ–­æ˜¯å¦æ˜¯ç›®å½•ä¸æ˜¯è¿”å›
 	if (strtmp[strtmp.GetLength() - 1] != TEXT('\\'))
 	{
 		return;

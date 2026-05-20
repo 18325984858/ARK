@@ -1,4 +1,4 @@
-// DlgGdt.cpp: ÊµÏÖÎÄ¼ş
+ï»¿// DlgGdt.cpp: å®ç°æ–‡ä»¶
 //
 
 #include "pch.h"
@@ -7,7 +7,7 @@
 #include "DlgGdt.h"
 #include "Thread.h"
 
-// DlgGdt ¶Ô»°¿ò
+// DlgGdt å¯¹è¯æ¡†
 
 IMPLEMENT_DYNAMIC(DlgGdt, CDialogEx)
 
@@ -33,7 +33,7 @@ BEGIN_MESSAGE_MAP(DlgGdt, CDialogEx)
 	ON_NOTIFY(NM_RCLICK, ID_GDT_LIST, &DlgGdt::OnNMRClickGdtList)
 END_MESSAGE_MAP()
 
-// DlgGdt ÏûÏ¢´¦Àí³ÌĞò
+// DlgGdt æ¶ˆæ¯å¤„ç†ç¨‹åº
 
 void DlgGdt::OnSize(UINT nType, int cx, int cy)
 {
@@ -52,12 +52,12 @@ BOOL DlgGdt::OnInitDialog()
 	m_CListCtrl.InsertColumn(um_Gdt_CpuId, _T("CPU"), LVCFMT_LEFT, 50);
 	m_CListCtrl.InsertColumn(um_Gdt_GdtBase, _T("GDTBase"), LVCFMT_LEFT, 120);
 	m_CListCtrl.InsertColumn(um_Gdt_GdtTlimit, _T("GDTTlimit"), LVCFMT_LEFT, 75);
-	m_CListCtrl.InsertColumn(um_Gdt_Index, _T("Ë÷Òı"), LVCFMT_LEFT, 50);
-	m_CListCtrl.InsertColumn(um_Gdt_Base, _T("»ùÖ·"), LVCFMT_LEFT, 120);
-	m_CListCtrl.InsertColumn(um_Gdt_Tlimit, _T("±ß½ç"), LVCFMT_LEFT, 120);
-	m_CListCtrl.InsertColumn(um_Gdt_Granule, _T("¿ÅÁ£"), LVCFMT_LEFT, 75);
-	m_CListCtrl.InsertColumn(um_Gdt_Level, _T("ÌØÈ¨¼¶"), LVCFMT_LEFT, 50);
-	m_CListCtrl.InsertColumn(um_Gdt_Type, _T("ÀàĞÍ"), LVCFMT_LEFT, 250);
+	m_CListCtrl.InsertColumn(um_Gdt_Index, _T("ç´¢å¼•"), LVCFMT_LEFT, 50);
+	m_CListCtrl.InsertColumn(um_Gdt_Base, _T("åŸºå€"), LVCFMT_LEFT, 120);
+	m_CListCtrl.InsertColumn(um_Gdt_Tlimit, _T("è¾¹ç•Œ"), LVCFMT_LEFT, 120);
+	m_CListCtrl.InsertColumn(um_Gdt_Granule, _T("é¢—ç²’"), LVCFMT_LEFT, 75);
+	m_CListCtrl.InsertColumn(um_Gdt_Level, _T("ç‰¹æƒçº§"), LVCFMT_LEFT, 50);
+	m_CListCtrl.InsertColumn(um_Gdt_Type, _T("ç±»å‹"), LVCFMT_LEFT, 250);
 	m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 
 	//OnGdtRefresh();
@@ -72,7 +72,7 @@ void DlgGdt::InsertCtrlListControl(PCGdtInfo pGdtInfo)
 		return;
 	}
 
-	//´úÂëÊı¾İ¶Î
+	//ä»£ç æ•°æ®æ®µ
 	CString SegmentDataCode[] = {
 		L"Data - Read-Only",
 		L"Data - Read-Only,accessed",
@@ -146,19 +146,19 @@ void DlgGdt::InsertCtrlListControl(PCGdtInfo pGdtInfo)
 		int InsertIndex = m_CListCtrl.GetItemCount();
 
 		CString StrBuf;
-		//²åÈëCPUID
+		//æ’å…¥CPUID
 		StrBuf.Format(L"%d", pCurGdtInfo->nCpuId);
 		m_CListCtrl.InsertItem(InsertIndex, StrBuf);
 
-		//²åÈëGdtBase
+		//æ’å…¥GdtBase
 		StrBuf.Format(L"%016I64X", pCurGdtInfo->GdtBase);
 		m_CListCtrl.SetItemText(InsertIndex, um_Gdt_GdtBase, StrBuf);
 
-		//²åÈëGdtTlimit
+		//æ’å…¥GdtTlimit
 		//StrBuf.Format(L"%d", pCurGdtInfo->);
 		//m_CListCtrl.SetItemText(m_CListCtrl.GetItemCount(), um_Gdt_GdtTlimit, StrBuf);
 
-		//²åÈëË÷Òı
+		//æ’å…¥ç´¢å¼•
 		StrBuf.Format(L"%d", pCurGdtInfo->nIndex);
 		m_CListCtrl.SetItemText(InsertIndex, um_Gdt_Index, StrBuf);
 
@@ -166,7 +166,7 @@ void DlgGdt::InsertCtrlListControl(PCGdtInfo pGdtInfo)
 		CString Tlimit;
 		CString Granule;
 
-		//ÅĞ¶ÏÊÇ·ñÊÇ64Î»¶Î
+		//åˆ¤æ–­æ˜¯å¦æ˜¯64ä½æ®µ
 		if (pCurGdtInfo->Is64Segment == TRUE)
 		{
 			ULONG64 dqBaseAddr = pCurGdtInfo->GdtData1.dwBaseAddr;
@@ -207,30 +207,30 @@ void DlgGdt::InsertCtrlListControl(PCGdtInfo pGdtInfo)
 				Granule = L"BYTE";
 			}
 		}
-		//µØÖ·
+		//åœ°å€
 		m_CListCtrl.SetItemText(InsertIndex, um_Gdt_Base, BaseAddr);
 
-		//¶Î±ß½ç
+		//æ®µè¾¹ç•Œ
 		m_CListCtrl.SetItemText(InsertIndex, um_Gdt_Tlimit, Tlimit);
 
-		//¿ÅÁ£
+		//é¢—ç²’
 		m_CListCtrl.SetItemText(InsertIndex, um_Gdt_Granule, Granule);
 
-		//²åÈëÌØÈ¨¼¶
+		//æ’å…¥ç‰¹æƒçº§
 		StrBuf.Format(L"%d", pCurGdtInfo->GdtData.Dpl);
 		m_CListCtrl.SetItemText(InsertIndex, um_Gdt_Level, StrBuf);
 
-		//ÀàĞÍ
+		//ç±»å‹
 		if (pCurGdtInfo->GdtData.S)
 		{
-			//´úÂë¶Î Êı¾İ¶Î
+			//ä»£ç æ®µ æ•°æ®æ®µ
 			m_CListCtrl.SetItemText(InsertIndex, um_Gdt_Type, SegmentDataCode[pCurGdtInfo->GdtData.Type]);
 		}
 		else
 		{
 			m_CListCtrl.SetItemText(InsertIndex, um_Gdt_Type, SystemSegment64[pCurGdtInfo->GdtData.Type]);
 
-			////ÏµÍ³¶Î
+			////ç³»ç»Ÿæ®µ
 			//if (pCurGdtInfo->GdtData.L == 1)
 			//{
 			//	m_CListCtrl.SetItemText(InsertIndex, um_Gdt_Type, SystemSegment64[pCurGdtInfo->GdtData.Type]);
@@ -244,7 +244,7 @@ void DlgGdt::InsertCtrlListControl(PCGdtInfo pGdtInfo)
 		pCurList = pCurList->Blink;
 		if (MyNtFreeVirtualMemory(GetCurrentProcess(), (LPVOID*)&pCurGdtInfo, &FreeSize, MEM_RELEASE) != 0)
 		{
-			AfxMessageBox(L"ÊÍ·Å¿Õ¼äÊ§°Ü!");
+			AfxMessageBox(L"é‡Šæ”¾ç©ºé—´å¤±è´¥!");
 		}
 	} while (pCurList != &pGdtInfo->List);
 }

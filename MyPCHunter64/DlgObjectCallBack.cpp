@@ -1,4 +1,4 @@
-// DlgObjectCallBack.cpp: ÊµÏÖÎÄ¼ş
+ï»¿// DlgObjectCallBack.cpp: å®ç°æ–‡ä»¶
 //
 
 #include "pch.h"
@@ -9,13 +9,13 @@
 #include "PdbResolver.h"
 #include "resource.h"
 
-// DlgObjectCallBack ¶Ô»°¿ò
+// DlgObjectCallBack å¯¹è¯æ¡†
 
 IMPLEMENT_DYNAMIC(DlgObjectCallBack, CDialogEx)
 
 DlgObjectCallBack::DlgObjectCallBack(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(ID_DLG_KERNEL_OBJECTCALLBACK, pParent)
-	, m_RootTitle(L"¶ÔÏóÀàĞÍ»Øµ÷")
+	, m_RootTitle(L"å¯¹è±¡ç±»å‹å›è°ƒ")
 {
 
 }
@@ -38,7 +38,7 @@ BEGIN_MESSAGE_MAP(DlgObjectCallBack, CDialogEx)
 	ON_NOTIFY(NM_DBLCLK, ID_DLG_KERNEL_OBJECTCALLBACK_TREE, &DlgObjectCallBack::OnNMDblclkDlgKernelObjectcallbackTree)
 END_MESSAGE_MAP()
 
-// DlgObjectCallBack ÏûÏ¢´¦Àí³ÌĞò
+// DlgObjectCallBack æ¶ˆæ¯å¤„ç†ç¨‹åº
 
 void DlgObjectCallBack::OnSize(UINT nType, int cx, int cy)
 {
@@ -56,21 +56,21 @@ BOOL DlgObjectCallBack::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	//ÉèÖÃ¿Ø¼şÀàĞÍ
+	//è®¾ç½®æ§ä»¶ç±»å‹
 	m_CTreeCtrl.SetExtendedStyle(m_CTreeCtrl.GetExtendedStyle() | TVS_FULLROWSELECT | TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_SHOWSELALWAYS,
 		m_CTreeCtrl.GetExtendedStyle() | TVS_FULLROWSELECT | TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_SHOWSELALWAYS);
 
-	//´´½¨¸ù½Úµã
+	//åˆ›å»ºæ ¹èŠ‚ç‚¹
 	auto RootNode = m_CTreeCtrl.InsertItem(m_RootTitle);
-	//´´½¨×Ó½Úµã1
+	//åˆ›å»ºå­èŠ‚ç‚¹1
 	auto ChildNode0 = m_CTreeCtrl.InsertItem(L"ObjectTypeCallBack", RootNode);
 	m_CTreeCtrl.SetItemData(ChildNode0, um_ObjectCallBack_Type);
-	//´´½¨×Ó½Úµã2
+	//åˆ›å»ºå­èŠ‚ç‚¹2
 	auto ChildNode1 = m_CTreeCtrl.InsertItem(L"ObjectTypeCallBackInfo", RootNode);
 	m_CTreeCtrl.SetItemData(ChildNode1, um_ObjectCallBackInfo_Type);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
-	// Òì³£: OCX ÊôĞÔÒ³Ó¦·µ»Ø FALSE
+	// å¼‚å¸¸: OCX å±æ€§é¡µåº”è¿”å› FALSE
 }
 
 void DlgObjectCallBack::OnNMRClickDlgKernelObjectcallbackList(NMHDR* pNMHDR, LRESULT* pResult)
@@ -108,11 +108,11 @@ void DlgObjectCallBack::InsertCtrlListControl(PCObjectTypeCallBackExInfo pCallBa
 		}
 
 		PCObjectTypeCallBackExInfo pInfo = (PCObjectTypeCallBackExInfo)pCurList;
-		//ÏÔÊ¾
+		//æ˜¾ç¤º
 
 		CString StrBuf;
 
-		//±éÀúµ±Ç°µÄ¶ÔÏóº¯Êı
+		//éå†å½“å‰çš„å¯¹è±¡å‡½æ•°
 		for (int j = 0; j < OBJECT_TYPE_CALLBACK_MAX_NUMBER; j++)
 		{
 			if (pInfo->FunAddr[j].FunAddr == 0)
@@ -120,7 +120,7 @@ void DlgObjectCallBack::InsertCtrlListControl(PCObjectTypeCallBackExInfo pCallBa
 				continue;
 			}
 			ULONG64 i = m_CListCtrl.GetItemCount();
-			//ÉèÖÃÀàĞÍÃû
+			//è®¾ç½®ç±»å‹å
 			m_CListCtrl.InsertItem(i, pInfo->TypeName);
 
 			StrBuf.Format(L"0x%08I64X", pInfo->ValidAccessMask);
@@ -131,7 +131,7 @@ void DlgObjectCallBack::InsertCtrlListControl(PCObjectTypeCallBackExInfo pCallBa
 
 			m_CListCtrl.SetItemText(i, um_ObjectCallBackEx_Type_FunName, Type[pInfo->FunAddr[j].FunType]);
 
-			// Î»ÖÃ£ºPdbResolver ½âÎö·ûºÅ
+			// ä½ç½®ï¼šPdbResolver è§£æç¬¦å·
 			{
 				WCHAR resolved[256] = { 0 };
 				PdbResolver_Resolve(pInfo->FunAddr[j].FunAddr, 0,
@@ -154,13 +154,13 @@ void DlgObjectCallBack::InsertCtrlListControl(PCObjectTypeCallBackExInfo pCallBa
 			}
 		}
 
-		//»ñÈ¡ÏÂÒ»¸ö
+		//è·å–ä¸‹ä¸€ä¸ª
 		pCurList = pCurList->Blink;
-		//ÊÍ·Å×ÊÔ´
+		//é‡Šæ”¾èµ„æº
 		SIZE_T FreeSize = 0;
 		if (MyNtFreeVirtualMemory(GetCurrentProcess(), (LPVOID*)&pInfo, &FreeSize, MEM_RELEASE) != 0)
 		{
-			AfxMessageBox(L"ÊÍ·Å¿Õ¼äÊ§°Ü!");
+			AfxMessageBox(L"é‡Šæ”¾ç©ºé—´å¤±è´¥!");
 		}
 	} while (pCurList != &pCallBackInfo->List.List);
 }
@@ -185,7 +185,7 @@ void DlgObjectCallBack::InsertCtrlListControl(PCObjectTypeCallBackInfo pCallBack
 
 		CString StrBuf;
 
-		//ÉèÖÃÀàĞÍÃû
+		//è®¾ç½®ç±»å‹å
 		m_CListCtrl.InsertItem(i, pInfo->szObjectTypeName);
 
 		StrBuf.Format(L"0x%08I64X", pInfo->PreOperation);
@@ -210,13 +210,13 @@ void DlgObjectCallBack::InsertCtrlListControl(PCObjectTypeCallBackInfo pCallBack
 			m_CListCtrl.SetItemText(i, um_ObjectCallBack_Firm, (LPWSTR)szDstFileName.GetString());
 		}
 
-		//»ñÈ¡ÏÂÒ»¸ö
+		//è·å–ä¸‹ä¸€ä¸ª
 		pCurList = pCurList->Blink;
-		//ÊÍ·Å×ÊÔ´
+		//é‡Šæ”¾èµ„æº
 		SIZE_T FreeSize = 0;
 		if (MyNtFreeVirtualMemory(GetCurrentProcess(), (LPVOID*)&pInfo, &FreeSize, MEM_RELEASE) != 0)
 		{
-			AfxMessageBox(L"ÊÍ·Å¿Õ¼äÊ§°Ü!");
+			AfxMessageBox(L"é‡Šæ”¾ç©ºé—´å¤±è´¥!");
 		}
 	} while (pCurList != &pCallBackInfo->List.List);
 }
@@ -226,14 +226,14 @@ void DlgObjectCallBack::SelectObjectTypeInfo()
 	if (nPerSel != um_ObjectCallBackInfo_Type)
 	{
 		while (m_CListCtrl.DeleteColumn(0)) {}
-		m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_Type, _T("ÀàĞÍ"), LVCFMT_LEFT, 100);
+		m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_Type, _T("ç±»å‹"), LVCFMT_LEFT, 100);
 		m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_ValidAccessMask, _T("ValidAccessMask"), LVCFMT_LEFT, 100);
-		m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_FunCallBack, _T("º¯ÊıµØÖ·"), LVCFMT_LEFT, 150);
-		m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_FunName, _T("º¯Êı"), LVCFMT_LEFT, 150);
-		m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_Pos, _T("Î»ÖÃ"), LVCFMT_LEFT, 250);
-		m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_Object, _T("¶ÔÏóµØÖ·"), LVCFMT_LEFT, 150);
-		m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_ModulePath, _T("ËùÔÚÄ£¿éÂ·¾¶"), LVCFMT_LEFT, 150);
-		m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_Firm, _T("ÎÄ¼ş³§ÉÌ"), LVCFMT_LEFT, 200);
+		m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_FunCallBack, _T("å‡½æ•°åœ°å€"), LVCFMT_LEFT, 150);
+		m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_FunName, _T("å‡½æ•°"), LVCFMT_LEFT, 150);
+		m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_Pos, _T("ä½ç½®"), LVCFMT_LEFT, 250);
+		m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_Object, _T("å¯¹è±¡åœ°å€"), LVCFMT_LEFT, 150);
+		m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_ModulePath, _T("æ‰€åœ¨æ¨¡å—è·¯å¾„"), LVCFMT_LEFT, 150);
+		m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_Firm, _T("æ–‡ä»¶å‚å•†"), LVCFMT_LEFT, 200);
 		m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 		nPerSel = um_ObjectCallBackInfo_Type;
 	}
@@ -243,13 +243,13 @@ void DlgObjectCallBack::SelectObjectTypeInfo()
 
 void DlgObjectCallBack::OnNMDblclkDlgKernelObjectcallbackTree(NMHDR* pNMHDR, LRESULT* pResult)
 {
-	// TODO: ÔÚ´ËÌí¼Ó¿Ø¼şÍ¨Öª´¦Àí³ÌĞò´úÂë
+	// TODO: åœ¨æ­¤æ·»åŠ æ§ä»¶é€šçŸ¥å¤„ç†ç¨‹åºä»£ç 
 	*pResult = 0;
 
-	//»ñÈ¡Ñ¡ÔñµÄ×Ó¼¯
+	//è·å–é€‰æ‹©çš„å­é›†
 	auto hSelectItem = m_CTreeCtrl.GetSelectedItem();
 
-	//»ñÈ¡°ó¶¨µÄÊı¾İ
+	//è·å–ç»‘å®šçš„æ•°æ®
 	int SelType = m_CTreeCtrl.GetItemData(hSelectItem);
 	switch (SelType)
 	{
@@ -257,21 +257,21 @@ void DlgObjectCallBack::OnNMDblclkDlgKernelObjectcallbackTree(NMHDR* pNMHDR, LRE
 	{
 		if (nPerSel != um_ObjectCallBack_Type)
 		{
-			//É¾³ıËùÓĞColumn
+			//åˆ é™¤æ‰€æœ‰Column
 			while (m_CListCtrl.DeleteColumn(0)) {}
-			//³õÊ¼»¯List¿Ø¼ş
-			m_CListCtrl.InsertColumn(um_ObjectCallBack_Type_Name, _T("ÀàĞÍ"), LVCFMT_LEFT, 100);
+			//åˆå§‹åŒ–Listæ§ä»¶
+			m_CListCtrl.InsertColumn(um_ObjectCallBack_Type_Name, _T("ç±»å‹"), LVCFMT_LEFT, 100);
 			m_CListCtrl.InsertColumn(um_ObjectCallBack_PreOperation, _T("PreOperation"), LVCFMT_LEFT, 150);
 			m_CListCtrl.InsertColumn(um_ObjectCallBack_PostOperation, _T("PostOperation"), LVCFMT_LEFT, 150);
-			m_CListCtrl.InsertColumn(um_ObjectCallBack_pHandle, _T("¾ä±ú"), LVCFMT_LEFT, 150);
+			m_CListCtrl.InsertColumn(um_ObjectCallBack_pHandle, _T("å¥æŸ„"), LVCFMT_LEFT, 150);
 			m_CListCtrl.InsertColumn(um_ObjectCallBack_Altitude, _T("Altitude"), LVCFMT_LEFT, 150);
-			m_CListCtrl.InsertColumn(um_ObjectCallBack_Moudle, _T("ËùÔÚÄ£¿éÂ·¾¶"), LVCFMT_LEFT, 200);
-			m_CListCtrl.InsertColumn(um_ObjectCallBack_Firm, _T("ÎÄ¼ş³§ÉÌ"), LVCFMT_LEFT, 100);
+			m_CListCtrl.InsertColumn(um_ObjectCallBack_Moudle, _T("æ‰€åœ¨æ¨¡å—è·¯å¾„"), LVCFMT_LEFT, 200);
+			m_CListCtrl.InsertColumn(um_ObjectCallBack_Firm, _T("æ–‡ä»¶å‚å•†"), LVCFMT_LEFT, 100);
 			m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 		}
 		else
 		{
-			//ÏàµÈÖ±½Ó·µ»Ø
+			//ç›¸ç­‰ç›´æ¥è¿”å›
 			return;
 		}
 
@@ -284,22 +284,22 @@ void DlgObjectCallBack::OnNMDblclkDlgKernelObjectcallbackTree(NMHDR* pNMHDR, LRE
 	{
 		if (nPerSel != um_ObjectCallBackInfo_Type)
 		{
-			//É¾³ıËùÓĞColumn
+			//åˆ é™¤æ‰€æœ‰Column
 			while (m_CListCtrl.DeleteColumn(0)) {}
-			//³õÊ¼»¯List¿Ø¼ş
-			m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_Type, _T("ÀàĞÍ"), LVCFMT_LEFT, 100);
+			//åˆå§‹åŒ–Listæ§ä»¶
+			m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_Type, _T("ç±»å‹"), LVCFMT_LEFT, 100);
 			m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_ValidAccessMask, _T("ValidAccessMask"), LVCFMT_LEFT, 100);
-			m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_FunCallBack, _T("º¯ÊıµØÖ·"), LVCFMT_LEFT, 150);
-			m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_FunName, _T("º¯Êı"), LVCFMT_LEFT, 150);
-			m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_Pos, _T("Î»ÖÃ"), LVCFMT_LEFT, 250);
-			m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_Object, _T("¶ÔÏóµØÖ·"), LVCFMT_LEFT, 150);
-			m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_ModulePath, _T("ËùÔÚÄ£¿éÂ·¾¶"), LVCFMT_LEFT, 150);
-			m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_Firm, _T("ÎÄ¼ş³§ÉÌ"), LVCFMT_LEFT, 200);
+			m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_FunCallBack, _T("å‡½æ•°åœ°å€"), LVCFMT_LEFT, 150);
+			m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_FunName, _T("å‡½æ•°"), LVCFMT_LEFT, 150);
+			m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_Pos, _T("ä½ç½®"), LVCFMT_LEFT, 250);
+			m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_Object, _T("å¯¹è±¡åœ°å€"), LVCFMT_LEFT, 150);
+			m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_ModulePath, _T("æ‰€åœ¨æ¨¡å—è·¯å¾„"), LVCFMT_LEFT, 150);
+			m_CListCtrl.InsertColumn(um_ObjectCallBackEx_Type_Firm, _T("æ–‡ä»¶å‚å•†"), LVCFMT_LEFT, 200);
 			m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 		}
 		else
 		{
-			//ÏàµÈÖ±½Ó·µ»Ø
+			//ç›¸ç­‰ç›´æ¥è¿”å›
 			return;
 		}
 		

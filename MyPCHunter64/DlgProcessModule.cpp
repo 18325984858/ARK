@@ -1,4 +1,4 @@
-// DlgProcessModule.cpp: ÊµÏÖÎÄ¼ş
+ï»¿// DlgProcessModule.cpp: å®ç°æ–‡ä»¶
 //
 
 #include "pch.h"
@@ -9,7 +9,7 @@
 #include "Dump/PeDump.h"
 #include "Inject/DllInject.h"
 
-// DlgProcessModule ¶Ô»°¿ò
+// DlgProcessModule å¯¹è¯æ¡†
 
 IMPLEMENT_DYNAMIC(DlgProcessModule, CDialogEx)
 
@@ -36,7 +36,7 @@ BEGIN_MESSAGE_MAP(DlgProcessModule, CDialogEx)
 	ON_NOTIFY(NM_RCLICK, ID_PROCESS_MODULE_LIST, &DlgProcessModule::OnNMRClickProcessModuleList)
 END_MESSAGE_MAP()
 
-// DlgProcessModule ÏûÏ¢´¦Àí³ÌĞò
+// DlgProcessModule æ¶ˆæ¯å¤„ç†ç¨‹åº
 
 void DlgProcessModule::OnProcessmoduleRefresh()
 {
@@ -49,19 +49,19 @@ BOOL DlgProcessModule::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	SetWindowText(m_StrProcessName.GetBuffer());//ÉèÖÃ´°¿Ú±êÌâ
+	SetWindowText(m_StrProcessName.GetBuffer());//è®¾ç½®çª—å£æ ‡é¢˜
 
-	m_CListCtrl.InsertColumn(um_Process_Module_Name, _T("Ãû³Æ"), LVCFMT_LEFT, 200);
-	m_CListCtrl.InsertColumn(um_Process_Module_BaseAddr, _T("Ä£¿é»ùÖ·"), LVCFMT_LEFT, 150);
-	m_CListCtrl.InsertColumn(um_Process_Module_Size, _T("´óĞ¡"), LVCFMT_LEFT, 75);
-	m_CListCtrl.InsertColumn(um_Process_Module_Path, _T("Ä£¿éÂ·¾¶"), LVCFMT_LEFT, 300);
-	m_CListCtrl.InsertColumn(um_Process_Module_Signal, _T("Êı×ÖÇ©Ãû"), LVCFMT_LEFT, 150);
-	m_CListCtrl.InsertColumn(um_Process_Module_Company, _T("¹«Ë¾Ãû"), LVCFMT_LEFT, 150);
+	m_CListCtrl.InsertColumn(um_Process_Module_Name, _T("åç§°"), LVCFMT_LEFT, 200);
+	m_CListCtrl.InsertColumn(um_Process_Module_BaseAddr, _T("æ¨¡å—åŸºå€"), LVCFMT_LEFT, 150);
+	m_CListCtrl.InsertColumn(um_Process_Module_Size, _T("å¤§å°"), LVCFMT_LEFT, 75);
+	m_CListCtrl.InsertColumn(um_Process_Module_Path, _T("æ¨¡å—è·¯å¾„"), LVCFMT_LEFT, 300);
+	m_CListCtrl.InsertColumn(um_Process_Module_Signal, _T("æ•°å­—ç­¾å"), LVCFMT_LEFT, 150);
+	m_CListCtrl.InsertColumn(um_Process_Module_Company, _T("å…¬å¸å"), LVCFMT_LEFT, 150);
 	m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 
 	OnProcessmoduleRefresh();
 	return TRUE;  // return TRUE unless you set the focus to a control
-	// Òì³£: OCX ÊôĞÔÒ³Ó¦·µ»Ø FALSE
+	// å¼‚å¸¸: OCX å±æ€§é¡µåº”è¿”å› FALSE
 }
 
 void DlgProcessModule::OnSize(UINT nType, int cx, int cy)
@@ -97,7 +97,7 @@ void DlgProcessModule::InsertCtrlListControl(PCProcessModuleInfo pinfo)
 
 			CString StrBuf;
 
-			//²åÈëÃû³Æ
+			//æ’å…¥åç§°
 			m_CListCtrl.InsertItem(i, pProcessModuleInfo->ModuleName);
 
 			StrBuf.Format(L"0x%I64X", pProcessModuleInfo->ModuleBaseAddr);		
@@ -122,13 +122,13 @@ void DlgProcessModule::InsertCtrlListControl(PCProcessModuleInfo pinfo)
 			m_CListCtrl.SetItemText(i, 5, this->GetCompanyName(pProcessModuleInfo->ModuleFullPath, szDstFileName) ? (LPWSTR)szDstFileName.GetString() : TEXT("--"));
 
 		}
-		//Ö¸ÏòÏÂÒ»¸ö
+		//æŒ‡å‘ä¸‹ä¸€ä¸ª
 		pCurList = pCurList->Blink;
 
-		//ÊÍ·ÅÄÚ´æ
+		//é‡Šæ”¾å†…å­˜
 		if (MyNtFreeVirtualMemory(GetCurrentProcess(), (LPVOID*)&pProcessModuleInfo, &FreeSize, MEM_RELEASE) != 0)
 		{
-			AfxMessageBox(L"ÊÍ·Å¿Õ¼äÊ§°Ü!");
+			AfxMessageBox(L"é‡Šæ”¾ç©ºé—´å¤±è´¥!");
 		}
 	} while (pCurList != &pinfo->List.List);
 
@@ -139,8 +139,8 @@ void DlgProcessModule::OnNMRClickProcessModuleList(NMHDR* pNMHDR, LRESULT* pResu
 	*pResult = 0;
 	if (m_CListCtrl.GetItemCount() <= 0) return;
 
-	// ¸´ÓÃ ShowListContextMenu µÄ "¸´ÖÆ / Ë¢ĞÂ" Ä¬ÈÏ²Ëµ¥£¬µ«ÒòÎªÎÒÃÇÒªµş¼Ó
-	// "Dump PE..." ÕâÌõÒµÎñÏî£¬ËùÒÔÕâÀï×ß×Ô¶¨Òå²Ëµ¥µÄĞ´·¨¡£
+	// å¤ç”¨ ShowListContextMenu çš„ "å¤åˆ¶ / åˆ·æ–°" é»˜è®¤èœå•ï¼Œä½†å› ä¸ºæˆ‘ä»¬è¦å åŠ 
+	// "Dump PE..." è¿™æ¡ä¸šåŠ¡é¡¹ï¼Œæ‰€ä»¥è¿™é‡Œèµ°è‡ªå®šä¹‰èœå•çš„å†™æ³•ã€‚
 	POSITION sp = m_CListCtrl.GetFirstSelectedItemPosition();
 	bool hasSel = (sp != NULL);
 	int selRow = hasSel ? ((int)sp - 1) : -1;
@@ -149,10 +149,10 @@ void DlgProcessModule::OnNMRClickProcessModuleList(NMHDR* pNMHDR, LRESULT* pResu
 
 	CMenu menu; menu.CreatePopupMenu();
 	int nCols = AppendCopyColumnsSubmenu(menu, &m_CListCtrl, kCopyBase, hasSel);
-	menu.AppendMenuW(MF_STRING, kRefresh, L"Ë¢ĞÂ");
+	menu.AppendMenuW(MF_STRING, kRefresh, L"åˆ·æ–°");
 	menu.AppendMenuW(MF_SEPARATOR, 0, L"");
 	menu.AppendMenuW(MF_STRING | (hasSel ? 0 : MF_GRAYED), kDumpPe, L"Dump PE ...");
-	menu.AppendMenuW(MF_STRING, kHijack, L"DLL ×¢Èë (Ïß³Ì½Ù³Ö) ...");
+	menu.AppendMenuW(MF_STRING, kHijack, L"DLL æ³¨å…¥ (çº¿ç¨‹åŠ«æŒ) ...");
 
 	CString explorerPath;
 	UINT explorerCmd = AppendOpenInExplorerItem(menu, &m_CListCtrl, explorerPath);
@@ -170,7 +170,7 @@ void DlgProcessModule::OnNMRClickProcessModuleList(NMHDR* pNMHDR, LRESULT* pResu
 	}
 	if (cmd == kDumpPe && hasSel)
 	{
-		// È¡Ä£¿é»ùÖ·£¨ÁĞ 1£©¡¢Ä£¿éÃû£¨ÁĞ 0£©×÷ÎªÄ¬ÈÏÎÄ¼şÃû
+		// å–æ¨¡å—åŸºå€ï¼ˆåˆ— 1ï¼‰ã€æ¨¡å—åï¼ˆåˆ— 0ï¼‰ä½œä¸ºé»˜è®¤æ–‡ä»¶å
 		CString baseStr = m_CListCtrl.GetItemText(selRow, um_Process_Module_BaseAddr);
 		CString name = m_CListCtrl.GetItemText(selRow, um_Process_Module_Name);
 		ULONG64 imageBase = _wcstoui64(
@@ -180,19 +180,19 @@ void DlgProcessModule::OnNMRClickProcessModuleList(NMHDR* pNMHDR, LRESULT* pResu
 		baseStr.ReleaseBuffer();
 		if (imageBase == 0)
 		{
-			AfxMessageBox(L"ÎŞ·¨½âÎöÄ£¿é»ùÖ·");
+			AfxMessageBox(L"æ— æ³•è§£ææ¨¡å—åŸºå€");
 			return;
 		}
 
-		// Ä¬ÈÏÎÄ¼şÃû£º<Ä£¿éÃû>_<basehex>.dmp.<ext>
+		// é»˜è®¤æ–‡ä»¶åï¼š<æ¨¡å—å>_<basehex>.dmp.<ext>
 		CString defName;
 		defName.Format(L"%s_0x%016I64X_dump", name.GetString(), imageBase);
 		CFileDialog dlg(FALSE, L"bin", defName,
 			OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST,
-			L"PE Dump (*.exe;*.dll;*.bin)|*.exe;*.dll;*.bin|ËùÓĞÎÄ¼ş (*.*)|*.*||", this);
+			L"PE Dump (*.exe;*.dll;*.bin)|*.exe;*.dll;*.bin|æ‰€æœ‰æ–‡ä»¶ (*.*)|*.*||", this);
 		if (dlg.DoModal() != IDOK) return;
 
-		// °Ñµ±Ç°ÁĞ±íÀïËùÓĞÄ£¿éÊÕ¼¯ÆğÀ´£¬¹© IAT ÖØ½¨Ê¹ÓÃ
+		// æŠŠå½“å‰åˆ—è¡¨é‡Œæ‰€æœ‰æ¨¡å—æ”¶é›†èµ·æ¥ï¼Œä¾› IAT é‡å»ºä½¿ç”¨
 		std::vector<ImportRebuilder::LoadedModule> modules;
 		int total = m_CListCtrl.GetItemCount();
 		modules.reserve(total);
@@ -226,35 +226,35 @@ void DlgProcessModule::OnNMRClickProcessModuleList(NMHDR* pNMHDR, LRESULT* pResu
 		if (!ok)
 		{
 			CString msg;
-			msg.Format(L"Dump Ê§°Ü£º%s", err.c_str());
+			msg.Format(L"Dump å¤±è´¥ï¼š%s", err.c_str());
 			AfxMessageBox(msg);
 			return;
 		}
 
-		// Dump ³É¹¦£¬ÔÙÕ¹Ê¾ IAT ÖØ½¨½á¹û
+		// Dump æˆåŠŸï¼Œå†å±•ç¤º IAT é‡å»ºç»“æœ
 		CString msg;
 		if (!rr.attempted)
 		{
-			msg.Format(L"Dump ³É¹¦£¨Î´³¢ÊÔ IAT ÖØ½¨£©£º\n%s", dlg.GetPathName().GetString());
+			msg.Format(L"Dump æˆåŠŸï¼ˆæœªå°è¯• IAT é‡å»ºï¼‰ï¼š\n%s", dlg.GetPathName().GetString());
 		}
 		else if (rr.success)
 		{
 			msg.Format(
-				L"Dump ³É¹¦£¬IAT ÖØ½¨Íê³É£º\n%s\n\n"
-				L"IAT ÌõÄ¿£º%lu\nÒÑ½âÎö£º%lu  Ê§°Ü£º%lu\nÄ£¿é£º%lu  Çø¶Î£º%lu%s\n\n"
-				L"Õï¶ÏÈÕÖ¾£º%s",
+				L"Dump æˆåŠŸï¼ŒIAT é‡å»ºå®Œæˆï¼š\n%s\n\n"
+				L"IAT æ¡ç›®ï¼š%lu\nå·²è§£æï¼š%lu  å¤±è´¥ï¼š%lu\næ¨¡å—ï¼š%lu  åŒºæ®µï¼š%lu%s\n\n"
+				L"è¯Šæ–­æ—¥å¿—ï¼š%s",
 				dlg.GetPathName().GetString(),
 				rr.stats.totalIatEntries, rr.stats.resolved, rr.stats.unresolved,
 				rr.stats.modulesUsed, rr.stats.iatRegions,
-				rr.stats.autoLocated ? L"£¨×Ô¶¯¶¨Î»£©" : L"",
+				rr.stats.autoLocated ? L"ï¼ˆè‡ªåŠ¨å®šä½ï¼‰" : L"",
 				rr.iatLogPath.c_str());
 		}
 		else
 		{
 			msg.Format(
-				L"Dump ³É¹¦£¬µ« IAT ÖØ½¨Ê§°Ü£º\n%s\n\n"
-				L"Ô­Òò£º%s\n\n"
-				L"ÒÑĞ´ÅÌµÄÊÇ raw memory snapshot£¬ÈÔ¿ÉÓÃ IDA / x64dbg ¾²Ì¬·ÖÎö¡£",
+				L"Dump æˆåŠŸï¼Œä½† IAT é‡å»ºå¤±è´¥ï¼š\n%s\n\n"
+				L"åŸå› ï¼š%s\n\n"
+				L"å·²å†™ç›˜çš„æ˜¯ raw memory snapshotï¼Œä»å¯ç”¨ IDA / x64dbg é™æ€åˆ†æã€‚",
 				dlg.GetPathName().GetString(),
 				rr.errMsg.c_str());
 		}
@@ -265,7 +265,7 @@ void DlgProcessModule::OnNMRClickProcessModuleList(NMHDR* pNMHDR, LRESULT* pResu
 	{
 		CFileDialog dlg(TRUE, L"dll", nullptr,
 			OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST,
-			L"¶¯Ì¬Á´½Ó¿â (*.dll)|*.dll|ËùÓĞÎÄ¼ş (*.*)|*.*||", this);
+			L"åŠ¨æ€é“¾æ¥åº“ (*.dll)|*.dll|æ‰€æœ‰æ–‡ä»¶ (*.*)|*.*||", this);
 		if (dlg.DoModal() != IDOK) return;
 
 		std::wstring err;
@@ -279,19 +279,19 @@ void DlgProcessModule::OnNMRClickProcessModuleList(NMHDR* pNMHDR, LRESULT* pResu
 		if (ok)
 		{
 			msg.Format(
-				L"Force-APC Í¶µİÍê³É£º\n%s\n\n"
-				L"Ä£¿é»ùÖ·£º0x%016llX\nÈë¿Úµã£º0x%016llX\n´óĞ¡£º0x%lX\n"
-				L"³É¹¦Í¶µİÏß³ÌÊı£º%lu\nÃ¶¾Ù£º%lu  ÏµÍ³Ïß³Ì£º%lu  Ê§°Ü£º%lu\n\n"
-				L"×¢£ºÊ¹ÓÃ Blackbone ·ç¸ñ force-APC£¨user APC + kernel APC µ÷ KeTestAlertThread(UserMode) Ç¿ÖÆ»½ĞÑ£©¡£\n"
-				L"ÌáÊ¾³É¹¦Ö»´ú±í APC ÒÑÈë¶Ó£»DllMain ÊÇ·ñÕæÕıÖ´ĞĞĞè¹Û²ìÄ¿±êĞĞÎª¡£\n"
-				L"ÈôÄ¿±ê½ø³ÌÉ³ÏäÏŞÖÆ user APC£¬¿É»» notepad µÈÆÕÍ¨½ø³ÌÑéÖ¤¡£",
+				L"Force-APC æŠ•é€’å®Œæˆï¼š\n%s\n\n"
+				L"æ¨¡å—åŸºå€ï¼š0x%016llX\nå…¥å£ç‚¹ï¼š0x%016llX\nå¤§å°ï¼š0x%lX\n"
+				L"æˆåŠŸæŠ•é€’çº¿ç¨‹æ•°ï¼š%lu\næšä¸¾ï¼š%lu  ç³»ç»Ÿçº¿ç¨‹ï¼š%lu  å¤±è´¥ï¼š%lu\n\n"
+				L"æ³¨ï¼šä½¿ç”¨ Blackbone é£æ ¼ force-APCï¼ˆuser APC + kernel APC è°ƒ KeTestAlertThread(UserMode) å¼ºåˆ¶å”¤é†’ï¼‰ã€‚\n"
+				L"æç¤ºæˆåŠŸåªä»£è¡¨ APC å·²å…¥é˜Ÿï¼›DllMain æ˜¯å¦çœŸæ­£æ‰§è¡Œéœ€è§‚å¯Ÿç›®æ ‡è¡Œä¸ºã€‚\n"
+				L"è‹¥ç›®æ ‡è¿›ç¨‹æ²™ç®±é™åˆ¶ user APCï¼Œå¯æ¢ notepad ç­‰æ™®é€šè¿›ç¨‹éªŒè¯ã€‚",
 				dlg.GetPathName().GetString(),
 				rr.moduleBase, rr.entryPoint, rr.sizeOfImage,
 				rr.queuedCount, rr.threadsSeen, rr.threadsSystem, rr.apcFails);
 		}
 		else
 		{
-			msg.Format(L"Ïß³Ì½Ù³ÖÊ§°Ü£º%s", err.c_str());
+			msg.Format(L"çº¿ç¨‹åŠ«æŒå¤±è´¥ï¼š%s", err.c_str());
 		}
 		AfxMessageBox(msg);
 		return;

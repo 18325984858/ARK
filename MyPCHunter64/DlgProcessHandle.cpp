@@ -1,4 +1,4 @@
-// DlgProcessHandle.cpp: ÊµÏÖÎÄ¼ş
+ï»¿// DlgProcessHandle.cpp: å®ç°æ–‡ä»¶
 //
 
 #include "pch.h"
@@ -7,7 +7,7 @@
 #include "DlgProcessHandle.h"
 #include "Thread.h"
 
-// DlgProcessHandle ¶Ô»°¿ò
+// DlgProcessHandle å¯¹è¯æ¡†
 
 IMPLEMENT_DYNAMIC(DlgProcessHandle, CDialogEx)
 
@@ -35,7 +35,7 @@ BEGIN_MESSAGE_MAP(DlgProcessHandle, CDialogEx)
 	ON_COMMAND(ID_PROCESSHANDLE_REFRESH, &DlgProcessHandle::OnProcesshandleRefresh)
 END_MESSAGE_MAP()
 
-// DlgProcessHandle ÏûÏ¢´¦Àí³ÌĞò
+// DlgProcessHandle æ¶ˆæ¯å¤„ç†ç¨‹åº
 
 void DlgProcessHandle::OnSize(UINT nType, int cx, int cy)
 {
@@ -53,13 +53,13 @@ BOOL DlgProcessHandle::OnInitDialog()
 
 	SetWindowText(m_StrProcessName);
 
-	m_CListCtrl.InsertColumn(um_Process_Handle_Type, _T("¾ä±úÀàĞÍ"), LVCFMT_LEFT, 100);
-	m_CListCtrl.InsertColumn(um_Process_Handle_Name, _T("¾ä±úÃû"), LVCFMT_LEFT, 200);
-	m_CListCtrl.InsertColumn(um_Process_Handle_Handle, _T("¾ä±ú"), LVCFMT_LEFT, 75);
-	m_CListCtrl.InsertColumn(um_Process_Handle_Object, _T("¾ä±ú¶ÔÏó"), LVCFMT_LEFT, 130);
-	m_CListCtrl.InsertColumn(um_Process_Handle_Power, _T("È¨ÏŞ"), LVCFMT_LEFT, 100);
-	m_CListCtrl.InsertColumn(um_Process_Handle_Index, _T("Ë÷Òı"), LVCFMT_LEFT, 75);
-	m_CListCtrl.InsertColumn(um_Process_Handle_Reference, _T("ÒıÓÃ"), LVCFMT_LEFT, 75);
+	m_CListCtrl.InsertColumn(um_Process_Handle_Type, _T("å¥æŸ„ç±»å‹"), LVCFMT_LEFT, 100);
+	m_CListCtrl.InsertColumn(um_Process_Handle_Name, _T("å¥æŸ„å"), LVCFMT_LEFT, 200);
+	m_CListCtrl.InsertColumn(um_Process_Handle_Handle, _T("å¥æŸ„"), LVCFMT_LEFT, 75);
+	m_CListCtrl.InsertColumn(um_Process_Handle_Object, _T("å¥æŸ„å¯¹è±¡"), LVCFMT_LEFT, 130);
+	m_CListCtrl.InsertColumn(um_Process_Handle_Power, _T("æƒé™"), LVCFMT_LEFT, 100);
+	m_CListCtrl.InsertColumn(um_Process_Handle_Index, _T("ç´¢å¼•"), LVCFMT_LEFT, 75);
+	m_CListCtrl.InsertColumn(um_Process_Handle_Reference, _T("å¼•ç”¨"), LVCFMT_LEFT, 75);
 	m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 
 	OnProcesshandleRefresh();
@@ -124,13 +124,13 @@ void DlgProcessHandle::InsertCtrlListControl(PCProcessHandleInfo pinfo)
 			StrBuf.Format(L"%08I64X", pProcessHandleInfo->Quote);
 			m_CListCtrl.SetItemText(i, um_Process_Handle_Reference, StrBuf);
 		}
-		//Ö¸ÏòÏÂÒ»¸ö
+		//æŒ‡å‘ä¸‹ä¸€ä¸ª
 		pCurList = pCurList->Blink;
 
-		//ÊÍ·ÅÄÚ´æ
+		//é‡Šæ”¾å†…å­˜
 		if (MyNtFreeVirtualMemory(GetCurrentProcess(), (LPVOID*)&pProcessHandleInfo, &FreeSize, MEM_RELEASE) != 0)
 		{
-			AfxMessageBox(L"ÊÍ·Å¿Õ¼äÊ§°Ü!");
+			AfxMessageBox(L"é‡Šæ”¾ç©ºé—´å¤±è´¥!");
 		}
 	} while (pCurList != &pinfo->List.List);
 

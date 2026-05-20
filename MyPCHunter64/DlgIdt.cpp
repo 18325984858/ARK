@@ -1,4 +1,4 @@
-// DlgIdt.cpp: ÊµÏÖÎÄ¼ş
+ï»¿// DlgIdt.cpp: å®ç°æ–‡ä»¶
 //
 
 #include "pch.h"
@@ -8,7 +8,7 @@
 #include "resource.h"
 #include "Thread.h"
 #include "PdbResolver.h"
-// DlgIdt ¶Ô»°¿ò
+// DlgIdt å¯¹è¯æ¡†
 
 IMPLEMENT_DYNAMIC(DlgIdt, CDialogEx)
 
@@ -34,7 +34,7 @@ BEGIN_MESSAGE_MAP(DlgIdt, CDialogEx)
 	ON_COMMAND(ID_IDT_REFRESH, &DlgIdt::OnIdtRefresh)
 END_MESSAGE_MAP()
 
-// DlgIdt ÏûÏ¢´¦Àí³ÌĞò
+// DlgIdt æ¶ˆæ¯å¤„ç†ç¨‹åº
 
 void DlgIdt::OnNMRClickIdtList(NMHDR* pNMHDR, LRESULT* pResult)
 {
@@ -49,19 +49,19 @@ BOOL DlgIdt::OnInitDialog()
 	CDialogEx::OnInitDialog();
 
 	m_CListCtrl.InsertColumn(um_Idt_CpuOrd, _T("CPU"), LVCFMT_LEFT, 50);
-	m_CListCtrl.InsertColumn(um_Idt_IdtNumber, _T("ÖĞ¶ÏºÅ"), LVCFMT_LEFT, 50);
+	m_CListCtrl.InsertColumn(um_Idt_IdtNumber, _T("ä¸­æ–­å·"), LVCFMT_LEFT, 50);
 	m_CListCtrl.InsertColumn(um_Idt_IdtBase, _T("IDTBase"), LVCFMT_LEFT, 120);
-	m_CListCtrl.InsertColumn(um_Idt_Level, _T("ÌØÈ¨¼¶"), LVCFMT_LEFT, 50);
+	m_CListCtrl.InsertColumn(um_Idt_Level, _T("ç‰¹æƒçº§"), LVCFMT_LEFT, 50);
 	m_CListCtrl.InsertColumn(um_Idt_BaseAddr, _T("Offset"), LVCFMT_LEFT, 120);
-	m_CListCtrl.InsertColumn(um_Idt_FunctionName, _T("º¯ÊıÃû³Æ"), LVCFMT_LEFT, 250);
-	m_CListCtrl.InsertColumn(um_Idt_Path, _T("ËùÔÚÄ£¿éÂ·¾¶"), LVCFMT_LEFT, 250);
-	m_CListCtrl.InsertColumn(um_Idt_Company, _T("¹«Ë¾Ãû"), LVCFMT_LEFT, 250);
+	m_CListCtrl.InsertColumn(um_Idt_FunctionName, _T("å‡½æ•°åç§°"), LVCFMT_LEFT, 250);
+	m_CListCtrl.InsertColumn(um_Idt_Path, _T("æ‰€åœ¨æ¨¡å—è·¯å¾„"), LVCFMT_LEFT, 250);
+	m_CListCtrl.InsertColumn(um_Idt_Company, _T("å…¬å¸å"), LVCFMT_LEFT, 250);
 	m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 
 	//OnIdtRefresh();
 
 	return TRUE;  // return TRUE unless you set the focus to a control
-	// Òì³£: OCX ÊôĞÔÒ³Ó¦·µ»Ø FALSE
+	// å¼‚å¸¸: OCX å±æ€§é¡µåº”è¿”å› FALSE
 }
 
 void DlgIdt::OnSize(UINT nType, int cx, int cy)
@@ -116,7 +116,7 @@ void DlgIdt::InsertCtrlListControl(PCIdtInfo pIdtInfo)
 		StrBuf.Format(L"%016I64X", FunAddr);
 		m_CListCtrl.SetItemText(i, um_Idt_BaseAddr, StrBuf);
 
-		// º¯ÊıÃû£ºPdbResolver ½âÎö
+		// å‡½æ•°åï¼šPdbResolver è§£æ
 		{
 			WCHAR resolved[256] = { 0 };
 			PdbResolver_Resolve(FunAddr, 0, pCurIdtInfo->szPath, resolved, _countof(resolved));
@@ -129,14 +129,14 @@ void DlgIdt::InsertCtrlListControl(PCIdtInfo pIdtInfo)
 		GetCompanyName(Path, StrBuf);
 		m_CListCtrl.SetItemText(i, um_Idt_Company, StrBuf);
 
-		//Ö¸ÏòÏÂÒ»¸ö
+		//æŒ‡å‘ä¸‹ä¸€ä¸ª
 		pCurList = pCurList->Blink;
 
-		//ÊÍ·Å×ÊÔ´
+		//é‡Šæ”¾èµ„æº
 		SIZE_T FreeSize = 0;
 		if (MyNtFreeVirtualMemory(GetCurrentProcess(), (LPVOID*)&pCurIdtInfo, &FreeSize, MEM_RELEASE) != 0)
 		{
-			AfxMessageBox(L"ÊÍ·Å¿Õ¼äÊ§°Ü!");
+			AfxMessageBox(L"é‡Šæ”¾ç©ºé—´å¤±è´¥!");
 		}
 	} while (pCurList != &pIdtInfo->List.List);
 

@@ -1,4 +1,4 @@
-// DlgWdf.cpp: ÊµÏÖÎÄ¼ş
+ï»¿// DlgWdf.cpp: å®ç°æ–‡ä»¶
 //
 
 #include "pch.h"
@@ -11,7 +11,7 @@
 #include <unordered_map>
 #include <string>
 
-// DlgWdf ¶Ô»°¿ò
+// DlgWdf å¯¹è¯æ¡†
 
 IMPLEMENT_DYNAMIC(DlgWdf, CDialogEx)
 
@@ -38,7 +38,7 @@ BEGIN_MESSAGE_MAP(DlgWdf, CDialogEx)
 	ON_NOTIFY(NM_RCLICK, ID_DLG_KERNEL_WDF_LIST, &DlgWdf::OnNMRClickDlgKernelWdfList)
 END_MESSAGE_MAP()
 
-// DlgWdf ÏûÏ¢´¦Àí³ÌĞò
+// DlgWdf æ¶ˆæ¯å¤„ç†ç¨‹åº
 
 void DlgWdf::OnSize(UINT nType, int cx, int cy)
 {
@@ -50,54 +50,54 @@ void DlgWdf::OnSize(UINT nType, int cx, int cy)
 
 	m_CTreeCtrl.SetWindowPos(NULL, 0, 0, fwidth, rect.Height(), SWP_NOZORDER);
 	m_CListCtrl.SetWindowPos(NULL, fwidth, 0, rect.Width() - fwidth, rect.Height(), SWP_NOZORDER);
-	// TODO: ÔÚ´Ë´¦Ìí¼ÓÏûÏ¢´¦Àí³ÌĞò´úÂë
+	// TODO: åœ¨æ­¤å¤„æ·»åŠ æ¶ˆæ¯å¤„ç†ç¨‹åºä»£ç 
 }
 
 BOOL DlgWdf::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	//³õÊ¼»¯Ê÷¿Ø¼ş
+	//åˆå§‹åŒ–æ ‘æ§ä»¶
 
-	//³õÊ¼»¯Ê÷¿Ø¼ş
+	//åˆå§‹åŒ–æ ‘æ§ä»¶
 	m_CTreeCtrl.SetExtendedStyle(m_CTreeCtrl.GetExtendedStyle() | TVS_FULLROWSELECT | TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_SHOWSELALWAYS,
 		m_CTreeCtrl.GetExtendedStyle() | TVS_FULLROWSELECT | TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_SHOWSELALWAYS);
 
-	//´´½¨¸ù½Úµã
-	auto RootNode = m_CTreeCtrl.InsertItem(L"WdfÏîÄ¿");
-	// ¸ù½Úµã²»²ÎÓë¼ÓÔØ£ºÉè¸ö sentinel(-1)£¬·ñÔò GetItemData Ä¬ÈÏÎª 0 »á
-	// ×²ÉÏ um_WdfDlgInfoType_Wdf01000Maj(=0) µ¼ÖÂË«»÷¸ù½ÚµãÒ²¼ÓÔØ¡£
+	//åˆ›å»ºæ ¹èŠ‚ç‚¹
+	auto RootNode = m_CTreeCtrl.InsertItem(L"Wdfé¡¹ç›®");
+	// æ ¹èŠ‚ç‚¹ä¸å‚ä¸åŠ è½½ï¼šè®¾ä¸ª sentinel(-1)ï¼Œå¦åˆ™ GetItemData é»˜è®¤ä¸º 0 ä¼š
+	// æ’ä¸Š um_WdfDlgInfoType_Wdf01000Maj(=0) å¯¼è‡´åŒå‡»æ ¹èŠ‚ç‚¹ä¹ŸåŠ è½½ã€‚
 	m_CTreeCtrl.SetItemData(RootNode, (DWORD_PTR)-1);
-	//´´½¨×Ó½Úµã1
-	auto ChildNode0 = m_CTreeCtrl.InsertItem(L"Wdf01000ÅÉ·¢º¯Êı", RootNode);
+	//åˆ›å»ºå­èŠ‚ç‚¹1
+	auto ChildNode0 = m_CTreeCtrl.InsertItem(L"Wdf01000æ´¾å‘å‡½æ•°", RootNode);
 	m_CTreeCtrl.SetItemData(ChildNode0, um_WdfDlgInfoType_Wdf01000Maj);
-	//´´½¨×Ó½Úµã2
+	//åˆ›å»ºå­èŠ‚ç‚¹2
 	auto ChildNode1 = m_CTreeCtrl.InsertItem(L"WdfFunction", RootNode);
 	m_CTreeCtrl.SetItemData(ChildNode1, um_WdfDlgInfoType_WdfFunction);
 
-	//³õÊ¼»¯List¿Ø¼ş
-	m_CListCtrl.InsertColumn(um_WdfDlgInfo_Order, _T("ĞòºÅ"), LVCFMT_LEFT, 70);
-	m_CListCtrl.InsertColumn(um_WdfDlgInfo_FunctionName, _T("º¯ÊıÃû³Æ"), LVCFMT_LEFT, 150);
-	m_CListCtrl.InsertColumn(um_WdfDlgInfo_FunctionAddr, _T("µ±Ç°º¯ÊıµØÖ·"), LVCFMT_LEFT, 125);
+	//åˆå§‹åŒ–Listæ§ä»¶
+	m_CListCtrl.InsertColumn(um_WdfDlgInfo_Order, _T("åºå·"), LVCFMT_LEFT, 70);
+	m_CListCtrl.InsertColumn(um_WdfDlgInfo_FunctionName, _T("å‡½æ•°åç§°"), LVCFMT_LEFT, 150);
+	m_CListCtrl.InsertColumn(um_WdfDlgInfo_FunctionAddr, _T("å½“å‰å‡½æ•°åœ°å€"), LVCFMT_LEFT, 125);
 	m_CListCtrl.InsertColumn(um_WdfDlgInfo_Hook, _T("HOOK"), LVCFMT_LEFT, 125);
-	m_CListCtrl.InsertColumn(um_WdfDlgInfo_SourceFunctionAddr, _T("Ô­Ê¼º¯ÊıµØÖ·"), LVCFMT_LEFT, 125);
-	m_CListCtrl.InsertColumn(um_WdfDlgInfo_Module, _T("µ±Ç°º¯ÊıËùÔÚÄ£¿éÂ·¾¶"), LVCFMT_LEFT, 300);
-	m_CListCtrl.InsertColumn(um_WdfDlgInfo_FileVender, _T("ÎÄ¼ş³§ÉÌ"), LVCFMT_LEFT, 125);
+	m_CListCtrl.InsertColumn(um_WdfDlgInfo_SourceFunctionAddr, _T("åŸå§‹å‡½æ•°åœ°å€"), LVCFMT_LEFT, 125);
+	m_CListCtrl.InsertColumn(um_WdfDlgInfo_Module, _T("å½“å‰å‡½æ•°æ‰€åœ¨æ¨¡å—è·¯å¾„"), LVCFMT_LEFT, 300);
+	m_CListCtrl.InsertColumn(um_WdfDlgInfo_FileVender, _T("æ–‡ä»¶å‚å•†"), LVCFMT_LEFT, 125);
 	m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
-	// Òì³£: OCX ÊôĞÔÒ³Ó¦·µ»Ø FALSE
+	// å¼‚å¸¸: OCX å±æ€§é¡µåº”è¿”å› FALSE
 }
 
 void DlgWdf::OnNMDblclkDlgKernelWdfTree(NMHDR* pNMHDR, LRESULT* pResult)
 {
-	// TODO: ÔÚ´ËÌí¼Ó¿Ø¼şÍ¨Öª´¦Àí³ÌĞò´úÂë
+	// TODO: åœ¨æ­¤æ·»åŠ æ§ä»¶é€šçŸ¥å¤„ç†ç¨‹åºä»£ç 
 	*pResult = 0;
 
 	auto hSelectItem = m_CTreeCtrl.GetSelectedItem();
 	if (hSelectItem == NULL) return;
 
-	//»ñÈ¡°ó¶¨µÄÊı¾İ
+	//è·å–ç»‘å®šçš„æ•°æ®
 	int SelType = (int)m_CTreeCtrl.GetItemData(hSelectItem);
 	switch (SelType)
 	{
@@ -164,7 +164,7 @@ void DlgWdf::InsertCtrlListControl(PCWdfInfo pWdfInfo)
 		StrBuf.Format(L"%04X", (USHORT)pInfo->pFunOrder);
 		m_CListCtrl.InsertItem(i, StrBuf);
 
-		// º¯ÊıÃû³Æ£ºÍ³Ò»×ß PdbResolver£»PDB Î´¾ÍĞ÷/ÎŞ PDB Ê±·µ»Ø "Module+0xRVA"
+		// å‡½æ•°åç§°ï¼šç»Ÿä¸€èµ° PdbResolverï¼›PDB æœªå°±ç»ª/æ—  PDB æ—¶è¿”å› "Module+0xRVA"
 		StrBuf.Empty();
 		if (pInfo->pFunAddr != 0 && pInfo->ModuleBase != 0 && pInfo->ModulePath[0] != 0)
 		{
@@ -182,7 +182,7 @@ void DlgWdf::InsertCtrlListControl(PCWdfInfo pWdfInfo)
 		StrBuf.Format(L"%016I64X", pInfo->pFunAddr);
 		m_CListCtrl.SetItemText(i, um_WdfDlgInfo_FunctionAddr, StrBuf);
 
-		m_CListCtrl.SetItemText(i, um_WdfDlgInfo_Hook, pInfo->HookType ? L"ÒÑHOOK" : L"Î´HOOK");
+		m_CListCtrl.SetItemText(i, um_WdfDlgInfo_Hook, pInfo->HookType ? L"å·²HOOK" : L"æœªHOOK");
 
 		if (pInfo->pSrcFunAddr)
 		{
@@ -218,11 +218,11 @@ void DlgWdf::InsertCtrlListControl(PCWdfInfo pWdfInfo)
 		m_CListCtrl.SetItemText(i, um_WdfDlgInfo_FileVender, (LPWSTR)company.GetString());
 
 		pCurList = pCurList->Blink;
-		//ÊÍ·Å×ÊÔ´
+		//é‡Šæ”¾èµ„æº
 		SIZE_T FreeSize = 0;
 		if (MyNtFreeVirtualMemory(GetCurrentProcess(), (LPVOID*)&pInfo, &FreeSize, MEM_RELEASE) != 0)
 		{
-			AfxMessageBox(L"ÊÍ·Å¿Õ¼äÊ§°Ü!");
+			AfxMessageBox(L"é‡Šæ”¾ç©ºé—´å¤±è´¥!");
 		}
 	} while (pCurList != &pWdfInfo->List.List);
 
@@ -230,19 +230,19 @@ void DlgWdf::InsertCtrlListControl(PCWdfInfo pWdfInfo)
 	m_CListCtrl.Invalidate();
 }
 
-// ÓÒ¼ü²Ëµ¥£ºË¢ĞÂ + ¸´ÖÆ¸÷ÁĞ¡£¶¯Ì¬¹¹½¨£¬ÎŞĞè .rc ×ÊÔ´¡£
+// å³é”®èœå•ï¼šåˆ·æ–° + å¤åˆ¶å„åˆ—ã€‚åŠ¨æ€æ„å»ºï¼Œæ— éœ€ .rc èµ„æºã€‚
 void DlgWdf::OnNMRClickDlgKernelWdfList(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	*pResult = 0;
 
 	static const struct { UINT id; LPCWSTR text; int col; } kCopyItems[] = {
-		{ 2001, L"ĞòºÅ",         um_WdfDlgInfo_Order },
-		{ 2002, L"º¯ÊıÃû³Æ",     um_WdfDlgInfo_FunctionName },
-		{ 2003, L"µ±Ç°º¯ÊıµØÖ·", um_WdfDlgInfo_FunctionAddr },
+		{ 2001, L"åºå·",         um_WdfDlgInfo_Order },
+		{ 2002, L"å‡½æ•°åç§°",     um_WdfDlgInfo_FunctionName },
+		{ 2003, L"å½“å‰å‡½æ•°åœ°å€", um_WdfDlgInfo_FunctionAddr },
 		{ 2004, L"HOOK",         um_WdfDlgInfo_Hook },
-		{ 2005, L"Ô­Ê¼º¯ÊıµØÖ·", um_WdfDlgInfo_SourceFunctionAddr },
-		{ 2006, L"Ä£¿éÂ·¾¶",     um_WdfDlgInfo_Module },
-		{ 2007, L"ÎÄ¼ş³§ÉÌ",     um_WdfDlgInfo_FileVender },
+		{ 2005, L"åŸå§‹å‡½æ•°åœ°å€", um_WdfDlgInfo_SourceFunctionAddr },
+		{ 2006, L"æ¨¡å—è·¯å¾„",     um_WdfDlgInfo_Module },
+		{ 2007, L"æ–‡ä»¶å‚å•†",     um_WdfDlgInfo_FileVender },
 	};
 	const UINT kRefreshId = 2000;
 
@@ -257,9 +257,9 @@ void DlgWdf::OnNMRClickDlgKernelWdfList(NMHDR* pNMHDR, LRESULT* pResult)
 
 	CMenu menu;
 	menu.CreatePopupMenu();
-	menu.AppendMenuW(MF_POPUP | (hasSel ? 0 : MF_GRAYED), (UINT_PTR)copySub.GetSafeHmenu(), L"¸´ÖÆ");
-	menu.AppendMenuW(MF_STRING, kRefreshId, L"Ë¢ĞÂ");
-	copySub.Detach(); // ËùÓĞÈ¨ÒÑ½»¸ø menu£¬±ÜÃâË«ÖØÏú»Ù
+	menu.AppendMenuW(MF_POPUP | (hasSel ? 0 : MF_GRAYED), (UINT_PTR)copySub.GetSafeHmenu(), L"å¤åˆ¶");
+	menu.AppendMenuW(MF_STRING, kRefreshId, L"åˆ·æ–°");
+	copySub.Detach(); // æ‰€æœ‰æƒå·²äº¤ç»™ menuï¼Œé¿å…åŒé‡é”€æ¯
 
 	CString explorerPath;
 	UINT explorerCmd = AppendOpenInExplorerItem(menu, &m_CListCtrl, explorerPath);
