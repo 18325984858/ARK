@@ -126,41 +126,37 @@ void DlgSetting::OnSize(UINT nType, int cx, int cy)
 
 void DlgSetting::OnBnClickedCheckKddebuggerenabled()
 {
+	// 注意：之前用 g_ThreadPool.AddTask(&DebugFlagsInfo) 是错的——
+	// DebugFlagsInfo 是这个函数的栈局部，等 worker 真跑 SendMsg 的时候
+	// 栈帧已经回收，驱动收到的是栈上残留 / 垃圾值 → 你勾上的 checkbox
+	// 跟驱动 SET 出来的值对不上。点击一下走一次 IPC，本身就够快，直接
+	// 在当前线程同步发，省一份内存所有权的事。
 	CDebugFlagInfo DebugFlagsInfo = { 0 };
 	GetKdDebuggerFlags(&DebugFlagsInfo);
-
-	DebugFlagsInfo.kdDebuggerEnable = m_kdDebuggerEnable ? TRUE : FALSE; //获取对话框数据
-
-	g_ThreadPool.AddTask(new _CThreadPack{ _LoadDriver::Um_UserCallBackType_UserSetDebugFlags, &DebugFlagsInfo });
+	DebugFlagsInfo.kdDebuggerEnable = m_kdDebuggerEnable ? TRUE : FALSE;
+	g_LoadDriver.SendMsg(um_Cmd_DebugFlags_info, &DebugFlagsInfo);
 }
 
 void DlgSetting::OnBnClickedCheckKddebuggernotpresent()
 {
 	CDebugFlagInfo DebugFlagsInfo = { 0 };
 	GetKdDebuggerFlags(&DebugFlagsInfo);
-
-	DebugFlagsInfo.KdDebuggerNotPresent = m_KdDebuggerNotPresent ? TRUE : FALSE; //获取对话框数据
-
-	g_ThreadPool.AddTask(new _CThreadPack{ _LoadDriver::Um_UserCallBackType_UserSetDebugFlags, &DebugFlagsInfo });
+	DebugFlagsInfo.KdDebuggerNotPresent = m_KdDebuggerNotPresent ? TRUE : FALSE;
+	g_LoadDriver.SendMsg(um_Cmd_DebugFlags_info, &DebugFlagsInfo);
 }
 
 void DlgSetting::OnBnClickedCheckpshareddatakddebuggerenabled()
 {
-
 	CDebugFlagInfo DebugFlagsInfo = { 0 };
 	GetKdDebuggerFlags(&DebugFlagsInfo);
-
-	DebugFlagsInfo.SharedDataKdDebuggerEnabled = m_pSharedDataKdDebuggerEnabled ? TRUE : FALSE; //获取对话框数据
-
-	g_ThreadPool.AddTask(new _CThreadPack{ _LoadDriver::Um_UserCallBackType_UserSetDebugFlags, &DebugFlagsInfo });
+	DebugFlagsInfo.SharedDataKdDebuggerEnabled = m_pSharedDataKdDebuggerEnabled ? TRUE : FALSE;
+	g_LoadDriver.SendMsg(um_Cmd_DebugFlags_info, &DebugFlagsInfo);
 }
 
 void DlgSetting::OnBnClickedCheckKdpitchdebugger()
 {
 	CDebugFlagInfo DebugFlagsInfo = { 0 };
 	GetKdDebuggerFlags(&DebugFlagsInfo);
-
-	DebugFlagsInfo.KdPitchDebugger = m_KdPitchDebugger ? TRUE : FALSE; //获取对话框数据
-
-	g_ThreadPool.AddTask(new _CThreadPack{ _LoadDriver::Um_UserCallBackType_UserSetDebugFlags, &DebugFlagsInfo });
+	DebugFlagsInfo.KdPitchDebugger = m_KdPitchDebugger ? TRUE : FALSE;
+	g_LoadDriver.SendMsg(um_Cmd_DebugFlags_info, &DebugFlagsInfo);
 }
