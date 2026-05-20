@@ -16,6 +16,7 @@
 #define ID_NAVBAR_PATH    30003
 #define ID_NAVBAR_GO      30004
 #define ID_NAVBAR_SEARCH  30005
+#define ID_NAVBAR_UP      30006
 static const int kNavBarHeight = 28;
 
 // DlgEnumFile 对话框
@@ -52,6 +53,7 @@ BEGIN_MESSAGE_MAP(DlgEnumFile, CDialogEx)
 	ON_NOTIFY(TVN_ENDLABELEDIT, ID_ENUMFILE_TREE, &DlgEnumFile::OnEndLabelEditEnumfileTree)
 	ON_BN_CLICKED(ID_NAVBAR_BACK,    &DlgEnumFile::OnBtnNavBack)
 	ON_BN_CLICKED(ID_NAVBAR_FORWARD, &DlgEnumFile::OnBtnNavForward)
+	ON_BN_CLICKED(ID_NAVBAR_UP,      &DlgEnumFile::OnBtnNavUp)
 	ON_BN_CLICKED(ID_NAVBAR_GO,      &DlgEnumFile::OnBtnNavGo)
 END_MESSAGE_MAP()
 
@@ -112,6 +114,8 @@ BOOL DlgEnumFile::OnInitDialog()
 		rcPlace, this, ID_NAVBAR_BACK);     // ◀
 	m_BtnForward.Create(L"\u25B6", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
 		rcPlace, this, ID_NAVBAR_FORWARD);  // ▶
+	m_BtnUp.Create(L"\u2191", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
+		rcPlace, this, ID_NAVBAR_UP);       // ↑ 返回上级
 	m_PathEdit.Create(WS_CHILD | WS_VISIBLE | WS_BORDER | WS_TABSTOP | ES_AUTOHSCROLL,
 		rcPlace, this, ID_NAVBAR_PATH);
 	m_BtnGo.Create(L"\u21B2", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
@@ -125,6 +129,7 @@ BOOL DlgEnumFile::OnInitDialog()
 	{
 		m_BtnBack.SetFont(pFont);
 		m_BtnForward.SetFont(pFont);
+		m_BtnUp.SetFont(pFont);
 		m_PathEdit.SetFont(pFont);
 		m_BtnGo.SetFont(pFont);
 		m_SearchEdit.SetFont(pFont);
@@ -158,6 +163,8 @@ void DlgEnumFile::OnSize(UINT nType, int cx, int cy)
 		m_BtnBack.SetWindowPos(NULL, x, y, btnW, h, SWP_NOZORDER);
 		x += btnW + gap;
 		m_BtnForward.SetWindowPos(NULL, x, y, btnW, h, SWP_NOZORDER);
+		x += btnW + gap;
+		m_BtnUp.SetWindowPos(NULL, x, y, btnW, h, SWP_NOZORDER);
 		x += btnW + gap;
 
 		int pathRight = rect.Width() - margin - searchW - gap - btnW - gap;
@@ -1042,6 +1049,15 @@ void DlgEnumFile::UpdateNavButtons()
 		m_BtnBack.EnableWindow(m_NavIndex > 0);
 	if (m_BtnForward.GetSafeHwnd())
 		m_BtnForward.EnableWindow(m_NavIndex >= 0 && m_NavIndex + 1 < (int)m_NavHistory.size());
+	if (m_BtnUp.GetSafeHwnd())
+	{
+		// 仅当当前路径有父目录时可用（盘符根目录如 "C:\" 没有父级）
+		CString cur = m_CurPath;
+		while (cur.GetLength() > 3 && cur[cur.GetLength() - 1] == L'\\')
+			cur.Delete(cur.GetLength() - 1);
+		int slash = cur.ReverseFind(L'\\');
+		m_BtnUp.EnableWindow(slash > 2); // "C:\Foo" 的 slash==2 → 无父级
+	}
 	if (m_PathEdit.GetSafeHwnd() && m_NavIndex >= 0 && m_NavIndex < (int)m_NavHistory.size())
 	{
 		// 显示给用户：去掉末尾反斜杠，更接近 Explorer 的地址栏写法
@@ -1141,6 +1157,19 @@ void DlgEnumFile::OnBtnNavForward()
 	++m_NavIndex;
 	NavigateToDirectory(m_NavHistory[m_NavIndex], false);
 	m_NavSuppressHistory = false;
+}
+
+// 返回上级目录（用当前目录算 parent，不走历史栈方向；
+// 类似 Windows 资源管理器的 ↑ 按钮）
+void DlgEnumFile::OnBtnNavUp()
+{
+	CString cur = m_CurPath;
+	while (cur.GetLength() > 3 && cur[cur.GetLength() - 1] == L'\\')
+		cur.Delete(cur.GetLength() - 1);
+	int slash = cur.ReverseFind(L'\\');
+	if (slash <= 2) return; // 已经是盘符根目录
+	CString parent = cur.Left(slash + 1); // 含末尾反斜杠，例如 "C:\Foo\"
+	NavigateToDirectory(parent, true);
 }
 
 void DlgEnumFile::OnBtnNavGo()

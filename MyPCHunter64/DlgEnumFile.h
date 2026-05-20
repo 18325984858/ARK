@@ -65,6 +65,7 @@ public:
 	// ===== 顶部地址栏 (后退/前进 + 路径输入 + 搜索) =====
 	CButton m_BtnBack;
 	CButton m_BtnForward;
+	CButton m_BtnUp;
 	CEdit   m_PathEdit;
 	CButton m_BtnGo;
 	CEdit   m_SearchEdit;
@@ -83,6 +84,7 @@ public:
 
 	afx_msg void OnBtnNavBack();
 	afx_msg void OnBtnNavForward();
+	afx_msg void OnBtnNavUp();
 	afx_msg void OnBtnNavGo();
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
 };
