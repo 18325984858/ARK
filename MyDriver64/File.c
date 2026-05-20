@@ -39,20 +39,11 @@ ULONG64 MyDeleteRunFile(PUNICODE_STRING pFullName)
 	IO_STATUS_BLOCK ioStatus = { 0 };
 
 	MyDbgPrintfEx("[MyDeleteRunFile] enter path=\"%wZ\"\n", pFullName);
-
-	//第一步：先把所有进程对这个文件的句柄全部强制关掉，
-	//避免后面删除遇到 SHARING_VIOLATION。
-	{
-		ULONG64 closed = 0;
-		NTSTATUS uls = UnlockFile(pFullName, &closed);
-		MyDbgPrintfEx("[MyDeleteRunFile] UnlockFile -> 0x%08X closed=%llu\n",
-			uls, closed);
-	}
-
 	InitializeObjectAttributes(&objAttribus, pFullName,
 		OBJ_KERNEL_HANDLE | OBJ_CASE_INSENSITIVE, NULL, NULL);
 
-	//第二步：以 DELETE 权限 + 全 share 打开文件，拿到 FILE_OBJECT。
+	//打开文件——访问权限带 DELETE，允许任意 share，最大限度兼容
+	//已经被进程占用的文件（典型例：自己的日志）。
 	nStatus = IoCreateFile(&FileHandle,
 		FILE_READ_ATTRIBUTES | DELETE | SYNCHRONIZE,
 		&objAttribus, &ioStatus, 0, FILE_ATTRIBUTE_NORMAL,
@@ -65,110 +56,22 @@ ULONG64 MyDeleteRunFile(PUNICODE_STRING pFullName)
 		return nStatus;
 	}
 
-	PFILE_OBJECT pFileObj = NULL;
-	nStatus = ObReferenceObjectByHandle(FileHandle, DELETE,
-		*IoFileObjectType, KernelMode, &pFileObj, NULL);
-	if (!NT_SUCCESS(nStatus))
-	{
-		MyDbgPrintfEx("[MyDeleteRunFile] ObReferenceObjectByHandle failed 0x%08X\n", nStatus);
-		ZwClose(FileHandle);
-		return nStatus;
-	}
-	ZwClose(FileHandle);
-
-	PDEVICE_OBJECT pFileDeviceObj = IoGetRelatedDeviceObject(pFileObj);
-	if (!MmIsAddressValid(pFileDeviceObj))
-	{
-		MyDbgPrintfEx("[MyDeleteRunFile] no related device object\n");
-		ObDereferenceObject(pFileObj);
-		return STATUS_DEVICE_NOT_READY;
-	}
-
-	//第三步：手搓 IRP_MJ_SET_INFORMATION + FileDispositionInformationEx，
-	//IoCallDriver 直接打到底层文件系统设备，强制删除。
-	PIRP pIrp = IoAllocateIrp(pFileDeviceObj->StackSize, TRUE);
-	if (!MmIsAddressValid(pIrp))
-	{
-		MyDbgPrintfEx("[MyDeleteRunFile] IoAllocateIrp failed\n");
-		ObDereferenceObject(pFileObj);
-		return STATUS_INSUFFICIENT_RESOURCES;
-	}
-
-	KEVENT nEvent = { 0 };
-	IO_STATUS_BLOCK irpIos = { 0 };
+	//走 POSIX 删除（Win10 RS1+ NTFS）：用上面拿到的句柄发
+	//ZwSetInformationFile + FileDispositionInformationEx，FltMgr 路径完整，
+	//NTFS 会按 POSIX 语义立即把文件名从目录里 unlink，不要求排他打开。
 	FILE_DISPOSITION_INFORMATION_EX dispEx = { 0 };
-	KeInitializeEvent(&nEvent, SynchronizationEvent, FALSE);
-
 	dispEx.Flags = FILE_DISPOSITION_DELETE
 		| FILE_DISPOSITION_POSIX_SEMANTICS
 		| FILE_DISPOSITION_FORCE_IMAGE_SECTION_CHECK
 		| FILE_DISPOSITION_IGNORE_READONLY_ATTRIBUTE;
 
-	pIrp->AssociatedIrp.SystemBuffer = &dispEx;
-	pIrp->UserEvent = &nEvent;
-	pIrp->UserIosb = &irpIos;
-	pIrp->Tail.Overlay.OriginalFileObject = pFileObj;
-	pIrp->Tail.Overlay.Thread = (PETHREAD)KeGetCurrentThread();
-	pIrp->RequestorMode = KernelMode;
+	IO_STATUS_BLOCK posixIos = { 0 };
+	nStatus = ZwSetInformationFile(FileHandle, &posixIos,
+		&dispEx, sizeof(dispEx), FileDispositionInformationExClass);
+	MyDbgPrintfEx("[MyDeleteRunFile] POSIX dispose -> 0x%08X (ios=0x%08X)\n",
+		nStatus, posixIos.Status);
 
-	PIO_STACK_LOCATION irpSp = IoGetNextIrpStackLocation(pIrp);
-	irpSp->MajorFunction = IRP_MJ_SET_INFORMATION;
-	irpSp->DeviceObject = pFileDeviceObj;
-	irpSp->FileObject = pFileObj;
-	irpSp->Parameters.SetFile.Length = sizeof(FILE_DISPOSITION_INFORMATION_EX);
-	irpSp->Parameters.SetFile.FileInformationClass = FileDispositionInformationExClass;
-	irpSp->Parameters.SetFile.FileObject = pFileObj;
-
-	IoSetCompletionRoutine(pIrp, SkillSetFileCompletion, &nEvent, TRUE, TRUE, TRUE);
-
-	//为了让 SectionObjectPointer 上有可能挂着的映射不挡删除，
-	//先备份再清零，删完再还原（经典做法，避免蓝屏）。
-	PULONG64 ImageSectionObject = NULL;
-	PULONG64 DataSectionObject = NULL;
-	PULONG64 SharedCacheMap = NULL;
-	PSECTION_OBJECT_POINTERS pSectionObjectPointer = pFileObj->SectionObjectPointer;
-	if (MmIsAddressValid(pSectionObjectPointer))
-	{
-		ImageSectionObject = pSectionObjectPointer->ImageSectionObject;
-		pSectionObjectPointer->ImageSectionObject = NULL;
-		DataSectionObject = pSectionObjectPointer->DataSectionObject;
-		pSectionObjectPointer->DataSectionObject = NULL;
-		SharedCacheMap = pSectionObjectPointer->SharedCacheMap;
-		pSectionObjectPointer->SharedCacheMap = NULL;
-	}
-
-	pFileObj->DeletePending = FALSE;
-	pFileObj->DeleteAccess = TRUE;
-
-	NTSTATUS callStatus = IoCallDriver(pFileDeviceObj, pIrp);
-	if (callStatus == STATUS_PENDING)
-	{
-		KeWaitForSingleObject(&nEvent, Executive, KernelMode, FALSE, NULL);
-	}
-
-	//还原 SectionObjectPointer
-	pSectionObjectPointer = pFileObj->SectionObjectPointer;
-	if (MmIsAddressValid(pSectionObjectPointer))
-	{
-		if (ImageSectionObject)
-		{
-			pSectionObjectPointer->ImageSectionObject = ImageSectionObject;
-		}
-		if (DataSectionObject)
-		{
-			pSectionObjectPointer->DataSectionObject = DataSectionObject;
-		}
-		if (SharedCacheMap)
-		{
-			pSectionObjectPointer->SharedCacheMap = SharedCacheMap;
-		}
-	}
-
-	nStatus = irpIos.Status;
-	MyDbgPrintfEx("[MyDeleteRunFile] delete IRP -> 0x%08X info=0x%llX\n",
-		nStatus, (ULONG64)irpIos.Information);
-
-	ObDereferenceObject(pFileObj);
+	ZwClose(FileHandle);
 	return nStatus;
 }
 
