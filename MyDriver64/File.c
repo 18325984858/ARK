@@ -869,8 +869,30 @@ retry:
 				NTSTATUS pStatus = PsLookupProcessByProcessId(HandleInfo->UniqueProcessId, &Process);
 				if (NT_SUCCESS(pStatus) && Process != NULL)
 				{
-					// 同步项目其它地方的 attach 安全约束
-					if (Process != PsGetCurrentProcess() && IsProcessSafeToAttach((ULONG64)Process))
+					if (Process == PsGetCurrentProcess())
+					{
+						// 自己进程持有的句柄：不能 attach 到自身（INVALID_PROCESS_ATTACH_ATTEMPT，
+						// 0x5），但同地址空间下 HandleValue 直接有效，临时把 PreviousMode 切到
+						// KernelMode 就可以直接 ZwClose（绕过对 PreviousMode==UserMode 的保护检查）。
+						PCHAR pPrev = NULL;
+						CHAR savedPrev = (CHAR)-1;
+						if (g_Offset_KTHREAD_PreviousMode > 0)
+						{
+							pPrev = (PCHAR)((ULONG64)PsGetCurrentThread() + g_Offset_KTHREAD_PreviousMode);
+							savedPrev = *pPrev;
+							*pPrev = (CHAR)KernelMode;
+						}
+
+						NTSTATUS closeStatus = ZwClose(HandleInfo->HandleValue);
+
+						if (pPrev) *pPrev = savedPrev;
+
+						MyDbgPrintfEx("[UnlockFile] ZwClose (self) pid=%u handle=%p -> 0x%08X\n",
+							(ULONG)(ULONG_PTR)HandleInfo->UniqueProcessId,
+							(PVOID)(ULONG_PTR)HandleInfo->HandleValue, closeStatus);
+						if (NT_SUCCESS(closeStatus)) { closed++; closedHandle++; }
+					}
+					else if (IsProcessSafeToAttach((ULONG64)Process))
 					{
 						KAPC_STATE ApcState = { 0 };
 						KeStackAttachProcess(Process, &ApcState);
@@ -899,10 +921,9 @@ retry:
 					}
 					else
 					{
-						MyDbgPrintfEx("[UnlockFile] skip attach pid=%u (cur=%p, target=%p, safe-to-attach=%s)\n",
+						MyDbgPrintfEx("[UnlockFile] skip pid=%u (cur=%p, target=%p, safe-to-attach=no)\n",
 							(ULONG)(ULONG_PTR)HandleInfo->UniqueProcessId,
-							PsGetCurrentProcess(), Process,
-							IsProcessSafeToAttach((ULONG64)Process) ? "yes" : "no");
+							PsGetCurrentProcess(), Process);
 					}
 					ObDereferenceObject(Process);
 				}
@@ -914,8 +935,10 @@ retry:
 
 				// 即便没找到对应进程的句柄表（system 进程持有的 image
 				// section reference），只要我们成功 flush 了 image section，
-				// 也算成功解了一份占用——统计入 closed，UI 才有反馈。
-				if (flushed) { closed++; flushedCnt++; }
+				// 也算成功解了一份占用——但只对真的有 ImageSectionObject 的
+				// PE 类文件统计；对纯数据文件 flush 总是返回 TRUE 但实际没动
+				// 任何引用，不应计入 closed，避免给用户"释放了 N 个"的假象。
+				if (flushed) flushedCnt++;
 			}
 		}
 
