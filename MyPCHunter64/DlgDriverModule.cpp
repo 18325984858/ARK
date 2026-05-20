@@ -18,6 +18,9 @@
 #pragma comment(lib, "comdlg32.lib")
 #pragma comment(lib, "comctl32.lib")
 
+extern void AppLog_Write(const char* level, const char* fmt, ...);
+#define DRVMOD_LOG(...) AppLog_Write("INFO ", __VA_ARGS__)
+
 extern _LoadDriver g_LoadDriver;
 
 // ---- 本文件局部 PE 解析 / 反汇编 / 转储辅助 ----
@@ -174,6 +177,8 @@ static void ShowListViewer(HWND parent, LPCWSTR title, LPCWSTR header,
 	const std::vector<ListViewerCol>& cols,
 	const std::vector<std::vector<CString>>& rows)
 {
+	DRVMOD_LOG("[ListViewer] BEGIN title='%ws' rows=%zu cols=%zu",
+		title, rows.size(), cols.size());
 	static bool s_registered = false;
 	static const wchar_t* kClass = L"PCHunterPeListViewer";
 	HINSTANCE hi = GetModuleHandleW(NULL);
@@ -223,13 +228,14 @@ static void ShowListViewer(HWND parent, LPCWSTR title, LPCWSTR header,
 		c.pszText  = (LPWSTR)cols[i].name;
 		ListView_InsertColumn(ctx->hList, (int)i, &c);
 	}
-	// 注入行
+	// 批量插入：关闭重画，全部完了再打开
+	SendMessageW(ctx->hList, WM_SETREDRAW, FALSE, 0);
 	for (size_t r = 0; r < rows.size(); ++r)
 	{
 		LVITEMW it = { 0 };
 		it.mask     = LVIF_TEXT;
 		it.iItem    = (int)r;
-		it.pszText  = (LPWSTR)(LPCWSTR)rows[r][0];
+		it.pszText  = rows[r].empty() ? (LPWSTR)L"" : (LPWSTR)(LPCWSTR)rows[r][0];
 		int idx = ListView_InsertItem(ctx->hList, &it);
 		for (size_t c = 1; c < rows[r].size() && c < cols.size(); ++c)
 		{
@@ -237,15 +243,20 @@ static void ShowListViewer(HWND parent, LPCWSTR title, LPCWSTR header,
 				(LPWSTR)(LPCWSTR)rows[r][c]);
 		}
 	}
+	SendMessageW(ctx->hList, WM_SETREDRAW, TRUE, 0);
+	DRVMOD_LOG("[ListViewer] inserted %zu rows", rows.size());
 
 	ShowWindow(hwnd, SW_SHOW);
 	UpdateWindow(hwnd);
+	DRVMOD_LOG("[ListViewer] DONE");
 }
 
 static void ShowPeExports(HWND hwnd, const CString& path)
 {
+	DRVMOD_LOG("[Exports] BEGIN path='%ws'", (LPCWSTR)path);
 	DWORD size = 0;
 	BYTE* buf = ReadAllFile(path, &size);
+	DRVMOD_LOG("[Exports] ReadAllFile -> buf=%p size=%u", buf, size);
 	if (!buf) { ::MessageBoxW(hwnd, L"无法读取文件。", L"查看导出表", MB_OK | MB_ICONWARNING); return; }
 	auto nt = GetNt64(buf, size);
 	if (!nt)
@@ -270,10 +281,19 @@ static void ShowPeExports(HWND hwnd, const CString& path)
 	DWORD funcsOff = RvaToFileOffset(buf, size, exp->AddressOfFunctions);
 	DWORD namesOff = RvaToFileOffset(buf, size, exp->AddressOfNames);
 	DWORD ordOff   = RvaToFileOffset(buf, size, exp->AddressOfNameOrdinals);
+	DRVMOD_LOG("[Exports] NumberOfFunctions=%u NumberOfNames=%u Base=%u funcsOff=0x%X namesOff=0x%X ordOff=0x%X",
+		exp->NumberOfFunctions, exp->NumberOfNames, exp->Base, funcsOff, namesOff, ordOff);
+
+	// 上限保护：防止损坏 PE 里 NumberOfFunctions 被写成天文数字
+	DWORD nFuncs = exp->NumberOfFunctions;
+	DWORD nNames = exp->NumberOfNames;
+	const DWORD kMaxFuncs = 200000;
+	if (nFuncs > kMaxFuncs) { DRVMOD_LOG("[Exports] WARN cap NumberOfFunctions %u -> %u", nFuncs, kMaxFuncs); nFuncs = kMaxFuncs; }
+	if (nNames > kMaxFuncs) { DRVMOD_LOG("[Exports] WARN cap NumberOfNames %u -> %u",     nNames, kMaxFuncs); nNames = kMaxFuncs; }
 
 	std::vector<std::vector<CString>> rows;
-	rows.reserve(exp->NumberOfFunctions);
-	for (DWORD i = 0; i < exp->NumberOfFunctions; ++i)
+	rows.reserve(nFuncs);
+	for (DWORD i = 0; i < nFuncs; ++i)
 	{
 		DWORD rva = 0;
 		if (funcsOff && funcsOff + (i + 1) * sizeof(DWORD) <= size)
@@ -282,7 +302,7 @@ static void ShowPeExports(HWND hwnd, const CString& path)
 		CString name = L"(未命名 / 序号导出)";
 		if (namesOff && ordOff)
 		{
-			for (DWORD k = 0; k < exp->NumberOfNames; ++k)
+			for (DWORD k = 0; k < nNames; ++k)
 			{
 				if (ordOff + (k + 1) * sizeof(WORD) > size) break;
 				WORD ordIdx = ((WORD*)(buf + ordOff))[k];
@@ -305,6 +325,7 @@ static void ShowPeExports(HWND hwnd, const CString& path)
 		sRva.Format(L"0x%08X", rva);
 		rows.push_back({ sOrd, sRva, name });
 	}
+	DRVMOD_LOG("[Exports] rows built: %zu", rows.size());
 	free(buf);
 
 	CString header;
@@ -317,7 +338,9 @@ static void ShowPeExports(HWND hwnd, const CString& path)
 		{ L"RVA",  100 },
 		{ L"名称", 600 },
 	};
+	DRVMOD_LOG("[Exports] calling ShowListViewer rows=%zu", rows.size());
 	ShowListViewer(hwnd, L"导出表", header, cols, rows);
+	DRVMOD_LOG("[Exports] DONE");
 }
 
 static void ShowPeImports(HWND hwnd, const CString& path)
