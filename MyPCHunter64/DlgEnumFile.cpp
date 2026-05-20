@@ -412,7 +412,6 @@ void DlgEnumFile::OnNMRClickEnumfileList(NMHDR* pNMHDR, LRESULT* pResult)
 	const UINT kFilePwsh       = 9030; // 在此处打开 PowerShell
 	const UINT kFileHash       = 9031; // 计算哈希
 	const UINT kFileVerify     = 9032; // 检查数字签名
-	const UINT kFileNewFolder  = 9033; // 新建文件夹
 	const UINT kFileNewText    = 9034; // 新建文本文件
 
 	CMenu copySub;
@@ -439,7 +438,6 @@ void DlgEnumFile::OnNMRClickEnumfileList(NMHDR* pNMHDR, LRESULT* pResult)
 	// 在当前目录打开终端 / 新建
 	menu.AppendMenuW(MF_STRING | (!m_CurPath.IsEmpty() ? 0 : MF_GRAYED), kFileCmd,  L"在此处打开命令行");
 	menu.AppendMenuW(MF_STRING | (!m_CurPath.IsEmpty() ? 0 : MF_GRAYED), kFilePwsh, L"在此处打开 PowerShell");
-	menu.AppendMenuW(MF_STRING | (!m_CurPath.IsEmpty() ? 0 : MF_GRAYED), kFileNewFolder, L"新建文件夹");
 	menu.AppendMenuW(MF_STRING | (!m_CurPath.IsEmpty() ? 0 : MF_GRAYED), kFileNewText,   L"新建文本文件");
 	menu.AppendMenuW(MF_SEPARATOR);
 
@@ -558,39 +556,6 @@ void DlgEnumFile::OnNMRClickEnumfileList(NMHDR* pNMHDR, LRESULT* pResult)
 		ShellExecuteW(NULL, L"open", L"powershell.exe",
 			L"-NoExit -Command \"Set-Location -LiteralPath '" + m_CurPath + L"'\"",
 			NULL, SW_SHOWNORMAL);
-		return;
-	}
-	if (cmd == kFileNewFolder && !m_CurPath.IsEmpty())
-	{
-		// 在当前目录下创建一个不重名的"新建文件夹"
-		CString base = m_CurPath + L"新建文件夹";
-		CString full = base;
-		for (int n = 2; n <= 99 && !CreateDirectoryW(full, NULL); ++n)
-		{
-			if (GetLastError() != ERROR_ALREADY_EXISTS) { full.Empty(); break; }
-			full.Format(L"%s (%d)", (LPCWSTR)base, n);
-		}
-		if (!full.IsEmpty())
-		{
-			// 只更新树控件：把新建文件夹挂到当前选中节点下
-			HTREEITEM hParent = m_CTreeCtrl.GetSelectedItem();
-			if (hParent)
-			{
-				CString name = full.Mid(m_CurPath.GetLength());
-				TVINSERTSTRUCTW ti = { 0 };
-				ti.hParent = hParent;
-				ti.hInsertAfter = TVI_LAST;
-				ti.itemex.mask = TVIF_TEXT | TVIF_CHILDREN;
-				ti.itemex.pszText = (LPWSTR)(LPCWSTR)name;
-				ti.itemex.cChildren = 1;
-				HTREEITEM hNew = m_CTreeCtrl.InsertItem(&ti);
-				CString* pData = new CString();
-				pData->Format(L"%s\\", (LPCWSTR)full);
-				m_CTreeCtrl.SetItemData(hNew, (DWORD_PTR)pData);
-				m_CTreeCtrl.Expand(hParent, TVE_EXPAND);
-				m_CTreeCtrl.EnsureVisible(hNew);
-			}
-		}
 		return;
 	}
 	if (cmd == kFileNewText && !m_CurPath.IsEmpty())
