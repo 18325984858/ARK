@@ -12,8 +12,11 @@
 #include "include/capstone-5.0-Release/include/capstone/capstone.h"
 #include <shlobj.h>
 #include <commdlg.h>
+#include <commctrl.h>
+#include <vector>
 #pragma comment(lib, "shell32.lib")
 #pragma comment(lib, "comdlg32.lib")
+#pragma comment(lib, "comctl32.lib")
 
 extern _LoadDriver g_LoadDriver;
 
@@ -101,49 +104,33 @@ static void WriteTempAndOpen(LPCWSTR baseName, const CString& content)
 }
 
 // ============================================================
-// 通用的"PE 文本结果"子窗口：一个 ReadOnly 多行 Edit 控件填满客户区，
-// 用纯 Win32 创建，避免再加一个 .rc 资源；项目其它独立功能（DlgDisasm
-// 等）都是各自 CDialogEx + 资源，这里以"展示型只读文本"为目的，体积
-// 太小、不值得新增资源 ID，故走 CreateWindowEx 路径但保留弹出独立窗口
-// 的视觉效果。窗口为 modeless：右键 → 弹一个查看器，不阻塞主界面，
-// 可以叠多个（比如同时看导出和导入）。
-struct TextViewerCtx
+// 通用 "PE 结果" 子窗口：客户区放一个 LVS_REPORT 列表 + 顶部状态栏。
+// 列定义 + 行数据由调用方传入，三个用途（导出/导入/反汇编）共用同一份
+// 弹窗代码。Modeless，方便叠多个对照。
+struct ListViewerCol
 {
-	HWND  hEdit;
+	LPCWSTR name;
+	int     width;
+};
+struct ListViewerCtx
+{
+	HWND  hList;
+	HWND  hHeader;     // 顶部小标签（显示文件路径等摘要）
 	HFONT hFont;
 };
 
-static LRESULT CALLBACK TextViewerWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
+static LRESULT CALLBACK ListViewerWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 {
-	auto* ctx = (TextViewerCtx*)GetWindowLongPtrW(hwnd, GWLP_USERDATA);
+	auto* ctx = (ListViewerCtx*)GetWindowLongPtrW(hwnd, GWLP_USERDATA);
 	switch (msg)
 	{
-	case WM_NCCREATE:
-		return DefWindowProcW(hwnd, msg, wp, lp);
-	case WM_CREATE:
-	{
-		auto* nctx = new TextViewerCtx{ NULL, NULL };
-		SetWindowLongPtrW(hwnd, GWLP_USERDATA, (LONG_PTR)nctx);
-		auto* cs = (CREATESTRUCTW*)lp;
-		auto* content = (const CString*)cs->lpCreateParams;
-
-		nctx->hEdit = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"",
-			WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY
-			| ES_AUTOVSCROLL | ES_AUTOHSCROLL | WS_VSCROLL | WS_HSCROLL,
-			0, 0, 0, 0, hwnd, (HMENU)100, cs->hInstance, NULL);
-		nctx->hFont = CreateFontW(-14, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
-			DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-			CLEARTYPE_QUALITY, FIXED_PITCH | FF_MODERN, L"Consolas");
-		SendMessageW(nctx->hEdit, WM_SETFONT, (WPARAM)nctx->hFont, FALSE);
-		SetWindowTextW(nctx->hEdit, (LPCWSTR)*content);
-		// 默认光标停在最前，避免一打开就滚到末尾
-		SendMessageW(nctx->hEdit, EM_SETSEL, 0, 0);
-		return 0;
-	}
 	case WM_SIZE:
-		if (ctx && ctx->hEdit)
+		if (ctx && ctx->hList)
 		{
-			MoveWindow(ctx->hEdit, 0, 0, LOWORD(lp), HIWORD(lp), TRUE);
+			int w = LOWORD(lp), h = HIWORD(lp);
+			int hdrH = 22;
+			MoveWindow(ctx->hHeader, 0, 0, w, hdrH, TRUE);
+			MoveWindow(ctx->hList, 0, hdrH, w, h - hdrH, TRUE);
 		}
 		return 0;
 	case WM_CLOSE:
@@ -161,16 +148,18 @@ static LRESULT CALLBACK TextViewerWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM
 	return DefWindowProcW(hwnd, msg, wp, lp);
 }
 
-static void ShowTextViewer(HWND parent, LPCWSTR title, const CString& content)
+static void ShowListViewer(HWND parent, LPCWSTR title, LPCWSTR header,
+	const std::vector<ListViewerCol>& cols,
+	const std::vector<std::vector<CString>>& rows)
 {
 	static bool s_registered = false;
-	static const wchar_t* kClass = L"PCHunterPeTextViewer";
+	static const wchar_t* kClass = L"PCHunterPeListViewer";
 	HINSTANCE hi = GetModuleHandleW(NULL);
 	if (!s_registered)
 	{
 		WNDCLASSEXW wc = { sizeof(wc) };
 		wc.style         = CS_HREDRAW | CS_VREDRAW;
-		wc.lpfnWndProc   = TextViewerWndProc;
+		wc.lpfnWndProc   = ListViewerWndProc;
 		wc.hInstance     = hi;
 		wc.hCursor       = LoadCursorW(NULL, IDC_ARROW);
 		wc.hbrBackground = (HBRUSH)(COLOR_BTNFACE + 1);
@@ -178,15 +167,57 @@ static void ShowTextViewer(HWND parent, LPCWSTR title, const CString& content)
 		RegisterClassExW(&wc);
 		s_registered = true;
 	}
+
 	HWND hwnd = CreateWindowExW(0, kClass, title,
 		WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT, CW_USEDEFAULT, 980, 640,
-		parent, NULL, hi, (LPVOID)&content);
-	if (hwnd)
+		CW_USEDEFAULT, CW_USEDEFAULT, 1000, 640,
+		parent, NULL, hi, NULL);
+	if (!hwnd) return;
+
+	auto* ctx = new ListViewerCtx{ NULL, NULL, NULL };
+	SetWindowLongPtrW(hwnd, GWLP_USERDATA, (LONG_PTR)ctx);
+
+	ctx->hHeader = CreateWindowExW(0, L"STATIC", header,
+		WS_CHILD | WS_VISIBLE | SS_LEFT | SS_NOPREFIX,
+		0, 0, 0, 22, hwnd, (HMENU)100, hi, NULL);
+	ctx->hList = CreateWindowExW(WS_EX_CLIENTEDGE, WC_LISTVIEW, L"",
+		WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_SHOWSELALWAYS,
+		0, 22, 0, 0, hwnd, (HMENU)101, hi, NULL);
+	ctx->hFont = CreateFontW(-12, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+		DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+		CLEARTYPE_QUALITY, FIXED_PITCH | FF_MODERN, L"Consolas");
+	SendMessageW(ctx->hList, WM_SETFONT, (WPARAM)ctx->hFont, FALSE);
+	SendMessageW(ctx->hHeader, WM_SETFONT,
+		(WPARAM)GetStockObject(DEFAULT_GUI_FONT), FALSE);
+	ListView_SetExtendedListViewStyle(ctx->hList,
+		LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES | LVS_EX_DOUBLEBUFFER);
+
+	// 注入列
+	for (size_t i = 0; i < cols.size(); ++i)
 	{
-		ShowWindow(hwnd, SW_SHOW);
-		UpdateWindow(hwnd);
+		LVCOLUMNW c = { 0 };
+		c.mask     = LVCF_TEXT | LVCF_WIDTH;
+		c.cx       = cols[i].width;
+		c.pszText  = (LPWSTR)cols[i].name;
+		ListView_InsertColumn(ctx->hList, (int)i, &c);
 	}
+	// 注入行
+	for (size_t r = 0; r < rows.size(); ++r)
+	{
+		LVITEMW it = { 0 };
+		it.mask     = LVIF_TEXT;
+		it.iItem    = (int)r;
+		it.pszText  = (LPWSTR)(LPCWSTR)rows[r][0];
+		int idx = ListView_InsertItem(ctx->hList, &it);
+		for (size_t c = 1; c < rows[r].size() && c < cols.size(); ++c)
+		{
+			ListView_SetItemText(ctx->hList, idx, (int)c,
+				(LPWSTR)(LPCWSTR)rows[r][c]);
+		}
+	}
+
+	ShowWindow(hwnd, SW_SHOW);
+	UpdateWindow(hwnd);
 }
 
 static void ShowPeExports(HWND hwnd, const CString& path)
@@ -214,53 +245,59 @@ static void ShowPeExports(HWND hwnd, const CString& path)
 		free(buf); ::MessageBoxW(hwnd, L"导出表已损坏。", L"查看导出表", MB_OK | MB_ICONWARNING); return;
 	}
 	auto exp = (PIMAGE_EXPORT_DIRECTORY)(buf + off);
-	DWORD funcsOff   = RvaToFileOffset(buf, size, exp->AddressOfFunctions);
-	DWORD namesOff   = RvaToFileOffset(buf, size, exp->AddressOfNames);
-	DWORD ordOff     = RvaToFileOffset(buf, size, exp->AddressOfNameOrdinals);
+	DWORD funcsOff = RvaToFileOffset(buf, size, exp->AddressOfFunctions);
+	DWORD namesOff = RvaToFileOffset(buf, size, exp->AddressOfNames);
+	DWORD ordOff   = RvaToFileOffset(buf, size, exp->AddressOfNameOrdinals);
 
-	CString text;
-	text.AppendFormat(L"文件: %s\r\n", (LPCWSTR)path);
-	text.AppendFormat(L"导出表 RVA=0x%08X  大小=0x%X\r\n", dd.VirtualAddress, dd.Size);
-	text.AppendFormat(L"函数总数=%u  名称总数=%u  Base=%u\r\n\r\n",
-		exp->NumberOfFunctions, exp->NumberOfNames, exp->Base);
-	text += L"序号  RVA         名称\r\n";
-	text += L"----  ----------  ---------------------------------\r\n";
-
+	std::vector<std::vector<CString>> rows;
+	rows.reserve(exp->NumberOfFunctions);
 	for (DWORD i = 0; i < exp->NumberOfFunctions; ++i)
 	{
 		DWORD rva = 0;
 		if (funcsOff && funcsOff + (i + 1) * sizeof(DWORD) <= size)
-		{
 			rva = ((DWORD*)(buf + funcsOff))[i];
-		}
-		// 在 NameOrdinals 表里找 i 对应的名字
+
 		CString name = L"(未命名 / 序号导出)";
 		if (namesOff && ordOff)
 		{
 			for (DWORD k = 0; k < exp->NumberOfNames; ++k)
 			{
 				if (ordOff + (k + 1) * sizeof(WORD) > size) break;
-				WORD ord = ((WORD*)(buf + ordOff))[k];
-				if (ord == i)
+				WORD ordIdx = ((WORD*)(buf + ordOff))[k];
+				if (ordIdx == i)
 				{
 					if (namesOff + (k + 1) * sizeof(DWORD) > size) break;
 					DWORD nameRva = ((DWORD*)(buf + namesOff))[k];
-					DWORD nameOff = RvaToFileOffset(buf, size, nameRva);
-					if (nameOff && nameOff < size)
+					DWORD nameO = RvaToFileOffset(buf, size, nameRva);
+					if (nameO && nameO < size)
 					{
-						const char* a = (const char*)(buf + nameOff);
 						WCHAR wbuf[256] = { 0 };
-						MultiByteToWideChar(CP_ACP, 0, a, -1, wbuf, _countof(wbuf) - 1);
+						MultiByteToWideChar(CP_ACP, 0, (const char*)(buf + nameO), -1,
+							wbuf, _countof(wbuf) - 1);
 						name = wbuf;
 					}
 					break;
 				}
 			}
 		}
-		text.AppendFormat(L"%4u  0x%08X  %s\r\n", exp->Base + i, rva, (LPCWSTR)name);
+		CString sOrd, sRva;
+		sOrd.Format(L"%u", exp->Base + i);
+		sRva.Format(L"0x%08X", rva);
+		rows.push_back({ sOrd, sRva, name });
 	}
 	free(buf);
-	ShowTextViewer(hwnd, L"导出表", text);
+
+	CString header;
+	header.Format(L"文件: %s    导出表 RVA=0x%08X 大小=0x%X    函数=%u  名称=%u  Base=%u",
+		(LPCWSTR)path, dd.VirtualAddress, dd.Size,
+		exp->NumberOfFunctions, exp->NumberOfNames, exp->Base);
+
+	std::vector<ListViewerCol> cols = {
+		{ L"序号", 60 },
+		{ L"RVA",  100 },
+		{ L"名称", 600 },
+	};
+	ShowListViewer(hwnd, L"导出表", header, cols, rows);
 }
 
 static void ShowPeImports(HWND hwnd, const CString& path)
@@ -288,10 +325,7 @@ static void ShowPeImports(HWND hwnd, const CString& path)
 		free(buf); ::MessageBoxW(hwnd, L"导入表 RVA 无效。", L"查看导入表", MB_OK | MB_ICONWARNING); return;
 	}
 
-	CString text;
-	text.AppendFormat(L"文件: %s\r\n", (LPCWSTR)path);
-	text.AppendFormat(L"导入表 RVA=0x%08X  大小=0x%X\r\n\r\n", dd.VirtualAddress, dd.Size);
-
+	std::vector<std::vector<CString>> rows;
 	auto desc = (PIMAGE_IMPORT_DESCRIPTOR)(buf + descOff);
 	while ((BYTE*)desc + sizeof(IMAGE_IMPORT_DESCRIPTOR) <= buf + size && desc->Name)
 	{
@@ -299,7 +333,6 @@ static void ShowPeImports(HWND hwnd, const CString& path)
 		const char* modName = (nameOff && nameOff < size) ? (const char*)(buf + nameOff) : "(?)";
 		WCHAR wmod[260] = { 0 };
 		MultiByteToWideChar(CP_ACP, 0, modName, -1, wmod, _countof(wmod) - 1);
-		text.AppendFormat(L"\r\n[模块] %s\r\n", wmod);
 
 		DWORD oftRva = desc->OriginalFirstThunk ? desc->OriginalFirstThunk : desc->FirstThunk;
 		DWORD thunkOff = RvaToFileOffset(buf, size, oftRva);
@@ -308,9 +341,11 @@ static void ShowPeImports(HWND hwnd, const CString& path)
 		auto thunk = (PIMAGE_THUNK_DATA64)(buf + thunkOff);
 		while ((BYTE*)thunk + sizeof(IMAGE_THUNK_DATA64) <= buf + size && thunk->u1.AddressOfData)
 		{
+			CString sHint, sName;
 			if (thunk->u1.Ordinal & IMAGE_ORDINAL_FLAG64)
 			{
-				text.AppendFormat(L"    (Ordinal) %llu\r\n",
+				sHint = L"-";
+				sName.Format(L"#%llu (Ordinal)",
 					(ULONGLONG)IMAGE_ORDINAL64(thunk->u1.Ordinal));
 			}
 			else
@@ -319,17 +354,30 @@ static void ShowPeImports(HWND hwnd, const CString& path)
 				if (ibnOff && ibnOff + sizeof(WORD) < size)
 				{
 					auto ibn = (PIMAGE_IMPORT_BY_NAME)(buf + ibnOff);
+					sHint.Format(L"%u", ibn->Hint);
 					WCHAR wname[256] = { 0 };
 					MultiByteToWideChar(CP_ACP, 0, ibn->Name, -1, wname, _countof(wname) - 1);
-					text.AppendFormat(L"    %5u  %s\r\n", ibn->Hint, wname);
+					sName = wname;
 				}
+				else { sHint = L"?"; sName = L"(? bad RVA)"; }
 			}
+			rows.push_back({ wmod, sHint, sName });
 			++thunk;
 		}
 		++desc;
 	}
 	free(buf);
-	ShowTextViewer(hwnd, L"导入表", text);
+
+	CString header;
+	header.Format(L"文件: %s    导入表 RVA=0x%08X 大小=0x%X    共 %u 条",
+		(LPCWSTR)path, dd.VirtualAddress, dd.Size, (unsigned)rows.size());
+
+	std::vector<ListViewerCol> cols = {
+		{ L"模块",   200 },
+		{ L"Hint",    60 },
+		{ L"函数名", 600 },
+	};
+	ShowListViewer(hwnd, L"导入表", header, cols, rows);
 }
 
 static void DisasmDriverEntry(HWND hwnd, const CString& path)
@@ -364,42 +412,45 @@ static void DisasmDriverEntry(HWND hwnd, const CString& path)
 		::MessageBoxW(hwnd, L"capstone 初始化失败。", L"反汇编入口点", MB_OK | MB_ICONWARNING);
 		return;
 	}
+	cs_option(handle, CS_OPT_SKIPDATA, CS_OPT_ON);
 	cs_insn* insn = nullptr;
 	size_t cnt = cs_disasm(handle, buf + entryOff, codeLen,
 		imageBase + entryRva, 0, &insn);
 
-	CString text;
-	text.AppendFormat(L"文件: %s\r\n", (LPCWSTR)path);
-	text.AppendFormat(L"ImageBase = 0x%016llX\r\n", (ULONGLONG)imageBase);
-	text.AppendFormat(L"AddressOfEntryPoint RVA = 0x%08X\r\n", entryRva);
-	text.AppendFormat(L"DriverEntry VA = 0x%016llX\r\n\r\n", (ULONGLONG)(imageBase + entryRva));
-	text += L"地址                 字节                              指令\r\n";
-	text += L"-------------------- --------------------------------- ---------------------\r\n";
-
+	std::vector<std::vector<CString>> rows;
+	rows.reserve(cnt);
 	for (size_t i = 0; i < cnt; ++i)
 	{
-		CString hex;
+		CString sAddr, sBytes, sMnem, sOp;
+		sAddr.Format(L"0x%016llX", (ULONGLONG)insn[i].address);
 		for (UCHAR b = 0; b < insn[i].size && b < 16; ++b)
 		{
 			CString one; one.Format(L"%02X ", insn[i].bytes[b]);
-			hex += one;
+			sBytes += one;
 		}
-		while (hex.GetLength() < 33) hex += L' ';
-
 		WCHAR mn[32] = { 0 }, op[160] = { 0 };
 		MultiByteToWideChar(CP_ACP, 0, insn[i].mnemonic, -1, mn, _countof(mn) - 1);
 		MultiByteToWideChar(CP_ACP, 0, insn[i].op_str,   -1, op, _countof(op) - 1);
-		text.AppendFormat(L"0x%016llX %s%-7s %s\r\n",
-			(ULONGLONG)insn[i].address, (LPCWSTR)hex, mn, op);
-	}
-	if (cnt == 0)
-	{
-		text += L"(capstone 未解析出任何指令)\r\n";
+		sMnem = mn;
+		sOp   = op;
+		rows.push_back({ sAddr, sBytes, sMnem, sOp });
 	}
 	if (insn) cs_free(insn, cnt);
 	cs_close(&handle);
 	free(buf);
-	ShowTextViewer(hwnd, L"反汇编入口点 (DriverEntry)", text);
+
+	CString header;
+	header.Format(L"文件: %s    ImageBase=0x%016llX  RVA=0x%08X  DriverEntry VA=0x%016llX  共 %u 条",
+		(LPCWSTR)path, (ULONGLONG)imageBase, entryRva,
+		(ULONGLONG)(imageBase + entryRva), (unsigned)rows.size());
+
+	std::vector<ListViewerCol> cols = {
+		{ L"地址",  170 },
+		{ L"字节",  280 },
+		{ L"指令",   80 },
+		{ L"操作数", 360 },
+	};
+	ShowListViewer(hwnd, L"反汇编入口点 (DriverEntry)", header, cols, rows);
 }
 
 // ---- 内存转储驱动到 .sys ----
