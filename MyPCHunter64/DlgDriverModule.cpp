@@ -458,13 +458,39 @@ static void DisasmDriverEntry(HWND hwnd, const CString& path)
 		(LPCWSTR)path, entryRva, (ULONGLONG)imageBase,
 		nt->OptionalHeader.SizeOfImage, nt->OptionalHeader.SizeOfHeaders,
 		(unsigned)nt->FileHeader.NumberOfSections);
+
+	// EP 为 0（CI.dll 等"被 ntoskrnl 通过专门接口加载"的模块就是这种）
+	// 不再硬性拒绝，自动回退到"第一个可执行节区的起始"。
+	bool fallbackToText = false;
+	CString sectionTag;
 	if (entryRva == 0)
 	{
-		free(buf);
-		::MessageBoxW(hwnd, L"该镜像未声明入口点（AddressOfEntryPoint == 0）。",
-			L"反汇编入口点", MB_OK | MB_ICONINFORMATION);
-		return;
+		auto sec = IMAGE_FIRST_SECTION(nt);
+		for (WORD i = 0; i < nt->FileHeader.NumberOfSections; ++i)
+		{
+			if (sec[i].Characteristics & (IMAGE_SCN_CNT_CODE | IMAGE_SCN_MEM_EXECUTE))
+			{
+				entryRva = sec[i].VirtualAddress;
+				CHAR  nameA[9] = { 0 };
+				memcpy(nameA, sec[i].Name, 8);
+				WCHAR nameW[16] = { 0 };
+				MultiByteToWideChar(CP_ACP, 0, nameA, -1, nameW, _countof(nameW) - 1);
+				sectionTag = nameW;
+				fallbackToText = true;
+				DRVMOD_LOG("[Disasm] EntryRva==0, fallback to section '%ws' VA=0x%08X",
+					(LPCWSTR)sectionTag, entryRva);
+				break;
+			}
+		}
+		if (!fallbackToText)
+		{
+			free(buf);
+			::MessageBoxW(hwnd, L"该镜像没有可执行节区，无法反汇编。",
+				L"反汇编入口点", MB_OK | MB_ICONINFORMATION);
+			return;
+		}
 	}
+
 	DWORD entryOff = RvaToFileOffset(buf, size, entryRva);
 	if (!entryOff || entryOff >= size)
 	{
@@ -517,9 +543,18 @@ static void DisasmDriverEntry(HWND hwnd, const CString& path)
 	free(buf);
 
 	CString header;
-	header.Format(L"文件: %s    ImageBase=0x%016llX  RVA=0x%08X  DriverEntry VA=0x%016llX  共 %u 条",
-		(LPCWSTR)path, (ULONGLONG)imageBase, entryRva,
-		(ULONGLONG)(imageBase + entryRva), (unsigned)rows.size());
+	if (fallbackToText)
+	{
+		header.Format(L"文件: %s    ImageBase=0x%016llX  无 EntryPoint，回退到节区 %s  RVA=0x%08X  VA=0x%016llX  共 %u 条",
+			(LPCWSTR)path, (ULONGLONG)imageBase, (LPCWSTR)sectionTag, entryRva,
+			(ULONGLONG)(imageBase + entryRva), (unsigned)rows.size());
+	}
+	else
+	{
+		header.Format(L"文件: %s    ImageBase=0x%016llX  RVA=0x%08X  DriverEntry VA=0x%016llX  共 %u 条",
+			(LPCWSTR)path, (ULONGLONG)imageBase, entryRva,
+			(ULONGLONG)(imageBase + entryRva), (unsigned)rows.size());
+	}
 
 	std::vector<ListViewerCol> cols = {
 		{ L"地址",  170 },
@@ -527,7 +562,10 @@ static void DisasmDriverEntry(HWND hwnd, const CString& path)
 		{ L"指令",   80 },
 		{ L"操作数", 360 },
 	};
-	ShowListViewer(hwnd, L"反汇编入口点 (DriverEntry)", header, cols, rows);
+	LPCWSTR title = fallbackToText
+		? L"反汇编（节区起始 / 无 DriverEntry）"
+		: L"反汇编入口点 (DriverEntry)";
+	ShowListViewer(hwnd, title, header, cols, rows);
 }
 
 // ---- 内存转储驱动到 .sys ----
