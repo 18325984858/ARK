@@ -103,6 +103,8 @@ enum _CommunicatOpCode
 	um_Cmd_ResumeThread_info,												//恢复指定线程（pIndata = TID）
 	um_Cmd_KillThread_info,													//结束指定线程（pIndata = TID）
 
+	um_Cmd_Force_Read_KernelRange_info,										//通过物理页重映射强制读内核 VA（兼容 PAGE/INIT 等被回收/特殊保护的页）
+
 };
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

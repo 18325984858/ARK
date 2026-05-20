@@ -538,7 +538,10 @@ static void MemoryDumpDriverToSys(HWND hwnd, ULONG64 imageBase, ULONG64 imageSiz
 		req.KernelAddr = imageBase + done;
 		req.Length     = chunk;
 		req.UserBuf    = buf + done;
-		g_LoadDriver.SendMsg(um_Cmd_Read_KernelRange_info, &req, nullptr, nullptr, nullptr);
+		// 用"强制读"路径：内核侧按页 MmGetPhysicalAddress + MmMapIoSpaceEx
+		// 重新映射物理页到临时 PAGE_READONLY VA，绕过 PAGE_NX / INIT 段回收
+		// 等导致原 VA 不可直接 RtlCopyMemory 的情形；拷完立即 MmUnmapIoSpace。
+		g_LoadDriver.SendMsg(um_Cmd_Force_Read_KernelRange_info, &req, nullptr, nullptr, nullptr);
 		// 读不到的块（被分页 / 物理失效）就保留全 0，继续往下推进
 		totalRead += req.BytesRead;
 		done += chunk;

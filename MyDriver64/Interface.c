@@ -57,6 +57,7 @@ CCmd g_CmdFun[MAX_FUNCALL_INDEX] = {
 	[um_Cmd_SuspendThread_info]								= {um_Cmd_SuspendThread_info, MySuspendThread},
 	[um_Cmd_ResumeThread_info]								= {um_Cmd_ResumeThread_info, MyResumeThread},
 	[um_Cmd_KillThread_info]								= {um_Cmd_KillThread_info, MyKillThread},
+	[um_Cmd_Force_Read_KernelRange_info]					= {um_Cmd_Force_Read_KernelRange_info, ForceReadKernelRangeInfo},
 };
 
 VOID MyThreadRoutine(PVOID Context)
@@ -1325,6 +1326,89 @@ VOID __vectorcall ReadKernelRangeInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT U
 	__except (EXCEPTION_EXECUTE_HANDLER)
 	{
 		p->BytesRead = 0;
+	}
+
+	if (MmIsAddressValid((PVOID)pRet))
+	{
+		*(PULONG64)pRet = (ULONG64)p->BytesRead;
+	}
+}
+
+// ============================================================
+// 强制读连续内核 VA：用 MmGetPhysicalAddress + MmMapIoSpaceEx 把目标
+// 物理页重新映射到一段"我们自己控制保护属性"的临时 VA，从临时 VA 拷贝
+// 之后再 MmUnmapIoSpace 还原。这种走法的好处：
+//   - 不受原 VA 的页保护影响（INIT 段被回收后 PTE 失效、PAGE_NX 等）
+//   - 不受 MmIsAddressValid 的"未驻留就拒绝"误判影响
+//   - 拷贝完立即 Unmap，不残留新的临时映射
+// 缺点：物理页不在内存里（真正被换出）时 MmGetPhysicalAddress 返回 0，
+// 此时无能为力，该页保持 0（不中断整段拷贝）。
+//
+// 按页拆分（每页独立 try）；输入参数复用 CKernelRangeReadInfo。
+VOID __vectorcall ForceReadKernelRangeInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam)
+{
+	UNREFERENCED_PARAMETER(nCmd);
+	UNREFERENCED_PARAMETER(pOutData);
+	UNREFERENCED_PARAMETER(pParam);
+
+	if (!MmIsAddressValid((PVOID)pIndata)) return;
+	PCKernelRangeReadInfo p = (PCKernelRangeReadInfo)pIndata;
+	p->BytesRead = 0;
+
+	if (p->Length == 0 || p->Length > MAX_KRD_PER_CALL) return;
+	if (p->UserBuf == NULL) return;
+
+	__try
+	{
+		ProbeForWrite(p->UserBuf, p->Length, 1);
+	}
+	__except (EXCEPTION_EXECUTE_HANDLER)
+	{
+		return;
+	}
+
+	PUCHAR src = (PUCHAR)p->KernelAddr;
+	PUCHAR usr = (PUCHAR)p->UserBuf;
+	ULONG  remain = p->Length;
+	ULONG  done   = 0;
+
+	while (remain > 0)
+	{
+		ULONG_PTR pageOff = ((ULONG_PTR)(src + done)) & (PAGE_SIZE - 1);
+		ULONG     inPage  = (ULONG)(PAGE_SIZE - pageOff);
+		if (inPage > remain) inPage = remain;
+
+		PHYSICAL_ADDRESS pa = MmGetPhysicalAddress(src + done);
+		if (pa.QuadPart != 0)
+		{
+			// 把该物理页重映射成一段 PAGE_READONLY 的新 VA。
+			// MmMapIoSpaceEx 在 Win8+，本项目最低支持 Win10。
+			PVOID newVa = MmMapIoSpaceEx(pa, PAGE_SIZE, PAGE_READONLY);
+			if (newVa)
+			{
+				__try
+				{
+					RtlCopyMemory(usr + done, (PUCHAR)newVa + pageOff, inPage);
+					p->BytesRead += inPage;
+				}
+				__except (EXCEPTION_EXECUTE_HANDLER) { }
+				MmUnmapIoSpace(newVa, PAGE_SIZE);
+			}
+			else
+			{
+				// 重映射失败（资源紧张？）回退到直接 VA 读
+				__try
+				{
+					RtlCopyMemory(usr + done, src + done, inPage);
+					p->BytesRead += inPage;
+				}
+				__except (EXCEPTION_EXECUTE_HANDLER) { }
+			}
+		}
+		// pa == 0：物理页被真正换出 / VA 未映射 → 保留 0，不中断整段
+
+		done   += inPage;
+		remain -= inPage;
 	}
 
 	if (MmIsAddressValid((PVOID)pRet))
