@@ -692,19 +692,58 @@ VOID __vectorcall EnumClassInitDataCallbackInfo(IN ULONG64 nCmd, IN ULONG64 pInd
 
 VOID __vectorcall MyDeleteFile(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam)
 {
-
-	if (!MmIsAddressValid(pIndata))
+	if (pIndata == 0 || !MmIsAddressValid((PVOID)pIndata))
 	{
+		if (MmIsAddressValid((PVOID)pRet)) *(PULONG64)pRet = (ULONG64)STATUS_INVALID_PARAMETER;
 		return;
 	}
-	//__debugbreak();
+
+	// R3 通过 FltSendMessage 把 wchar_t* 路径写到 InputBuffer 里，但 InputBuffer
+	// 本身是用户态 VA，handler 直接 swprintf(L"%ws", pIndata) 会一字一字往后读
+	// 用户内存，一旦 R3 给了缺少 NULL 终止符的脏指针就会 C0000005 抛到外层 SEH，
+	// 走到外层后 cmd=18 就只能记一行日志返回，删除自然失败。
+	// 这里先在 SEH 包裹下把路径搬到内核栈缓冲，超长/越界都直接拒绝。
+	WCHAR userPath[MY_MAX_PATH] = { 0 };
+	__try
+	{
+		PCWSTR src = (PCWSTR)pIndata;
+		SIZE_T i = 0;
+		while (i < (MY_MAX_PATH - 1))
+		{
+			WCHAR c = src[i];
+			userPath[i] = c;
+			if (c == L'\0') break;
+			++i;
+		}
+		userPath[MY_MAX_PATH - 1] = L'\0';
+	}
+	__except (EXCEPTION_EXECUTE_HANDLER)
+	{
+		if (MmIsAddressValid((PVOID)pRet)) *(PULONG64)pRet = (ULONG64)STATUS_INVALID_USER_BUFFER;
+		return;
+	}
+
+	if (userPath[0] == L'\0')
+	{
+		if (MmIsAddressValid((PVOID)pRet)) *(PULONG64)pRet = (ULONG64)STATUS_INVALID_PARAMETER;
+		return;
+	}
+
+	// 期望形如 "X:\..." 的 DOS 路径；其它形式（NT 路径、空白）直接拒
+	if (userPath[1] != L':' || userPath[2] != L'\\')
+	{
+		if (MmIsAddressValid((PVOID)pRet)) *(PULONG64)pRet = (ULONG64)STATUS_OBJECT_PATH_SYNTAX_BAD;
+		return;
+	}
+
+	WCHAR szFilePath[MY_MAX_PATH + 8] = { 0 };
+	swprintf(szFilePath, L"\\??\\%ws", userPath);
+
 	UNICODE_STRING FilePath = { 0 };
-	WCHAR szFilePath[MY_MAX_PATH] = { 0 };
-	swprintf(szFilePath, L"\\??\\%ws", pIndata);
 	RtlInitUnicodeString(&FilePath, szFilePath);
 	ULONG64 dqRet = MyDeleteRunFile(&FilePath);
 
-	if (MmIsAddressValid(pRet))
+	if (MmIsAddressValid((PVOID)pRet))
 	{
 		*(PULONG64)pRet = dqRet;
 	}

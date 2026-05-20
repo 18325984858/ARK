@@ -816,28 +816,39 @@ retry:
 			{
 				PFILE_OBJECT pFile = (PFILE_OBJECT)HandleInfo->Object;
 
-				// 先做 image / data section flush。
-				// 这是真正"解占用"的关键：对加载为 DLL/EXE 的文件，OS 是通过
-				// FILE_OBJECT->SectionObjectPointers 持有 image section 的，
-				// 单纯 ZwClose 句柄并不会让 OS 释放 image。MmFlushImageSection
-				// 在没有其它 mapping reference 时会清掉 image section，从而让
-				// Explorer/Win32 之后能成功 DeleteFile。
-				// 注意：对"当前正在运行的进程自己的 EXE" 这里返回 FALSE，
-				//      OS 内核硬性保护，不可能在运行期间真删自己。
+				// 关键手法：在关闭句柄之前，先把 FILE_OBJECT->SectionObjectPointer
+				// 上的 ImageSectionObject / DataSectionObject / SharedCacheMap
+				// 临时清零并 MmFlushImageSection(MmFlushForDelete)。
+				// - 这样 OS 不再把它当作"有 image 引用"，DLL/EXE 占用能真正释放。
+				// - 清完做 flush 之后立刻恢复回来，否则其它路径（IoCleanup/Mm*）
+				//   再访问会蓝屏。对正在运行的进程的 EXE，OS 仍然阻止删除，
+				//   但能把其它进程对它的 image cache 释放出来。
 				BOOLEAN flushed = FALSE;
-				if (MmIsAddressValid(pFile) &&
-					pFile->SectionObjectPointer != NULL)
+				__try
 				{
-					__try
+					if (MmIsAddressValid(pFile) &&
+						pFile->SectionObjectPointer != NULL &&
+						MmIsAddressValid(pFile->SectionObjectPointer))
 					{
-						flushed = MmFlushImageSection(
-							pFile->SectionObjectPointer,
-							MmFlushForDelete);
+						PSECTION_OBJECT_POINTERS pSop = pFile->SectionObjectPointer;
+						PVOID savedImage  = pSop->ImageSectionObject;
+						PVOID savedData   = pSop->DataSectionObject;
+						PVOID savedShared = pSop->SharedCacheMap;
+
+						pSop->ImageSectionObject = NULL;
+						pSop->DataSectionObject  = NULL;
+						pSop->SharedCacheMap     = NULL;
+
+						flushed = MmFlushImageSection(pSop, MmFlushForDelete);
+
+						if (savedImage)  pSop->ImageSectionObject = savedImage;
+						if (savedData)   pSop->DataSectionObject  = savedData;
+						if (savedShared) pSop->SharedCacheMap     = savedShared;
 					}
-					__except (EXCEPTION_EXECUTE_HANDLER)
-					{
-						flushed = FALSE;
-					}
+				}
+				__except (EXCEPTION_EXECUTE_HANDLER)
+				{
+					flushed = FALSE;
 				}
 
 				PEPROCESS Process = NULL;
@@ -872,7 +883,7 @@ retry:
 					ObDereferenceObject(Process);
 				}
 
-				// 即便没找到对应进程的句柄表（比如 system 进程持有的 image
+				// 即便没找到对应进程的句柄表（system 进程持有的 image
 				// section reference），只要我们成功 flush 了 image section，
 				// 也算成功解了一份占用——统计入 closed，UI 才有反馈。
 				if (flushed) closed++;
