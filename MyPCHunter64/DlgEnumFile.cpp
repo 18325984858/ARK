@@ -1187,7 +1187,9 @@ void DlgEnumFile::OnBtnNavGo()
 	NavigateToDirectory(text, true);
 }
 
-// 关键字过滤：把当前列表中文件名不含 keyword 的行删掉（不重新枚举目录）
+// 关键字模糊搜索：在当前目录及其所有子目录下递归查找文件名（不区分大小写）
+// 包含关键字的文件，命中后以"相对路径"展示在列表里，方便后续右键操作。
+// 限制最大结果数和递归深度，避免极深/极大的目录导致 UI 长时间无响应。
 void DlgEnumFile::ApplyListSearchFilter(const CString& keyword)
 {
 	if (keyword.IsEmpty())
@@ -1196,17 +1198,100 @@ void DlgEnumFile::ApplyListSearchFilter(const CString& keyword)
 		OnFileRefresh();
 		return;
 	}
+	if (m_CurPath.IsEmpty()) return;
+
+	// 清空当前列表（保留树）
+	DelListItemData();
+
 	CString needle = keyword; needle.MakeLower();
-	for (int i = m_CListCtrl.GetItemCount() - 1; i >= 0; --i)
+	int found = 0;
+	const int kMaxResults = 5000;
+	const int kMaxDepth   = 12;
+
+	auto fmtTime = [](const FILETIME& ft, CString& out) {
+		FILETIME lt = { 0 };
+		SYSTEMTIME st = { 0 };
+		FileTimeToLocalFileTime(&ft, &lt);
+		FileTimeToSystemTime(&lt, &st);
+		out.Format(L"%d/%d/%d--%d:%d:%d:%d",
+			st.wYear, st.wMonth, st.wDay,
+			st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
+	};
+
+	// 用迭代式栈避免深递归触发栈警告；同时方便控制结果上限/深度。
+	struct Frame { CString dir; int depth; };
+	std::vector<Frame> stack;
+	stack.push_back({ m_CurPath, 0 });
+
+	while (!stack.empty() && found < kMaxResults)
 	{
-		CString name = m_CListCtrl.GetItemText(i, 0);
-		CString lower = name; lower.MakeLower();
-		if (lower.Find(needle) < 0)
+		Frame f = stack.back(); stack.pop_back();
+		if (f.depth > kMaxDepth) continue;
+
+		WIN32_FIND_DATAW fd = { 0 };
+		HANDLE h = FindFirstFileExW(f.dir + L"*",
+			FindExInfoBasic, &fd, FindExSearchNameMatch, NULL, 0);
+		if (h == INVALID_HANDLE_VALUE) continue;
+
+		do
 		{
-			CString* p = (CString*)m_CListCtrl.GetItemData(i);
-			if (p) delete p;
-			m_CListCtrl.DeleteItem(i);
+			if (wcscmp(fd.cFileName, L".") == 0 || wcscmp(fd.cFileName, L"..") == 0)
+				continue;
+
+			CString name = fd.cFileName;
+			CString fullPath = f.dir + name;
+
+			if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+			{
+				// 跳过 reparse point / junction，避免循环
+				if (fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) continue;
+				stack.push_back({ fullPath + L"\\", f.depth + 1 });
+				continue;
+			}
+
+			CString lower = name; lower.MakeLower();
+			if (lower.Find(needle) < 0) continue;
+
+			// 命中：列表显示相对路径（相对当前 m_CurPath），方便看出来自哪个子目录
+			CString shown = fullPath;
+			if (fullPath.GetLength() >= m_CurPath.GetLength() &&
+				fullPath.Left(m_CurPath.GetLength()).CompareNoCase(m_CurPath) == 0)
+			{
+				shown = fullPath.Mid(m_CurPath.GetLength());
+			}
+
+			int row = m_CListCtrl.GetItemCount();
+			m_CListCtrl.InsertItem(row, shown);
+
+			CString s;
+			fmtTime(fd.ftCreationTime,   s); m_CListCtrl.SetItemText(row, 1, s);
+			fmtTime(fd.ftLastAccessTime, s); m_CListCtrl.SetItemText(row, 2, s);
+
+			ULARGE_INTEGER sz;
+			sz.LowPart  = fd.nFileSizeLow;
+			sz.HighPart = fd.nFileSizeHigh;
+			s.Format(L"%I64X", sz.QuadPart);
+			m_CListCtrl.SetItemText(row, 3, s);
+
+			// 行内绑定全路径，沿用其它代码路径（属性 / 哈希 / 资源管理器 等）
+			CString* p = new CString(fullPath);
+			m_CListCtrl.SetItemData(row, (DWORD_PTR)p);
+
+			if (++found >= kMaxResults) break;
 		}
+		while (FindNextFileW(h, &fd));
+
+		FindClose(h);
+	}
+
+	// 给用户一点提示
+	CString hint;
+	if (found >= kMaxResults)
+		hint.Format(L"搜索结果已达上限 %d 条，请细化关键字。", kMaxResults);
+	if (!hint.IsEmpty())
+	{
+		// 不打断用户操作，只在结果有限时弹一次
+		::MessageBoxW(GetSafeHwnd(), hint, L"提示", MB_OK | MB_ICONINFORMATION);
 	}
 }
 
