@@ -60,6 +60,15 @@ static DWORD RvaToFileOffset(BYTE* base, DWORD size, DWORD rva)
 	if ((DWORD)dos->e_lfanew + sizeof(IMAGE_NT_HEADERS64) > size) return 0;
 	auto nt = (PIMAGE_NT_HEADERS64)(base + dos->e_lfanew);
 	if (nt->Signature != IMAGE_NT_SIGNATURE) return 0;
+
+	// 先处理 "RVA 落在 PE 头部" 的情形：SizeOfHeaders 以内的区间
+	// 在文件里与虚拟偏移一致，本身不在任何 section 中。
+	DWORD sizeOfHeaders = nt->OptionalHeader.SizeOfHeaders;
+	if (rva > 0 && rva < sizeOfHeaders && rva < size)
+	{
+		return rva;
+	}
+
 	auto sec = IMAGE_FIRST_SECTION(nt);
 	for (WORD i = 0; i < nt->FileHeader.NumberOfSections; ++i)
 	{
@@ -445,11 +454,28 @@ static void DisasmDriverEntry(HWND hwnd, const CString& path)
 	}
 	DWORD entryRva = nt->OptionalHeader.AddressOfEntryPoint;
 	ULONGLONG imageBase = nt->OptionalHeader.ImageBase;
+	DRVMOD_LOG("[Disasm] path='%ws' EntryRva=0x%08X ImageBase=0x%llX SizeOfImage=0x%X SizeOfHeaders=0x%X Sections=%u",
+		(LPCWSTR)path, entryRva, (ULONGLONG)imageBase,
+		nt->OptionalHeader.SizeOfImage, nt->OptionalHeader.SizeOfHeaders,
+		(unsigned)nt->FileHeader.NumberOfSections);
+	if (entryRva == 0)
+	{
+		free(buf);
+		::MessageBoxW(hwnd, L"该镜像未声明入口点（AddressOfEntryPoint == 0）。",
+			L"反汇编入口点", MB_OK | MB_ICONINFORMATION);
+		return;
+	}
 	DWORD entryOff = RvaToFileOffset(buf, size, entryRva);
 	if (!entryOff || entryOff >= size)
 	{
+		DRVMOD_LOG("[Disasm] entryOff=0x%X size=%u -> rejected", entryOff, size);
 		free(buf);
-		::MessageBoxW(hwnd, L"入口点 RVA 无效。", L"反汇编入口点", MB_OK | MB_ICONWARNING);
+		CString m;
+		m.Format(L"入口点 RVA 无法映射到文件偏移。\n\n"
+			L"RVA = 0x%08X\n文件大小 = 0x%X\n"
+			L"（该 RVA 不在任何节区范围内，也不在 PE 头部。可能是加壳/损坏的 PE。）",
+			entryRva, size);
+		::MessageBoxW(hwnd, m, L"反汇编入口点", MB_OK | MB_ICONWARNING);
 		return;
 	}
 	const DWORD kMax = 256;
