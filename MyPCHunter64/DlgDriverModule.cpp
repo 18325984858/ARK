@@ -81,6 +81,7 @@ static PIMAGE_NT_HEADERS64 GetNt64(BYTE* base, DWORD size)
 }
 
 // 写一个 UTF-16 LE BOM 文本文件到 %TEMP%，并用记事本打开。
+// 已被 ShowTextViewer 取代，保留作旧调用兼容（暂未使用）。
 static void WriteTempAndOpen(LPCWSTR baseName, const CString& content)
 {
 	WCHAR tmpDir[MAX_PATH] = { 0 };
@@ -97,6 +98,95 @@ static void WriteTempAndOpen(LPCWSTR baseName, const CString& content)
 	CloseHandle(hf);
 	CString quoted; quoted.Format(L"\"%s\"", tmpFile);
 	ShellExecuteW(NULL, L"open", L"notepad.exe", quoted, NULL, SW_SHOWNORMAL);
+}
+
+// ============================================================
+// 通用的"PE 文本结果"子窗口：一个 ReadOnly 多行 Edit 控件填满客户区，
+// 用纯 Win32 创建，避免再加一个 .rc 资源；项目其它独立功能（DlgDisasm
+// 等）都是各自 CDialogEx + 资源，这里以"展示型只读文本"为目的，体积
+// 太小、不值得新增资源 ID，故走 CreateWindowEx 路径但保留弹出独立窗口
+// 的视觉效果。窗口为 modeless：右键 → 弹一个查看器，不阻塞主界面，
+// 可以叠多个（比如同时看导出和导入）。
+struct TextViewerCtx
+{
+	HWND  hEdit;
+	HFONT hFont;
+};
+
+static LRESULT CALLBACK TextViewerWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+	auto* ctx = (TextViewerCtx*)GetWindowLongPtrW(hwnd, GWLP_USERDATA);
+	switch (msg)
+	{
+	case WM_NCCREATE:
+		return DefWindowProcW(hwnd, msg, wp, lp);
+	case WM_CREATE:
+	{
+		auto* nctx = new TextViewerCtx{ NULL, NULL };
+		SetWindowLongPtrW(hwnd, GWLP_USERDATA, (LONG_PTR)nctx);
+		auto* cs = (CREATESTRUCTW*)lp;
+		auto* content = (const CString*)cs->lpCreateParams;
+
+		nctx->hEdit = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"",
+			WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY
+			| ES_AUTOVSCROLL | ES_AUTOHSCROLL | WS_VSCROLL | WS_HSCROLL,
+			0, 0, 0, 0, hwnd, (HMENU)100, cs->hInstance, NULL);
+		nctx->hFont = CreateFontW(-14, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+			DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+			CLEARTYPE_QUALITY, FIXED_PITCH | FF_MODERN, L"Consolas");
+		SendMessageW(nctx->hEdit, WM_SETFONT, (WPARAM)nctx->hFont, FALSE);
+		SetWindowTextW(nctx->hEdit, (LPCWSTR)*content);
+		// 默认光标停在最前，避免一打开就滚到末尾
+		SendMessageW(nctx->hEdit, EM_SETSEL, 0, 0);
+		return 0;
+	}
+	case WM_SIZE:
+		if (ctx && ctx->hEdit)
+		{
+			MoveWindow(ctx->hEdit, 0, 0, LOWORD(lp), HIWORD(lp), TRUE);
+		}
+		return 0;
+	case WM_CLOSE:
+		DestroyWindow(hwnd);
+		return 0;
+	case WM_DESTROY:
+		if (ctx)
+		{
+			if (ctx->hFont) DeleteObject(ctx->hFont);
+			delete ctx;
+			SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
+		}
+		return 0;
+	}
+	return DefWindowProcW(hwnd, msg, wp, lp);
+}
+
+static void ShowTextViewer(HWND parent, LPCWSTR title, const CString& content)
+{
+	static bool s_registered = false;
+	static const wchar_t* kClass = L"PCHunterPeTextViewer";
+	HINSTANCE hi = GetModuleHandleW(NULL);
+	if (!s_registered)
+	{
+		WNDCLASSEXW wc = { sizeof(wc) };
+		wc.style         = CS_HREDRAW | CS_VREDRAW;
+		wc.lpfnWndProc   = TextViewerWndProc;
+		wc.hInstance     = hi;
+		wc.hCursor       = LoadCursorW(NULL, IDC_ARROW);
+		wc.hbrBackground = (HBRUSH)(COLOR_BTNFACE + 1);
+		wc.lpszClassName = kClass;
+		RegisterClassExW(&wc);
+		s_registered = true;
+	}
+	HWND hwnd = CreateWindowExW(0, kClass, title,
+		WS_OVERLAPPEDWINDOW,
+		CW_USEDEFAULT, CW_USEDEFAULT, 980, 640,
+		parent, NULL, hi, (LPVOID)&content);
+	if (hwnd)
+	{
+		ShowWindow(hwnd, SW_SHOW);
+		UpdateWindow(hwnd);
+	}
 }
 
 static void ShowPeExports(HWND hwnd, const CString& path)
@@ -170,7 +260,7 @@ static void ShowPeExports(HWND hwnd, const CString& path)
 		text.AppendFormat(L"%4u  0x%08X  %s\r\n", exp->Base + i, rva, (LPCWSTR)name);
 	}
 	free(buf);
-	WriteTempAndOpen(L"pchunter_exports", text);
+	ShowTextViewer(hwnd, L"导出表", text);
 }
 
 static void ShowPeImports(HWND hwnd, const CString& path)
@@ -239,7 +329,7 @@ static void ShowPeImports(HWND hwnd, const CString& path)
 		++desc;
 	}
 	free(buf);
-	WriteTempAndOpen(L"pchunter_imports", text);
+	ShowTextViewer(hwnd, L"导入表", text);
 }
 
 static void DisasmDriverEntry(HWND hwnd, const CString& path)
@@ -309,7 +399,148 @@ static void DisasmDriverEntry(HWND hwnd, const CString& path)
 	if (insn) cs_free(insn, cnt);
 	cs_close(&handle);
 	free(buf);
-	WriteTempAndOpen(L"pchunter_disasm", text);
+	ShowTextViewer(hwnd, L"反汇编入口点 (DriverEntry)", text);
+}
+
+// ---- 内存转储驱动到 .sys ----
+// 通过 um_Cmd_Read_KernelRange_info 把已加载驱动的 SizeOfImage 整段从内核
+// 空间拷回用户缓冲，然后把每个 section 的 PointerToRawData/SizeOfRawData
+// 改写成 VirtualAddress/VirtualSize（=== 文件 layout 等于内存 layout），
+// 这样 dump 出来的 .sys 可以被各种 PE 工具打开。
+//
+// 已知局限：
+//  - IAT 在加载后已经被填成绝对内核地址；本实现保留这一现状，没有把
+//    每个槽位反查"模块+导出名"还原成 OriginalFirstThunk 形态。若需要
+//    重建 IAT，需要进一步枚举所有内核模块的导出表来反向匹配。
+//  - 重定位表本身保留；OptionalHeader.ImageBase 改写成实际加载基址。
+static void MemoryDumpDriverToSys(HWND hwnd, ULONG64 imageBase, ULONG64 imageSize,
+	const CString& origPath)
+{
+	if (imageBase == 0 || imageSize == 0)
+	{
+		::MessageBoxW(hwnd, L"基址/大小为空，无法内存转储。",
+			L"内存转储驱动", MB_OK | MB_ICONWARNING);
+		return;
+	}
+	if (imageSize > 256ULL * 1024 * 1024)
+	{
+		::MessageBoxW(hwnd, L"驱动镜像超过 256MB，已拒绝。",
+			L"内存转储驱动", MB_OK | MB_ICONWARNING);
+		return;
+	}
+
+	BYTE* buf = (BYTE*)calloc(1, (size_t)imageSize);
+	if (!buf)
+	{
+		::MessageBoxW(hwnd, L"内存不足。", L"内存转储驱动", MB_OK | MB_ICONWARNING);
+		return;
+	}
+
+	ULONG64 done = 0;
+	ULONG totalRead = 0;
+	while (done < imageSize)
+	{
+		ULONG64 left = imageSize - done;
+		ULONG chunk = left > MAX_KRD_PER_CALL ? MAX_KRD_PER_CALL : (ULONG)left;
+		CKernelRangeReadInfo req = { 0 };
+		req.KernelAddr = imageBase + done;
+		req.Length     = chunk;
+		req.UserBuf    = buf + done;
+		g_LoadDriver.SendMsg(um_Cmd_Read_KernelRange_info, &req, nullptr, nullptr, nullptr);
+		// 读不到的块（被分页 / 物理失效）就保留全 0，继续往下推进
+		totalRead += req.BytesRead;
+		done += chunk;
+	}
+
+	if (totalRead == 0)
+	{
+		free(buf);
+		::MessageBoxW(hwnd, L"驱动镜像不可读（驱动可能未加载/已卸载，或区域被特殊保护）。",
+			L"内存转储驱动", MB_OK | MB_ICONWARNING);
+		return;
+	}
+
+	// PE 头校验 + section 表回填
+	bool peOk = false;
+	if (imageSize >= sizeof(IMAGE_DOS_HEADER))
+	{
+		auto dos = (PIMAGE_DOS_HEADER)buf;
+		if (dos->e_magic == IMAGE_DOS_SIGNATURE
+			&& (DWORD)dos->e_lfanew + sizeof(IMAGE_NT_HEADERS64) < imageSize)
+		{
+			auto nt = (PIMAGE_NT_HEADERS64)(buf + dos->e_lfanew);
+			if (nt->Signature == IMAGE_NT_SIGNATURE
+				&& nt->OptionalHeader.Magic == IMAGE_NT_OPTIONAL_HDR64_MAGIC)
+			{
+				// 内存 layout 落盘：raw == virtual
+				auto sec = IMAGE_FIRST_SECTION(nt);
+				for (WORD i = 0; i < nt->FileHeader.NumberOfSections; ++i)
+				{
+					DWORD vs = sec[i].Misc.VirtualSize;
+					if (vs == 0) vs = sec[i].SizeOfRawData;
+					sec[i].PointerToRawData = sec[i].VirtualAddress;
+					sec[i].SizeOfRawData    = vs;
+				}
+				// 把 OptionalHeader.ImageBase 改写成实际加载基址，方便 IDA/PE-bear 之类工具自然识别
+				nt->OptionalHeader.ImageBase = imageBase;
+				peOk = true;
+			}
+		}
+	}
+
+	WCHAR initName[MAX_PATH] = { 0 };
+	LPCWSTR slash = origPath.IsEmpty() ? NULL : wcsrchr(origPath, L'\\');
+	if (slash)
+	{
+		// 去掉扩展名加 "_mem.sys"
+		CString base = slash + 1;
+		int dot = base.ReverseFind(L'.');
+		if (dot > 0) base = base.Left(dot);
+		swprintf_s(initName, L"%s_mem.sys", (LPCWSTR)base);
+	}
+	else
+	{
+		wcscpy_s(initName, L"driver_mem.sys");
+	}
+
+	WCHAR file[MAX_PATH] = { 0 };
+	wcscpy_s(file, initName);
+
+	OPENFILENAMEW ofn = { 0 };
+	ofn.lStructSize = sizeof(ofn);
+	ofn.hwndOwner   = hwnd;
+	ofn.lpstrFilter = L"驱动文件 (*.sys)\0*.sys\0所有文件 (*.*)\0*.*\0";
+	ofn.lpstrFile   = file;
+	ofn.nMaxFile    = _countof(file);
+	ofn.lpstrTitle  = L"内存转储驱动到 .sys";
+	ofn.lpstrDefExt = L"sys";
+	ofn.Flags = OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
+	if (!GetSaveFileNameW(&ofn))
+	{
+		free(buf);
+		return;
+	}
+
+	HANDLE hf = CreateFileW(file, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
+		FILE_ATTRIBUTE_NORMAL, NULL);
+	if (hf == INVALID_HANDLE_VALUE)
+	{
+		free(buf);
+		CString m; m.Format(L"无法创建文件，GetLastError=%u", GetLastError());
+		::MessageBoxW(hwnd, m, L"内存转储驱动", MB_OK | MB_ICONWARNING);
+		return;
+	}
+	DWORD wr = 0;
+	WriteFile(hf, buf, (DWORD)imageSize, &wr, NULL);
+	CloseHandle(hf);
+	free(buf);
+
+	CString msg;
+	msg.Format(L"已内存转储到:\n%s\n\n大小: 0x%llX (%llu)\n"
+		L"PE 修复: %s\n\n注意：IAT 已是绝对内核地址；重定位表保留。",
+		file, (ULONGLONG)imageSize, (ULONGLONG)imageSize,
+		peOk ? L"section raw=virtual / ImageBase 已改写" : L"非 PE64 头，原样写出");
+	::MessageBoxW(hwnd, msg, L"内存转储驱动", MB_OK | MB_ICONINFORMATION);
 }
 
 static void DumpDriverToSys(HWND hwnd, const CString& path)
@@ -541,6 +772,7 @@ void DlgDriverModule::OnNMRClickControlDrivermoduleList(NMHDR* pNMHDR, LRESULT* 
 	const UINT kDrvImports  = 9104;
 	const UINT kDrvDisasm   = 9105;
 	const UINT kDrvDump     = 9106;
+	const UINT kDrvMemDump  = 9109;
 	const UINT kDrvCopyPath = 9107;
 	const UINT kDrvProps    = 9108;
 	CString drvPath = GetSelText(um_Driver_FilePath);
@@ -555,7 +787,11 @@ void DlgDriverModule::OnNMRClickControlDrivermoduleList(NMHDR* pNMHDR, LRESULT* 
 	pPopup->AppendMenuW(MF_STRING | (hasPath ? 0 : MF_GRAYED), kDrvExports, L"查看导出表");
 	pPopup->AppendMenuW(MF_STRING | (hasPath ? 0 : MF_GRAYED), kDrvImports, L"查看导入表");
 	pPopup->AppendMenuW(MF_STRING | (hasPath ? 0 : MF_GRAYED), kDrvDisasm, L"反汇编入口点 (DriverEntry)");
-	pPopup->AppendMenuW(MF_STRING | (hasPath ? 0 : MF_GRAYED), kDrvDump,   L"转储驱动到 .sys");
+	pPopup->AppendMenuW(MF_STRING | (hasPath ? 0 : MF_GRAYED), kDrvDump,    L"转储驱动到 .sys (磁盘拷贝)");
+	CString baseHex = GetSelText(um_Driver_BaseAddr);
+	CString sizeHex = GetSelText(um_Driver_Size);
+	BOOL hasMemImg = !baseHex.IsEmpty() && baseHex != L"--" && !sizeHex.IsEmpty() && sizeHex != L"--";
+	pPopup->AppendMenuW(MF_STRING | (hasMemImg ? 0 : MF_GRAYED), kDrvMemDump, L"内存转储驱动到 .sys");
 
 	UINT cmd = pPopup->TrackPopupMenu(TPM_LEFTBUTTON | TPM_RETURNCMD, point.x, point.y, this);
 	if (HandleOpenInExplorerCmd(cmd, explorerCmd, explorerPath))
@@ -611,6 +847,14 @@ void DlgDriverModule::OnNMRClickControlDrivermoduleList(NMHDR* pNMHDR, LRESULT* 
 	if (cmd == kDrvImports && hasPath) { ShowPeImports(GetSafeHwnd(), drvPath);     return; }
 	if (cmd == kDrvDisasm  && hasPath) { DisasmDriverEntry(GetSafeHwnd(), drvPath); return; }
 	if (cmd == kDrvDump    && hasPath) { DumpDriverToSys(GetSafeHwnd(), drvPath);   return; }
+	if (cmd == kDrvMemDump && hasMemImg)
+	{
+		ULONG64 ib = _wcstoui64(baseHex, nullptr, 16);
+		// sizeHex 是 "0x%08X" 形式，_wcstoui64 带前缀 0x 能识别
+		ULONG64 iz = _wcstoui64(sizeHex, nullptr, 16);
+		MemoryDumpDriverToSys(GetSafeHwnd(), ib, iz, drvPath);
+		return;
+	}
 	if (cmd != 0)
 	{
 		PostMessage(WM_COMMAND, MAKEWPARAM(cmd, 0), 0);
