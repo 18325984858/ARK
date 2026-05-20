@@ -40,6 +40,8 @@ BEGIN_MESSAGE_MAP(DlgEnumFile, CDialogEx)
 	ON_NOTIFY(NM_RCLICK, ID_ENUMFILE_LIST, &DlgEnumFile::OnNMRClickEnumfileList)
 	ON_COMMAND(ID_FILE_FILEDEOCCUPY, &DlgEnumFile::OnFileFiledeoccupy)
 	ON_NOTIFY(LVN_ENDLABELEDIT, ID_ENUMFILE_LIST, &DlgEnumFile::OnEndLabelEditEnumfileList)
+	ON_NOTIFY(NM_RCLICK, ID_ENUMFILE_TREE, &DlgEnumFile::OnNMRClickEnumfileTree)
+	ON_NOTIFY(TVN_ENDLABELEDIT, ID_ENUMFILE_TREE, &DlgEnumFile::OnEndLabelEditEnumfileTree)
 END_MESSAGE_MAP()
 
 
@@ -60,6 +62,8 @@ BOOL DlgEnumFile::OnInitDialog()
 	}
 
 	m_CTreeCtrl.SetExtendedStyle(m_CTreeCtrl.GetExtendedStyle() | TVS_FULLROWSELECT | TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_SHOWSELALWAYS, m_CTreeCtrl.GetExtendedStyle() | TVS_FULLROWSELECT | TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_SHOWSELALWAYS);
+	// 允许树节点标签内编辑（右键"重命名"会触发 EditLabel）
+	m_CTreeCtrl.ModifyStyle(0, TVS_EDITLABELS);
 
 	//初始化树控件
 	//初始化Tree控件
@@ -287,25 +291,29 @@ void DlgEnumFile::EnunFile()
 
 			m_CListCtrl.InsertItem(i, pCurFileInfo->FileFullName);
 
+			// 内核读到的时间字段为 UTC，转换到本地时区再显示
+			auto FormatTimeLocal = [](const auto& tf, CString& out) {
+				SYSTEMTIME stUtc = { 0 };
+				stUtc.wYear         = (WORD)tf.Year;
+				stUtc.wMonth        = (WORD)tf.Month;
+				stUtc.wDay          = (WORD)tf.Day;
+				stUtc.wHour         = (WORD)tf.Hour;
+				stUtc.wMinute       = (WORD)tf.Minute;
+				stUtc.wSecond       = (WORD)tf.Second;
+				stUtc.wMilliseconds = (WORD)tf.Milliseconds;
+				SYSTEMTIME stLocal = stUtc;
+				SystemTimeToTzSpecificLocalTime(NULL, &stUtc, &stLocal);
+				out.Format(L"%d/%d/%d--%d:%d:%d:%d",
+					stLocal.wYear, stLocal.wMonth, stLocal.wDay,
+					stLocal.wHour, stLocal.wMinute, stLocal.wSecond,
+					stLocal.wMilliseconds);
+			};
+
 			CString strBuf;
-			strBuf.Format(L"%d/%d/%d--%d:%d:%d:%d",
-				pCurFileInfo->CreationTime.Year,
-				pCurFileInfo->CreationTime.Month,
-				pCurFileInfo->CreationTime.Day,
-				pCurFileInfo->CreationTime.Hour,
-				pCurFileInfo->CreationTime.Minute,
-				pCurFileInfo->CreationTime.Second,
-				pCurFileInfo->CreationTime.Milliseconds);
+			FormatTimeLocal(pCurFileInfo->CreationTime, strBuf);
 			m_CListCtrl.SetItemText(i, 1, strBuf);
 
-			strBuf.Format(L"%d/%d/%d--%d:%d:%d:%d",
-				pCurFileInfo->ChangeTime.Year,
-				pCurFileInfo->ChangeTime.Month,
-				pCurFileInfo->ChangeTime.Day,
-				pCurFileInfo->ChangeTime.Hour,
-				pCurFileInfo->ChangeTime.Minute,
-				pCurFileInfo->ChangeTime.Second,
-				pCurFileInfo->ChangeTime.Milliseconds);
+			FormatTimeLocal(pCurFileInfo->ChangeTime, strBuf);
 			m_CListCtrl.SetItemText(i, 2, strBuf);
 
 			strBuf.Format(L"%I64X", pCurFileInfo->AllocationSize);
@@ -562,7 +570,27 @@ void DlgEnumFile::OnNMRClickEnumfileList(NMHDR* pNMHDR, LRESULT* pResult)
 			if (GetLastError() != ERROR_ALREADY_EXISTS) { full.Empty(); break; }
 			full.Format(L"%s (%d)", (LPCWSTR)base, n);
 		}
-		if (!full.IsEmpty()) OnFileRefresh();
+		if (!full.IsEmpty())
+		{
+			// 只更新树控件：把新建文件夹挂到当前选中节点下
+			HTREEITEM hParent = m_CTreeCtrl.GetSelectedItem();
+			if (hParent)
+			{
+				CString name = full.Mid(m_CurPath.GetLength());
+				TVINSERTSTRUCTW ti = { 0 };
+				ti.hParent = hParent;
+				ti.hInsertAfter = TVI_LAST;
+				ti.itemex.mask = TVIF_TEXT | TVIF_CHILDREN;
+				ti.itemex.pszText = (LPWSTR)(LPCWSTR)name;
+				ti.itemex.cChildren = 1;
+				HTREEITEM hNew = m_CTreeCtrl.InsertItem(&ti);
+				CString* pData = new CString();
+				pData->Format(L"%s\\", (LPCWSTR)full);
+				m_CTreeCtrl.SetItemData(hNew, (DWORD_PTR)pData);
+				m_CTreeCtrl.Expand(hParent, TVE_EXPAND);
+				m_CTreeCtrl.EnsureVisible(hNew);
+			}
+		}
 		return;
 	}
 	if (cmd == kFileNewText && !m_CurPath.IsEmpty())
@@ -577,7 +605,21 @@ void DlgEnumFile::OnNMRClickEnumfileList(NMHDR* pNMHDR, LRESULT* pResult)
 		}
 		HANDLE h = CreateFileW(full, GENERIC_WRITE, 0, NULL, CREATE_NEW,
 			FILE_ATTRIBUTE_NORMAL, NULL);
-		if (h != INVALID_HANDLE_VALUE) { CloseHandle(h); OnFileRefresh(); }
+		if (h != INVALID_HANDLE_VALUE)
+		{
+			CloseHandle(h);
+			// 只更新列表：在末尾追加一行（不重新枚举整个目录）
+			CString name = full.Mid(m_CurPath.GetLength());
+			int row = m_CListCtrl.GetItemCount();
+			m_CListCtrl.InsertItem(row, name);
+			// 时间/大小先填 "--"，下一次刷新会更准
+			m_CListCtrl.SetItemText(row, 1, L"--");
+			m_CListCtrl.SetItemText(row, 2, L"--");
+			m_CListCtrl.SetItemText(row, 3, L"0");
+			CString* pFull = new CString(full);
+			m_CListCtrl.SetItemData(row, (DWORD_PTR)pFull);
+			m_CListCtrl.EnsureVisible(row, FALSE);
+		}
 		return;
 	}
 	if (cmd == kFileHash && !selPath.IsEmpty())
@@ -644,6 +686,217 @@ void DlgEnumFile::OnEndLabelEditEnumfileList(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 
 	*pOld = newPath;
+	*pResult = TRUE;
+}
+
+// ---------------------------------------------------------------------------
+//  Tree 控件：右键菜单 + 标签编辑回调
+// ---------------------------------------------------------------------------
+
+void DlgEnumFile::OnNMRClickEnumfileTree(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	*pResult = 0;
+
+	// 把光标点击到的节点选中（避免对当前选中节点误操作）
+	POINT ptScreen = { 0 }; GetCursorPos(&ptScreen);
+	POINT ptClient = ptScreen; m_CTreeCtrl.ScreenToClient(&ptClient);
+	UINT flags = 0;
+	HTREEITEM hHit = m_CTreeCtrl.HitTest(ptClient, &flags);
+	if (hHit) m_CTreeCtrl.SelectItem(hHit);
+
+	HTREEITEM hSel = m_CTreeCtrl.GetSelectedItem();
+	CString dirPath;
+	if (hSel)
+	{
+		CString* pData = (CString*)m_CTreeCtrl.GetItemData(hSel);
+		if (pData) dirPath = *pData;
+	}
+	BOOL hasSel = (hSel != NULL) && !dirPath.IsEmpty();
+	// 是否是根盘符（"X:\"），根节点不允许重命名/删除
+	BOOL isRoot = (hSel != NULL) && m_CTreeCtrl.GetParentItem(hSel) == NULL;
+
+	const UINT kTreeNewFolder = 9300;
+	const UINT kTreeRename    = 9301;
+	const UINT kTreeDelete    = 9302;
+	const UINT kTreeProps     = 9303;
+	const UINT kTreeOpenExp   = 9304;
+	const UINT kTreeRefresh   = 9305;
+	const UINT kTreeCopyPath  = 9306;
+
+	CMenu menu;
+	menu.CreatePopupMenu();
+	menu.AppendMenuW(MF_STRING | (hasSel ? 0 : MF_GRAYED), kTreeNewFolder, L"新建文件夹");
+	menu.AppendMenuW(MF_SEPARATOR);
+	menu.AppendMenuW(MF_STRING | (hasSel && !isRoot ? 0 : MF_GRAYED), kTreeRename, L"重命名");
+	menu.AppendMenuW(MF_STRING | (hasSel && !isRoot ? 0 : MF_GRAYED), kTreeDelete, L"删除");
+	menu.AppendMenuW(MF_SEPARATOR);
+	menu.AppendMenuW(MF_STRING | (hasSel ? 0 : MF_GRAYED), kTreeOpenExp,  L"在资源管理器中显示");
+	menu.AppendMenuW(MF_STRING | (hasSel ? 0 : MF_GRAYED), kTreeCopyPath, L"复制为路径");
+	menu.AppendMenuW(MF_STRING | (hasSel ? 0 : MF_GRAYED), kTreeProps,    L"属性");
+	menu.AppendMenuW(MF_SEPARATOR);
+	menu.AppendMenuW(MF_STRING | (hasSel ? 0 : MF_GRAYED), kTreeRefresh,  L"刷新");
+
+	UINT cmd = menu.TrackPopupMenu(TPM_LEFTBUTTON | TPM_RETURNCMD | TPM_NONOTIFY,
+		ptScreen.x, ptScreen.y, this);
+	if (cmd == 0) return;
+
+	if (cmd == kTreeNewFolder)
+	{
+		// 在当前选中目录下创建新文件夹，并把它插到树里
+		CString base = dirPath + L"新建文件夹";
+		CString full = base;
+		for (int n = 2; n <= 99 && !CreateDirectoryW(full, NULL); ++n)
+		{
+			if (GetLastError() != ERROR_ALREADY_EXISTS) { full.Empty(); break; }
+			full.Format(L"%s (%d)", (LPCWSTR)base, n);
+		}
+		if (!full.IsEmpty())
+		{
+			CString name = full.Mid(dirPath.GetLength());
+			TVINSERTSTRUCTW ti = { 0 };
+			ti.hParent = hSel;
+			ti.hInsertAfter = TVI_LAST;
+			ti.itemex.mask = TVIF_TEXT | TVIF_CHILDREN;
+			ti.itemex.pszText = (LPWSTR)(LPCWSTR)name;
+			ti.itemex.cChildren = 1;
+			HTREEITEM hNew = m_CTreeCtrl.InsertItem(&ti);
+			CString* pData = new CString();
+			pData->Format(L"%s\\", (LPCWSTR)full);
+			m_CTreeCtrl.SetItemData(hNew, (DWORD_PTR)pData);
+			m_CTreeCtrl.Expand(hSel, TVE_EXPAND);
+			m_CTreeCtrl.EnsureVisible(hNew);
+		}
+		return;
+	}
+	if (cmd == kTreeRename && hasSel && !isRoot)
+	{
+		m_CTreeCtrl.SetFocus();
+		m_CTreeCtrl.EditLabel(hSel);
+		return;
+	}
+	if (cmd == kTreeDelete && hasSel && !isRoot)
+	{
+		CString dirNoSlash = dirPath;
+		while (dirNoSlash.GetLength() > 3 && dirNoSlash[dirNoSlash.GetLength() - 1] == L'\\')
+			dirNoSlash.Delete(dirNoSlash.GetLength() - 1);
+		CString prompt;
+		prompt.Format(L"确认删除目录及其全部内容？\n\n%s", (LPCWSTR)dirNoSlash);
+		if (::MessageBoxW(GetSafeHwnd(), prompt, L"删除目录",
+			MB_OKCANCEL | MB_ICONWARNING | MB_DEFBUTTON2) != IDOK) return;
+
+		// SHFileOperationW 处理非空目录递归删除
+		WCHAR buf[MAX_PATH + 2] = { 0 };
+		wcsncpy_s(buf, _countof(buf), dirNoSlash, _TRUNCATE);
+		SHFILEOPSTRUCTW fo = { 0 };
+		fo.hwnd = GetSafeHwnd();
+		fo.wFunc = FO_DELETE;
+		fo.pFrom = buf;
+		fo.fFlags = FOF_NOCONFIRMATION | FOF_NOERRORUI | FOF_SILENT;
+		if (SHFileOperationW(&fo) == 0 && !fo.fAnyOperationsAborted)
+		{
+			// 释放子树绑定的 CString*
+			DelTreeChild(hSel);
+			CString* pData = (CString*)m_CTreeCtrl.GetItemData(hSel);
+			if (pData) { delete pData; m_CTreeCtrl.SetItemData(hSel, 0); }
+			m_CTreeCtrl.DeleteItem(hSel);
+		}
+		else
+		{
+			::MessageBoxW(GetSafeHwnd(), L"删除失败。", L"提示", MB_OK | MB_ICONERROR);
+		}
+		return;
+	}
+	if (cmd == kTreeOpenExp && hasSel)
+	{
+		CString dirNoSlash = dirPath;
+		while (dirNoSlash.GetLength() > 3 && dirNoSlash[dirNoSlash.GetLength() - 1] == L'\\')
+			dirNoSlash.Delete(dirNoSlash.GetLength() - 1);
+		ShellExecuteW(NULL, L"open", L"explorer.exe",
+			L"/select,\"" + dirNoSlash + L"\"", NULL, SW_SHOWNORMAL);
+		return;
+	}
+	if (cmd == kTreeCopyPath && hasSel)
+	{
+		CString dirNoSlash = dirPath;
+		while (dirNoSlash.GetLength() > 3 && dirNoSlash[dirNoSlash.GetLength() - 1] == L'\\')
+			dirNoSlash.Delete(dirNoSlash.GetLength() - 1);
+		CString quoted = L"\"" + dirNoSlash + L"\"";
+		if (OpenClipboard())
+		{
+			EmptyClipboard();
+			size_t bytes = (quoted.GetLength() + 1) * sizeof(wchar_t);
+			HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, bytes);
+			if (hMem)
+			{
+				void* p = GlobalLock(hMem);
+				if (p) { memcpy(p, (LPCWSTR)quoted, bytes); GlobalUnlock(hMem); }
+				SetClipboardData(CF_UNICODETEXT, hMem);
+			}
+			CloseClipboard();
+		}
+		return;
+	}
+	if (cmd == kTreeProps && hasSel)
+	{
+		CString dirNoSlash = dirPath;
+		while (dirNoSlash.GetLength() > 3 && dirNoSlash[dirNoSlash.GetLength() - 1] == L'\\')
+			dirNoSlash.Delete(dirNoSlash.GetLength() - 1);
+		SHObjectProperties(GetSafeHwnd(), SHOP_FILEPATH, dirNoSlash, NULL);
+		return;
+	}
+	if (cmd == kTreeRefresh && hasSel)
+	{
+		m_CurPath = dirPath;
+		OnFileRefresh();
+		return;
+	}
+}
+
+// 树标签编辑结束：重命名目录
+void DlgEnumFile::OnEndLabelEditEnumfileTree(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	NMTVDISPINFO* pInfo = (NMTVDISPINFO*)pNMHDR;
+	*pResult = FALSE;
+
+	if (!pInfo || !pInfo->item.pszText) return;
+	HTREEITEM hItem = pInfo->item.hItem;
+	if (!hItem) return;
+	if (m_CTreeCtrl.GetParentItem(hItem) == NULL) return; // 不允许重命名根盘符
+
+	CString newName = pInfo->item.pszText;
+	newName.Trim();
+	if (newName.IsEmpty()) return;
+	if (newName.FindOneOf(L"\\/:*?\"<>|") >= 0)
+	{
+		::MessageBoxW(GetSafeHwnd(), L"目录名不能包含 \\ / : * ? \" < > |",
+			L"提示", MB_OK | MB_ICONWARNING);
+		return;
+	}
+
+	CString* pOld = (CString*)m_CTreeCtrl.GetItemData(hItem);
+	if (!pOld || pOld->IsEmpty()) return;
+
+	CString oldFull = *pOld; // 形如 "C:\Foo\Bar\"
+	CString trimmed = oldFull;
+	while (trimmed.GetLength() > 3 && trimmed[trimmed.GetLength() - 1] == L'\\')
+		trimmed.Delete(trimmed.GetLength() - 1);
+	int slash = trimmed.ReverseFind(L'\\');
+	if (slash < 0) return;
+	CString parentDir = trimmed.Left(slash + 1);
+	CString newFull   = parentDir + newName;
+
+	if (oldFull.Left(oldFull.GetLength() - 1).CompareNoCase(newFull) == 0) return;
+
+	if (!MoveFileW(trimmed, newFull))
+	{
+		DWORD err = GetLastError();
+		CString msg; msg.Format(L"重命名失败，错误码: %lu", err);
+		::MessageBoxW(GetSafeHwnd(), msg, L"提示", MB_OK | MB_ICONERROR);
+		return;
+	}
+
+	// 更新节点绑定数据；子树绑定的旧路径将在下次刷新时重新生成
+	*pOld = newFull + L"\\";
 	*pResult = TRUE;
 }
 

@@ -58,4 +58,6 @@ public:
 	afx_msg void OnNMRClickEnumfileList(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnFileFiledeoccupy();
 	afx_msg void OnEndLabelEditEnumfileList(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnNMRClickEnumfileTree(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnEndLabelEditEnumfileTree(NMHDR* pNMHDR, LRESULT* pResult);
 };
