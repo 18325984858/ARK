@@ -2,6 +2,13 @@
 #include "framework.h"
 #include "MyPCHunter64.h"   // LOGI/LOGW/LOGE
 #include <vector>
+#include <shlobj.h>
+#pragma comment(lib, "shell32.lib")
+
+// 路径菜单 helpers 前向声明，定义见本文件下方
+static CString TrimPathString(const CString& s);
+static bool LooksLikeExistingFile(const CString& s);
+static void OpenExplorerAndSelect(const CString& path);
 
 
 void ErrorMessage(ULONG unErrorCode, CString Msg)/*将系统错误码转换成中文以信息框方式打印*/
@@ -264,11 +271,34 @@ CHAR _CFunction::CopyBufferToClipboard(CListCtrl* m_CListCtrl, SIZE_T ItemTextIn
 }
 
 // 右键菜单 helper：两级 "复制 ▸ 各列 / 刷新"
-int _CFunction::ShowListCopyRefreshMenu(const int* cols, const wchar_t* const* colNames, int n, bool hasSelection, CWnd* owner)
+int _CFunction::ShowListCopyRefreshMenu(const int* cols, const wchar_t* const* colNames, int n, bool hasSelection, CWnd* owner, CListCtrl* listForPath)
 {
 	if (n < 0) n = 0;
 	const UINT kRefresh = 9000;
 	const UINT kCopyBase = 9001; // 9001..9000+n
+	const UINT kOpenExplorer = 9900;
+
+	// 扫描选中行各列，看是否有可定位到 Explorer 的文件路径
+	CString hitPath;
+	if (hasSelection && listForPath && listForPath->GetSafeHwnd())
+	{
+		POSITION p = listForPath->GetFirstSelectedItemPosition();
+		if (p)
+		{
+			int row = listForPath->GetNextSelectedItem(p);
+			CHeaderCtrl* hdr = listForPath->GetHeaderCtrl();
+			int hcCols = hdr ? hdr->GetItemCount() : 0;
+			for (int c = 0; c < hcCols; ++c)
+			{
+				CString cell = TrimPathString(listForPath->GetItemText(row, c));
+				if (LooksLikeExistingFile(cell))
+				{
+					hitPath = cell;
+					break;
+				}
+			}
+		}
+	}
 
 	CMenu copySub;
 	copySub.CreatePopupMenu();
@@ -284,6 +314,11 @@ int _CFunction::ShowListCopyRefreshMenu(const int* cols, const wchar_t* const* c
 		menu.AppendMenuW(MF_POPUP | (hasSelection ? 0 : MF_GRAYED), (UINT_PTR)copySub.GetSafeHmenu(), L"复制");
 	}
 	menu.AppendMenuW(MF_STRING, kRefresh, L"刷新");
+	if (!hitPath.IsEmpty())
+	{
+		menu.AppendMenuW(MF_SEPARATOR, 0, (LPCTSTR)NULL);
+		menu.AppendMenuW(MF_STRING, kOpenExplorer, L"使用资源管理器打开");
+	}
 
 	POINT pt = { 0 };
 	GetCursorPos(&pt);
@@ -292,6 +327,11 @@ int _CFunction::ShowListCopyRefreshMenu(const int* cols, const wchar_t* const* c
 
 	if (cmd == 0) return -1;
 	if (cmd == kRefresh) return 0;
+	if (cmd == kOpenExplorer)
+	{
+		OpenExplorerAndSelect(hitPath);
+		return -1;
+	}
 	if (cmd >= kCopyBase && cmd < kCopyBase + (UINT)n)
 	{
 		(void)cols; // 调用方拿到 1..n 后自己映射列；保留 cols 形参以便将来需要
@@ -303,6 +343,140 @@ int _CFunction::ShowListCopyRefreshMenu(const int* cols, const wchar_t* const* c
 // 右键菜单 helper（自适应版）：自动从 list 的 header 读列标题，
 // 弹出 "复制 ▸ <列1>/<列2>/... / 刷新" 菜单。
 // 返回值: -1=未点击, 0=刷新, 否则 = 选中要复制的列号(0-based)+1。
+// 额外：选中行如果有任何一列的文本是磁盘上真实存在的文件路径，
+//       会自动追加 "使用资源管理器打开" 菜单项，点击直接弹 Explorer 并高亮文件，
+//       内部完成动作并返回 -1，不影响原有调用约定。
+static CString TrimPathString(const CString& s)
+{
+	CString t = s;
+	t.TrimLeft();
+	t.TrimRight();
+	// 部分对话框会用引号包路径，去掉两端引号
+	if (t.GetLength() >= 2 && t[0] == L'"' && t[t.GetLength() - 1] == L'"')
+	{
+		t = t.Mid(1, t.GetLength() - 2);
+	}
+	return t;
+}
+
+static bool LooksLikeExistingFile(const CString& s)
+{
+	if (s.GetLength() < 4) return false;
+	if (s == L"--") return false;
+	// 必须像绝对路径（盘符或 UNC）才尝试
+	bool isDriveAbs = (s.GetLength() >= 3 && s[1] == L':' && (s[2] == L'\\' || s[2] == L'/'));
+	bool isUnc = (s.GetLength() >= 2 && s[0] == L'\\' && s[1] == L'\\');
+	if (!isDriveAbs && !isUnc) return false;
+
+	DWORD attr = GetFileAttributesW(s);
+	if (attr == INVALID_FILE_ATTRIBUTES) return false;
+	if (attr & FILE_ATTRIBUTE_DIRECTORY) return false; // 这里只处理文件，目录不需要"定位"
+	return true;
+}
+
+static void OpenExplorerAndSelect(const CString& path)
+{
+	PIDLIST_ABSOLUTE pidl = ILCreateFromPathW(path);
+	if (!pidl)
+	{
+		// 退化方案：打开所在文件夹
+		CString folder = path;
+		int slash = folder.ReverseFind(L'\\');
+		if (slash > 0)
+		{
+			folder = folder.Left(slash);
+			ShellExecuteW(NULL, L"open", folder, NULL, NULL, SW_SHOW);
+		}
+		return;
+	}
+	SHOpenFolderAndSelectItems(pidl, 0, NULL, 0);
+	ILFree(pidl);
+}
+
+// 公开工具：扫描选中行各列，命中文件则在 menu 末尾追加“使用资源管理器打开”+“打开文件”。
+static const UINT kCmdOpenInExplorer = 9900;
+static const UINT kCmdOpenInFileTab  = 9901;
+
+// 由 MyPCHunter64Dlg.cpp 提供：切到“文件”页并定位高亮指定文件。
+extern void OpenFileInMainFileTab(const CString& fullPath);
+
+UINT _CFunction::AppendOpenInExplorerItem(CMenu& menu, CListCtrl* list, CString& outPath)
+{
+	outPath.Empty();
+	if (!list || !list->GetSafeHwnd()) return 0;
+	POSITION p = list->GetFirstSelectedItemPosition();
+	if (!p) return 0;
+	int row = list->GetNextSelectedItem(p);
+	CHeaderCtrl* hdr = list->GetHeaderCtrl();
+	int nCols = hdr ? hdr->GetItemCount() : 0;
+	for (int c = 0; c < nCols; ++c)
+	{
+		CString cell = TrimPathString(list->GetItemText(row, c));
+		if (LooksLikeExistingFile(cell))
+		{
+			outPath = cell;
+			break;
+		}
+	}
+	if (outPath.IsEmpty()) return 0;
+	menu.AppendMenuW(MF_SEPARATOR, 0, (LPCTSTR)NULL);
+	menu.AppendMenuW(MF_STRING, kCmdOpenInExplorer, L"使用资源管理器打开");
+	menu.AppendMenuW(MF_STRING, kCmdOpenInFileTab,  L"打开文件");
+	return kCmdOpenInExplorer;
+}
+
+bool _CFunction::HandleOpenInExplorerCmd(UINT cmd, UINT expectedCmdId, const CString& path)
+{
+	if (expectedCmdId == 0 || path.IsEmpty()) return false;
+	if (cmd == kCmdOpenInExplorer)
+	{
+		OpenExplorerAndSelect(path);
+		return true;
+	}
+	if (cmd == kCmdOpenInFileTab)
+	{
+		OpenFileInMainFileTab(path);
+		return true;
+	}
+	return false;
+}
+
+int _CFunction::AppendCopyColumnsSubmenu(CMenu& parentMenu, CListCtrl* list,
+	UINT kCopyBase, bool hasSel, LPCWSTR label)
+{
+	if (!list || !list->GetSafeHwnd()) return 0;
+	CHeaderCtrl* hdr = list->GetHeaderCtrl();
+	int nCols = hdr ? hdr->GetItemCount() : 0;
+	if (nCols <= 0) return 0;
+
+	CMenu copySub;
+	copySub.CreatePopupMenu();
+	for (int i = 0; i < nCols; ++i)
+	{
+		wchar_t buf[128] = { 0 };
+		HDITEMW hi = { 0 };
+		hi.mask = HDI_TEXT;
+		hi.pszText = buf;
+		hi.cchTextMax = _countof(buf);
+		Header_GetItem(hdr->GetSafeHwnd(), i, &hi);
+		copySub.AppendMenuW(MF_STRING | (hasSel ? 0 : MF_GRAYED),
+			kCopyBase + i, buf[0] ? buf : L"--");
+	}
+	parentMenu.AppendMenuW(MF_POPUP | (hasSel ? 0 : MF_GRAYED),
+		(UINT_PTR)copySub.GetSafeHmenu(),
+		label ? label : L"复制");
+	copySub.Detach();
+	return nCols;
+}
+
+bool _CFunction::TryHandleCopyColumnsCmd(UINT cmd, UINT kCopyBase, int nCols, CListCtrl* list)
+{
+	if (nCols <= 0 || !list) return false;
+	if (cmd < kCopyBase || cmd >= kCopyBase + (UINT)nCols) return false;
+	CopyBufferToClipboard(list, (int)(cmd - kCopyBase));
+	return true;
+}
+
 int _CFunction::ShowListContextMenu(CListCtrl* list, CWnd* owner)
 {
 	if (!list || !list->GetSafeHwnd()) return -1;
@@ -324,7 +498,66 @@ int _CFunction::ShowListContextMenu(CListCtrl* list, CWnd* owner)
 	}
 	for (auto& s : titles) ptrs.push_back(s.GetString());
 	bool hasSel = (list->GetFirstSelectedItemPosition() != NULL);
-	return ShowListCopyRefreshMenu(nullptr, ptrs.data(), nCols, hasSel, owner);
+
+	// 扫描选中行的各列，找第一个真实存在的文件路径
+	CString hitPath;
+	if (hasSel)
+	{
+		POSITION p = list->GetFirstSelectedItemPosition();
+		int row = list->GetNextSelectedItem(p);
+		for (int c = 0; c < nCols; ++c)
+		{
+			CString cell = TrimPathString(list->GetItemText(row, c));
+			if (LooksLikeExistingFile(cell))
+			{
+				hitPath = cell;
+				break;
+			}
+		}
+	}
+
+	// 复用既有 "复制 + 刷新" 菜单逻辑构建命令；用更高的 cmd id 防冲突
+	const UINT kRefresh = 9000;
+	const UINT kCopyBase = 9001;       // 9001..9000+nCols
+	const UINT kOpenExplorer = 9900;
+
+	CMenu copySub;
+	copySub.CreatePopupMenu();
+	for (int i = 0; i < nCols; ++i)
+	{
+		copySub.AppendMenuW(MF_STRING | (hasSel ? 0 : MF_GRAYED), kCopyBase + i, ptrs[i] ? ptrs[i] : L"");
+	}
+
+	CMenu menu;
+	menu.CreatePopupMenu();
+	if (nCols > 0)
+	{
+		menu.AppendMenuW(MF_POPUP | (hasSel ? 0 : MF_GRAYED), (UINT_PTR)copySub.GetSafeHmenu(), L"复制");
+	}
+	menu.AppendMenuW(MF_STRING, kRefresh, L"刷新");
+	if (!hitPath.IsEmpty())
+	{
+		menu.AppendMenuW(MF_SEPARATOR, 0, (LPCTSTR)NULL);
+		menu.AppendMenuW(MF_STRING, kOpenExplorer, L"使用资源管理器打开");
+	}
+
+	POINT pt = { 0 };
+	GetCursorPos(&pt);
+	UINT cmd = menu.TrackPopupMenu(TPM_LEFTBUTTON | TPM_RETURNCMD | TPM_NONOTIFY, pt.x, pt.y, owner);
+	copySub.Detach();
+
+	if (cmd == 0) return -1;
+	if (cmd == kRefresh) return 0;
+	if (cmd == kOpenExplorer)
+	{
+		OpenExplorerAndSelect(hitPath);
+		return -1;
+	}
+	if (cmd >= kCopyBase && cmd < kCopyBase + (UINT)nCols)
+	{
+		return (int)(cmd - kCopyBase + 1);
+	}
+	return -1;
 }
 
 LONG _CFunction::GetSoftSign(TCHAR* v_pszFilePath, TCHAR* v_pszSign, int v_iBufSize)

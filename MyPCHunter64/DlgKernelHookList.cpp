@@ -146,44 +146,29 @@ void DlgKernelHookList::OnNMRClickList(NMHDR* /*pNMHDR*/, LRESULT* pResult)
 {
     *pResult = 0;
 
-    // 自适应读列标题（沿用 _CFunction::ShowListContextMenu 的做法），
-    // 不过这里多加一个 "反汇编" 项，所以手动构造菜单。
-    CHeaderCtrl* hdr = m_CListCtrl.GetHeaderCtrl();
-    int nCols = hdr ? hdr->GetItemCount() : 0;
     bool hasSel = (m_CListCtrl.GetFirstSelectedItemPosition() != NULL);
 
     const UINT kCopyBase   = 9001;
     const UINT kRefresh    = 9000;
     const UINT kDisasm     = 9100;
 
-    CMenu copySub;
-    copySub.CreatePopupMenu();
-    for (int i = 0; i < nCols; ++i)
-    {
-        wchar_t buf[128] = { 0 };
-        HDITEMW hi = { 0 };
-        hi.mask = HDI_TEXT; hi.pszText = buf; hi.cchTextMax = _countof(buf);
-        Header_GetItem(hdr->GetSafeHwnd(), i, &hi);
-        copySub.AppendMenuW(MF_STRING | (hasSel ? 0 : MF_GRAYED), kCopyBase + i, buf);
-    }
-
     CMenu menu;
     menu.CreatePopupMenu();
-    if (nCols > 0) menu.AppendMenuW(MF_POPUP | (hasSel ? 0 : MF_GRAYED), (UINT_PTR)copySub.GetSafeHmenu(), L"复制");
+    int nCols = AppendCopyColumnsSubmenu(menu, &m_CListCtrl, kCopyBase, hasSel);
     menu.AppendMenuW(MF_STRING, kRefresh, L"刷新");
     menu.AppendMenuW(MF_SEPARATOR);
     menu.AppendMenuW(MF_STRING | (hasSel ? 0 : MF_GRAYED), kDisasm, L"反汇编 ...");
 
+    CString explorerPath;
+    UINT explorerCmd = AppendOpenInExplorerItem(menu, &m_CListCtrl, explorerPath);
+
     POINT pt = { 0 }; GetCursorPos(&pt);
     UINT cmd = menu.TrackPopupMenu(TPM_LEFTBUTTON | TPM_RETURNCMD | TPM_NONOTIFY, pt.x, pt.y, this);
-    copySub.Detach();
+
+    if (HandleOpenInExplorerCmd(cmd, explorerCmd, explorerPath)) return;
 
     if (cmd == kRefresh) { OnRefresh(); return; }
-    if (cmd >= kCopyBase && cmd < kCopyBase + (UINT)nCols)
-    {
-        CopyBufferToClipboard(&m_CListCtrl, (int)(cmd - kCopyBase));
-        return;
-    }
+    if (TryHandleCopyColumnsCmd(cmd, kCopyBase, nCols, &m_CListCtrl)) return;
     if (cmd == kDisasm && hasSel)
     {
         // 取选中行的"当前函数地址"列做为入口

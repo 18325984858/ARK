@@ -1,4 +1,4 @@
-ï»¿// DlgHalTable.cpp: å®ç°æ–‡ä»¶
+// DlgHalTable.cpp: ÊµÏÖÎÄ¼ş
 //
 
 #include "pch.h"
@@ -8,7 +8,7 @@
 #include "Thread.h"
 #include "PdbResolver.h"
 
-// DlgHalTable å¯¹è¯æ¡†
+// DlgHalTable ¶Ô»°¿ò
 
 IMPLEMENT_DYNAMIC(DlgHalTable, CDialogEx)
 
@@ -29,7 +29,6 @@ void DlgHalTable::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, ID_DLG_KERNEL_MINIFILTERCALLBACK_LIST, m_CListCtrl);
 }
 
-
 BEGIN_MESSAGE_MAP(DlgHalTable, CDialogEx)
 	ON_NOTIFY(NM_DBLCLK, ID_DLG_KERNEL_MINIFILTERCALLBACK_TREE, &DlgHalTable::OnNMDblclkDlgKernelMinifiltercallbackTree)
 	ON_WM_SIZE()
@@ -37,19 +36,17 @@ BEGIN_MESSAGE_MAP(DlgHalTable, CDialogEx)
 	ON_NOTIFY(NM_RCLICK, ID_DLG_KERNEL_MINIFILTERCALLBACK_LIST, &DlgHalTable::OnNMRClickDlgKernelMinifiltercallbackList)
 END_MESSAGE_MAP()
 
-
-// DlgHalTable æ¶ˆæ¯å¤„ç†ç¨‹åº
-
+// DlgHalTable ÏûÏ¢´¦Àí³ÌĞò
 
 void DlgHalTable::OnNMDblclkDlgKernelMinifiltercallbackTree(NMHDR* pNMHDR, LRESULT* pResult)
 {
-	// TODO: åœ¨æ­¤æ·»åŠ æ§ä»¶é€šçŸ¥å¤„ç†ç¨‹åºä»£ç 
+	// TODO: ÔÚ´ËÌí¼Ó¿Ø¼şÍ¨Öª´¦Àí³ÌĞò´úÂë
 	*pResult = 0;
 
-	//è·å–é€‰æ‹©çš„å­é›†
+	//»ñÈ¡Ñ¡ÔñµÄ×Ó¼¯
 	auto hSelectItem = m_CTreeCtrl.GetSelectedItem();
 
-	//è·å–ç»‘å®šçš„æ•°æ®
+	//»ñÈ¡°ó¶¨µÄÊı¾İ
 	int SelType = m_CTreeCtrl.GetItemData(hSelectItem);
 	switch (SelType)
 	{
@@ -60,10 +57,10 @@ void DlgHalTable::OnNMDblclkDlgKernelMinifiltercallbackTree(NMHDR* pNMHDR, LRESU
 			return;
 		}
 
-		//åˆ·æ–°æ˜¾ç¤ºçš„æ•°æ®
+		//Ë¢ĞÂÏÔÊ¾µÄÊı¾İ
 		OnHaltableRefresh();
 
-		//é‡æ–°è®¾ç½®é€‰æ‹©çš„åœ°æ–¹
+		//ÖØĞÂÉèÖÃÑ¡ÔñµÄµØ·½
 		nPerSel = um_HalTableDlgType_HalDispatchTable;
 	}
 	break;
@@ -76,11 +73,10 @@ void DlgHalTable::OnNMDblclkDlgKernelMinifiltercallbackTree(NMHDR* pNMHDR, LRESU
 
 		}
 
-		//åˆ·æ–°æ˜¾ç¤ºçš„æ•°æ®
+		//Ë¢ĞÂÏÔÊ¾µÄÊı¾İ
 		OnHaltableRefresh();
 
-
-		//é‡æ–°è®¾ç½®é€‰æ‹©çš„åœ°æ–¹
+		//ÖØĞÂÉèÖÃÑ¡ÔñµÄµØ·½
 		nPerSel = um_HalTableDlgType_HalPrivateDispatchTable;
 	}
 	break;
@@ -92,11 +88,10 @@ void DlgHalTable::OnNMDblclkDlgKernelMinifiltercallbackTree(NMHDR* pNMHDR, LRESU
 			return;
 		}
 
-		//åˆ·æ–°æ˜¾ç¤ºçš„æ•°æ®
+		//Ë¢ĞÂÏÔÊ¾µÄÊı¾İ
 		OnHaltableRefresh();
 
-
-		//é‡æ–°è®¾ç½®é€‰æ‹©çš„åœ°æ–¹
+		//ÖØĞÂÉèÖÃÑ¡ÔñµÄµØ·½
 		nPerSel = um_HalTableDlgType_HalAcpiDispatchTable;
 	}
 	break;
@@ -105,7 +100,6 @@ void DlgHalTable::OnNMDblclkDlgKernelMinifiltercallbackTree(NMHDR* pNMHDR, LRESU
 		break;
 	}
 }
-
 
 void DlgHalTable::OnSize(UINT nType, int cx, int cy)
 {
@@ -123,53 +117,44 @@ BOOL DlgHalTable::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	//åˆå§‹åŒ–æ ‘æ§ä»¶
+	//³õÊ¼»¯Ê÷¿Ø¼ş
 	m_CTreeCtrl.SetExtendedStyle(m_CTreeCtrl.GetExtendedStyle() | TVS_FULLROWSELECT | TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_SHOWSELALWAYS,
 		m_CTreeCtrl.GetExtendedStyle() | TVS_FULLROWSELECT | TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_SHOWSELALWAYS);
 
-	//åˆ›å»ºæ ¹èŠ‚ç‚¹
-	auto RootNode = m_CTreeCtrl.InsertItem(L"Halå›è°ƒ");
-	//åˆ›å»ºå­èŠ‚ç‚¹1
+	//´´½¨¸ù½Úµã
+	auto RootNode = m_CTreeCtrl.InsertItem(L"Hal»Øµ÷");
+	//´´½¨×Ó½Úµã1
 	auto ChildNode0 = m_CTreeCtrl.InsertItem(L"HalDispatchTable", RootNode);
 	m_CTreeCtrl.SetItemData(ChildNode0, um_HalTableDlgType_HalDispatchTable);
-	//åˆ›å»ºå­èŠ‚ç‚¹2
+	//´´½¨×Ó½Úµã2
 	auto ChildNode1 = m_CTreeCtrl.InsertItem(L"HalPrivateDispatchTable", RootNode);
 	m_CTreeCtrl.SetItemData(ChildNode1, um_HalTableDlgType_HalPrivateDispatchTable);
-	//åˆ›å»ºå­èŠ‚ç‚¹2
+	//´´½¨×Ó½Úµã2
 	auto ChildNode3 = m_CTreeCtrl.InsertItem(L"HalAcpiDispatchTable", RootNode);
 	m_CTreeCtrl.SetItemData(ChildNode3, um_HalTableDlgType_HalAcpiDispatchTable);
 
-	//åˆå§‹åŒ–Listæ§ä»¶
-	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_Order, _T("åºå·"), LVCFMT_LEFT, 70);
-	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_FunName, _T("å‡½æ•°åç§°"), LVCFMT_LEFT, 150);
-	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_CurFunAddr, _T("å½“å‰å‡½æ•°åœ°å€"), LVCFMT_LEFT, 125);
+	//³õÊ¼»¯List¿Ø¼ş
+	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_Order, _T("ĞòºÅ"), LVCFMT_LEFT, 70);
+	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_FunName, _T("º¯ÊıÃû³Æ"), LVCFMT_LEFT, 150);
+	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_CurFunAddr, _T("µ±Ç°º¯ÊıµØÖ·"), LVCFMT_LEFT, 125);
 	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_Hook, _T("HOOK"), LVCFMT_LEFT, 125);
-	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_SrcFunAddr, _T("åŸå§‹å‡½æ•°åœ°å€"), LVCFMT_LEFT, 125);
-	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_Pos, _T("ä½ç½®"), LVCFMT_LEFT, 250);
-	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_CurModule, _T("å½“å‰å‡½æ•°æ‰€åœ¨æ¨¡å—è·¯å¾„"), LVCFMT_LEFT, 300);
-	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_FileVender, _T("æ–‡ä»¶å‚å•†"), LVCFMT_LEFT, 125);
+	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_SrcFunAddr, _T("Ô­Ê¼º¯ÊıµØÖ·"), LVCFMT_LEFT, 125);
+	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_Pos, _T("Î»ÖÃ"), LVCFMT_LEFT, 250);
+	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_CurModule, _T("µ±Ç°º¯ÊıËùÔÚÄ£¿éÂ·¾¶"), LVCFMT_LEFT, 300);
+	m_CListCtrl.InsertColumn(um_HalTableDlgInfo_FileVender, _T("ÎÄ¼ş³§ÉÌ"), LVCFMT_LEFT, 125);
 	m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
-	// å¼‚å¸¸: OCX å±æ€§é¡µåº”è¿”å› FALSE
+	// Òì³£: OCX ÊôĞÔÒ³Ó¦·µ»Ø FALSE
 }
-
 
 void DlgHalTable::OnHaltableRefresh()
 {
 	m_CListCtrl.DeleteAllItems();
-	//DWORD lpThreadId = 0;
-
-	//CThreadInfo* pThread = new CThreadInfo{ _LoadDriver::Um_UserCallBackType_UserEnumHalTableInfo, this };
-	//HANDLE hThread = CreateThread(NULL, NULL, UniversalThreadFunction,/*å˜é‡å‚æ•°åœ°å€*/(LPVOID)pThread, 0, &lpThreadId);
-	//
-	////HANDLE hThread = CreateThread(NULL, NULL, EnumHalTable,/*å˜é‡å‚æ•°åœ°å€*/(LPVOID)this, 0, &lpThreadId);
-	//CloseHandle(hThread);
 
 	g_ThreadPool.AddTask(new _CThreadPack{ _LoadDriver::Um_UserCallBackType_UserEnumHalTableInfo, this });
 
 }
-
 
 void DlgHalTable::OnNMRClickDlgKernelMinifiltercallbackList(NMHDR* pNMHDR, LRESULT* pResult)
 {
@@ -179,22 +164,20 @@ void DlgHalTable::OnNMRClickDlgKernelMinifiltercallbackList(NMHDR* pNMHDR, LRESU
 	else if (r > 0) CopyBufferToClipboard(&m_CListCtrl, r - 1);
 }
 
-
 void DlgHalTable::InsertCtrlListControl()
 {
-	//éªŒè¯å½“å‰é€‰æ‹©çš„é¡¹
+	//ÑéÖ¤µ±Ç°Ñ¡ÔñµÄÏî
 	if (nPerSel < 0 || nPerSel > 3)
 	{
 		return;
 	}
 
-	//å‘é€åŒ…
+	//·¢ËÍ°ü
 	PCHalFunTableInfo pCHalTableInfo = NULL;
 	if (!g_LoadDriver.SendMsg(um_Cmd_Enum_HalTable_info, (LPVOID)((nPerSel + 1) % 0x4), (LPVOID*)&pCHalTableInfo))
 	{
 		return;
 	}
-
 
 	WCHAR* HalPrivateDispatchTableFunName[] = {
 		L"HalHandlerForBus",
@@ -371,8 +354,6 @@ void DlgHalTable::InsertCtrlListControl()
 		L"HalSetPciErrorHandlerCallback",
 		L"HalGetPrmCache" };
 
-
-
 	WCHAR** NameTable[] = { HalDispatchTableFunName, HalPrivateDispatchTableFunName,NULL };
 	ULONG64 LengthTable[] = { (sizeof(HalDispatchTableFunName) / sizeof(WCHAR*)) + 1,(sizeof(HalPrivateDispatchTableFunName) / sizeof(WCHAR*)) + 1 };
 
@@ -397,13 +378,12 @@ void DlgHalTable::InsertCtrlListControl()
 		StrBuf.Format(L"%016I64X", pInfo->pFunAddr);
 		m_CListCtrl.SetItemText(i, um_HalTableDlgInfo_CurFunAddr, StrBuf);
 
-		// ä½ç½®ï¼šPdbResolver è§£æç¬¦å·å
+		// Î»ÖÃ£ºPdbResolver ½âÎö·ûºÅÃû
 		{
 			WCHAR resolved[256] = { 0 };
 			PdbResolver_Resolve(pInfo->pFunAddr, 0, pInfo->ModulePath, resolved, _countof(resolved));
 			m_CListCtrl.SetItemText(i, um_HalTableDlgInfo_Pos, resolved);
 		}
-
 
 		CString FilePath = PathTransForm(pInfo->ModulePath);
 		m_CListCtrl.SetItemText(i, um_HalTableDlgInfo_CurModule, pInfo->pFunAddr == NULL ? L"--" : FilePath.GetBuffer());
@@ -415,13 +395,13 @@ void DlgHalTable::InsertCtrlListControl()
 			m_CListCtrl.SetItemText(i, um_HalTableDlgInfo_FileVender, (LPWSTR)szDstFileName.GetString());
 		}
 
-		//è·å–ä¸‹ä¸€ä¸ª
+		//»ñÈ¡ÏÂÒ»¸ö
 		pCurList = pCurList->Blink;
-		//é‡Šæ”¾èµ„æº
+		//ÊÍ·Å×ÊÔ´
 		SIZE_T FreeSize = 0;
 		if (MyNtFreeVirtualMemory(GetCurrentProcess(), (LPVOID*)&pInfo, &FreeSize, MEM_RELEASE) != 0)
 		{
-			AfxMessageBox(L"é‡Šæ”¾ç©ºé—´å¤±è´¥!");
+			AfxMessageBox(L"ÊÍ·Å¿Õ¼äÊ§°Ü!");
 		}
 
 	} while (pCurList != &pCHalTableInfo->List.List);

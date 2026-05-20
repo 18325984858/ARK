@@ -335,6 +335,36 @@ void CMyPCHunter64Dlg::OnClickControlMainTab(NMHDR* pNMHDR, LRESULT* pResult)
 }
 
 
+VOID CMyPCHunter64Dlg::ShowFileTabAndNavigate(const CString& fullPath)
+{
+	// 隐藏其它子对话框
+	m_DlgProcess.ShowWindow(FALSE);
+	m_DlgDriverModule.ShowWindow(FALSE);
+	m_DlgKernel.ShowWindow(FALSE);
+	m_DlgKernelHook.ShowWindow(FALSE);
+	m_DlgEnumRegistry.ShowWindow(FALSE);
+	m_DlgSetting.ShowWindow(FALSE);
+
+	// 切到“文件”页
+	m_Control_Tab.SetCurSel(DlgType_EnumFile);
+	m_DlgEnumFile.ShowWindow(TRUE);
+	m_Control_Tab.Invalidate();
+	m_Control_Tab.UpdateWindow();
+
+	if (!fullPath.IsEmpty())
+	{
+		m_DlgEnumFile.NavigateToFile(fullPath);
+	}
+}
+
+void OpenFileInMainFileTab(const CString& fullPath)
+{
+	CMyPCHunter64Dlg* pDlg = dynamic_cast<CMyPCHunter64Dlg*>(AfxGetMainWnd());
+	if (pDlg == nullptr) return;
+	pDlg->ShowFileTabAndNavigate(fullPath);
+}
+
+
 void CMyPCHunter64Dlg::OnSize(UINT nType, int cx, int cy)
 {
 	CDialogEx::OnSize(nType, cx, cy);

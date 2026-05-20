@@ -53,7 +53,7 @@ void DlgDpc::OnNMRClickDpcList(NMHDR* pNMHDR, LRESULT* pResult)
 	const int n = (int)_countof(cols);
 
 	bool hasSel = (m_CListCtrl.GetFirstSelectedItemPosition() != NULL);
-	int r = ShowListCopyRefreshMenu(cols, names, n, hasSel, this);
+	int r = ShowListCopyRefreshMenu(cols, names, n, hasSel, this, &m_CListCtrl);
 	if (r == 0) { if (this->m_ThreadFlags != 1) OnDpcRefresh(); }
 	else if (r > 0) CopyBufferToClipboard(&m_CListCtrl, cols[r - 1]);
 }

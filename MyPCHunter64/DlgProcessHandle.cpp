@@ -1,4 +1,4 @@
-ï»¿// DlgProcessHandle.cpp: å®ç°æ–‡ä»¶
+// DlgProcessHandle.cpp: ÊµÏÖÎÄ¼ş
 //
 
 #include "pch.h"
@@ -7,7 +7,7 @@
 #include "DlgProcessHandle.h"
 #include "Thread.h"
 
-// DlgProcessHandle å¯¹è¯æ¡†
+// DlgProcessHandle ¶Ô»°¿ò
 
 IMPLEMENT_DYNAMIC(DlgProcessHandle, CDialogEx)
 
@@ -29,16 +29,13 @@ void DlgProcessHandle::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, ID_PROCESS_HANDLE_LIST, m_CListCtrl);
 }
 
-
 BEGIN_MESSAGE_MAP(DlgProcessHandle, CDialogEx)
 	ON_WM_SIZE()
 	ON_NOTIFY(NM_RCLICK, ID_PROCESS_HANDLE_LIST, &DlgProcessHandle::OnRclickProcessHandleList)
 	ON_COMMAND(ID_PROCESSHANDLE_REFRESH, &DlgProcessHandle::OnProcesshandleRefresh)
 END_MESSAGE_MAP()
 
-
-// DlgProcessHandle æ¶ˆæ¯å¤„ç†ç¨‹åº
-
+// DlgProcessHandle ÏûÏ¢´¦Àí³ÌĞò
 
 void DlgProcessHandle::OnSize(UINT nType, int cx, int cy)
 {
@@ -50,48 +47,37 @@ void DlgProcessHandle::OnSize(UINT nType, int cx, int cy)
 	m_CListCtrl.MoveWindow(&rect, TRUE);
 }
 
-
 BOOL DlgProcessHandle::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
 	SetWindowText(m_StrProcessName);
 
-	m_CListCtrl.InsertColumn(um_Process_Handle_Type, _T("å¥æŸ„ç±»å‹"), LVCFMT_LEFT, 100);
-	m_CListCtrl.InsertColumn(um_Process_Handle_Name, _T("å¥æŸ„å"), LVCFMT_LEFT, 200);
-	m_CListCtrl.InsertColumn(um_Process_Handle_Handle, _T("å¥æŸ„"), LVCFMT_LEFT, 75);
-	m_CListCtrl.InsertColumn(um_Process_Handle_Object, _T("å¥æŸ„å¯¹è±¡"), LVCFMT_LEFT, 130);
-	m_CListCtrl.InsertColumn(um_Process_Handle_Power, _T("æƒé™"), LVCFMT_LEFT, 100);
-	m_CListCtrl.InsertColumn(um_Process_Handle_Index, _T("ç´¢å¼•"), LVCFMT_LEFT, 75);
-	m_CListCtrl.InsertColumn(um_Process_Handle_Reference, _T("å¼•ç”¨"), LVCFMT_LEFT, 75);
+	m_CListCtrl.InsertColumn(um_Process_Handle_Type, _T("¾ä±úÀàĞÍ"), LVCFMT_LEFT, 100);
+	m_CListCtrl.InsertColumn(um_Process_Handle_Name, _T("¾ä±úÃû"), LVCFMT_LEFT, 200);
+	m_CListCtrl.InsertColumn(um_Process_Handle_Handle, _T("¾ä±ú"), LVCFMT_LEFT, 75);
+	m_CListCtrl.InsertColumn(um_Process_Handle_Object, _T("¾ä±ú¶ÔÏó"), LVCFMT_LEFT, 130);
+	m_CListCtrl.InsertColumn(um_Process_Handle_Power, _T("È¨ÏŞ"), LVCFMT_LEFT, 100);
+	m_CListCtrl.InsertColumn(um_Process_Handle_Index, _T("Ë÷Òı"), LVCFMT_LEFT, 75);
+	m_CListCtrl.InsertColumn(um_Process_Handle_Reference, _T("ÒıÓÃ"), LVCFMT_LEFT, 75);
 	m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
-
 
 	OnProcesshandleRefresh();
 	return TRUE;
 }
 
-
 void DlgProcessHandle::OnRclickProcessHandleList(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	*pResult = 0;
-	if (m_CListCtrl.GetItemCount() < 0) return;
+	if (m_CListCtrl.GetItemCount() <= 0) return;
 	int r = ShowListContextMenu(&m_CListCtrl, this);
 	if (r == 0) { if (this->m_ThreadFlags != TRUE) OnProcesshandleRefresh(); }
 	else if (r > 0) CopyBufferToClipboard(&m_CListCtrl, r - 1);
 }
 
-
 void DlgProcessHandle::OnProcesshandleRefresh()
 {
 	m_CListCtrl.DeleteAllItems();
-	//DWORD lpThreadId = 0;
-	////HANDLE hThread = CreateThread(NULL, NULL, EnumProcessHandleThreadProc,/*å˜é‡å‚æ•°åœ°å€*/(LPVOID)this, 0, &lpThreadId);
-	//
-	//CThreadInfo* pThread = new CThreadInfo{ _LoadDriver::Um_UserCallBackType_UserEnumProcessHandleInfo, this };
-	//HANDLE hThread = CreateThread(NULL, NULL, UniversalThreadFunction,/*å˜é‡å‚æ•°åœ°å€*/(LPVOID)pThread, 0, &lpThreadId);
-	//
-	//CloseHandle(hThread);
 
 	g_ThreadPool.AddTask(new _CThreadPack{ _LoadDriver::Um_UserCallBackType_UserEnumProcessHandleInfo, this });
 
@@ -138,15 +124,14 @@ void DlgProcessHandle::InsertCtrlListControl(PCProcessHandleInfo pinfo)
 			StrBuf.Format(L"%08I64X", pProcessHandleInfo->Quote);
 			m_CListCtrl.SetItemText(i, um_Process_Handle_Reference, StrBuf);
 		}
-		//æŒ‡å‘ä¸‹ä¸€ä¸ª
+		//Ö¸ÏòÏÂÒ»¸ö
 		pCurList = pCurList->Blink;
 
-		//é‡Šæ”¾å†…å­˜
+		//ÊÍ·ÅÄÚ´æ
 		if (MyNtFreeVirtualMemory(GetCurrentProcess(), (LPVOID*)&pProcessHandleInfo, &FreeSize, MEM_RELEASE) != 0)
 		{
-			AfxMessageBox(L"é‡Šæ”¾ç©ºé—´å¤±è´¥!");
+			AfxMessageBox(L"ÊÍ·Å¿Õ¼äÊ§°Ü!");
 		}
 	} while (pCurList != &pinfo->List.List);
-
 
 }

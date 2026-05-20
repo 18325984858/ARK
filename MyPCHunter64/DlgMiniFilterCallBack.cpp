@@ -1,4 +1,4 @@
-ï»¿// DlgMiniFilterCallBack.cpp: å®ç°æ–‡ä»¶
+// DlgMiniFilterCallBack.cpp: ÊµÏÖÎÄ¼ş
 //
 
 #include "pch.h"
@@ -10,7 +10,7 @@
 #include <unordered_map>
 #include <string>
 
-// DlgMiniFilterCallBack å¯¹è¯æ¡†
+// DlgMiniFilterCallBack ¶Ô»°¿ò
 
 IMPLEMENT_DYNAMIC(DlgMiniFilterCallBack, CDialogEx)
 
@@ -31,7 +31,6 @@ void DlgMiniFilterCallBack::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, ID_DLG_KERNEL_MINIFILTERCALLBACK_TREE, m_CTreeCtrl);
 }
 
-
 BEGIN_MESSAGE_MAP(DlgMiniFilterCallBack, CDialogEx)
 	ON_WM_SIZE()
 	ON_COMMAND(ID_MINIFILTERCALLBACK_REFRESH, &DlgMiniFilterCallBack::OnMinifiltercallbackRefresh)
@@ -39,9 +38,7 @@ BEGIN_MESSAGE_MAP(DlgMiniFilterCallBack, CDialogEx)
 	ON_NOTIFY(NM_DBLCLK, ID_DLG_KERNEL_MINIFILTERCALLBACK_TREE, &DlgMiniFilterCallBack::OnNMDblclkDlgKernelMinifiltercallbackTree)
 END_MESSAGE_MAP()
 
-
-// DlgMiniFilterCallBack æ¶ˆæ¯å¤„ç†ç¨‹åº
-
+// DlgMiniFilterCallBack ÏûÏ¢´¦Àí³ÌĞò
 
 void DlgMiniFilterCallBack::OnSize(UINT nType, int cx, int cy)
 {
@@ -55,55 +52,45 @@ void DlgMiniFilterCallBack::OnSize(UINT nType, int cx, int cy)
 	m_CListCtrl.SetWindowPos(NULL, fwidth, 0, rect.Width() - fwidth, rect.Height(), SWP_NOZORDER);
 }
 
-
 BOOL DlgMiniFilterCallBack::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-
-	//åˆå§‹åŒ–æ ‘æ§ä»¶
+	//³õÊ¼»¯Ê÷¿Ø¼ş
 	m_CTreeCtrl.SetExtendedStyle(m_CTreeCtrl.GetExtendedStyle() | TVS_FULLROWSELECT | TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_SHOWSELALWAYS,
 		m_CTreeCtrl.GetExtendedStyle() | TVS_FULLROWSELECT | TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_SHOWSELALWAYS);
 
-	//åˆ›å»ºæ ¹èŠ‚ç‚¹
-	auto RootNode = m_CTreeCtrl.InsertItem(L"å¯¹è±¡ç±»å‹å›è°ƒ");
-	//åˆ›å»ºå­èŠ‚ç‚¹1
-	auto ChildNode0 = m_CTreeCtrl.InsertItem(L"å¾®ç«¯å£è¿‡æ»¤å™¨", RootNode);
+	//´´½¨¸ù½Úµã
+	auto RootNode = m_CTreeCtrl.InsertItem(L"¶ÔÏóÀàĞÍ»Øµ÷");
+	//´´½¨×Ó½Úµã1
+	auto ChildNode0 = m_CTreeCtrl.InsertItem(L"Î¢¶Ë¿Ú¹ıÂËÆ÷", RootNode);
 	m_CTreeCtrl.SetItemData(ChildNode0, um_FileSystemType_MiniPortFilter);
-	//åˆ›å»ºå­èŠ‚ç‚¹2
-	auto ChildNode1 = m_CTreeCtrl.InsertItem(L"æ–‡ä»¶ç³»ç»Ÿ", RootNode);
+	//´´½¨×Ó½Úµã2
+	auto ChildNode1 = m_CTreeCtrl.InsertItem(L"ÎÄ¼şÏµÍ³", RootNode);
 	m_CTreeCtrl.SetItemData(ChildNode1, um_FileSystemType_FileSystem);
-	//åˆ›å»ºå­èŠ‚ç‚¹3
-	auto ChildNode2 = m_CTreeCtrl.InsertItem(L"Sfilterå›è°ƒ", RootNode);
+	//´´½¨×Ó½Úµã3
+	auto ChildNode2 = m_CTreeCtrl.InsertItem(L"Sfilter»Øµ÷", RootNode);
 	m_CTreeCtrl.SetItemData(ChildNode2, um_FileSystemType_SfilterCallBack);
-	//åˆ›å»ºå­èŠ‚ç‚¹4
-	auto ChildNode3 = m_CTreeCtrl.InsertItem(L"ClassInitDataå›è°ƒ", RootNode);
+	//´´½¨×Ó½Úµã4
+	auto ChildNode3 = m_CTreeCtrl.InsertItem(L"ClassInitData»Øµ÷", RootNode);
 	m_CTreeCtrl.SetItemData(ChildNode3, um_FileSystemType_ClassInitDataClass);
-	//åˆ›å»ºå­èŠ‚ç‚¹5
-	auto ChildNode4 = m_CTreeCtrl.InsertItem(L"Npfsæ´¾å‘å‡½æ•°", RootNode);
+	//´´½¨×Ó½Úµã5
+	auto ChildNode4 = m_CTreeCtrl.InsertItem(L"NpfsÅÉ·¢º¯Êı", RootNode);
 	m_CTreeCtrl.SetItemData(ChildNode4, um_FileSystemType_NpfsMajorFunction);
-	//åˆ›å»ºå­èŠ‚ç‚¹5
-	auto ChildNode5 = m_CTreeCtrl.InsertItem(L"Msfsæ´¾å‘å‡½æ•°", RootNode);
+	//´´½¨×Ó½Úµã5
+	auto ChildNode5 = m_CTreeCtrl.InsertItem(L"MsfsÅÉ·¢º¯Êı", RootNode);
 	m_CTreeCtrl.SetItemData(ChildNode5, um_FileSystemType_MsfsMajorFunction);
-	//åˆ›å»ºå­èŠ‚ç‚¹5
-	auto ChildNode6 = m_CTreeCtrl.InsertItem(L"UsbPortæ´¾å‘å‡½æ•°", RootNode);
+	//´´½¨×Ó½Úµã5
+	auto ChildNode6 = m_CTreeCtrl.InsertItem(L"UsbPortÅÉ·¢º¯Êı", RootNode);
 	m_CTreeCtrl.SetItemData(ChildNode6, um_FileSystemType_UsbPortMajorFunction);
 
-
 	return TRUE;  // return TRUE unless you set the focus to a control
-	// å¼‚å¸¸: OCX å±æ€§é¡µåº”è¿”å› FALSE`
+	// Òì³£: OCX ÊôĞÔÒ³Ó¦·µ»Ø FALSE`
 }
-
 
 void DlgMiniFilterCallBack::OnMinifiltercallbackRefresh()
 {
 	m_CListCtrl.DeleteAllItems();
-	//DWORD lpThreadId = 0;
-	////HANDLE hThread = CreateThread(NULL, NULL, EnumMiniFilterCallBackThreadProc,/*å˜é‡å‚æ•°åœ°å€*/(LPVOID)this, 0, &lpThreadId);
-	//CThreadInfo* pThread = new CThreadInfo{ _LoadDriver::Um_UserCallBackType_UserEnumMiniFilterCallBackInfo, this };
-	//HANDLE hThread = CreateThread(NULL, NULL, UniversalThreadFunction,/*å˜é‡å‚æ•°åœ°å€*/(LPVOID)pThread, 0, &lpThreadId);
-	//CloseHandle(hThread);
-
 
 	g_ThreadPool.AddTask(new _CThreadPack{ _LoadDriver::Um_UserCallBackType_UserEnumMiniFilterCallBackInfo, this });
 
@@ -150,13 +137,13 @@ void DlgMiniFilterCallBack::InsertCtrlListControl(PCMiniFilterCallBackInfo pMini
 			m_CListCtrl.SetItemText(i, um_MiniFilterCallBack_Firm, (LPWSTR)szDstFileName.GetString());
 		}
 
-		//è·å–ä¸‹ä¸€ä¸ª
+		//»ñÈ¡ÏÂÒ»¸ö
 		pCurList = pCurList->Blink;
-		//é‡Šæ”¾èµ„æº
+		//ÊÍ·Å×ÊÔ´
 		SIZE_T FreeSize = 0;
 		if (MyNtFreeVirtualMemory(GetCurrentProcess(), (LPVOID*)&pInfo, &FreeSize, MEM_RELEASE) != 0)
 		{
-			AfxMessageBox(L"é‡Šæ”¾ç©ºé—´å¤±è´¥!");
+			AfxMessageBox(L"ÊÍ·Å¿Õ¼äÊ§°Ü!");
 		}
 
 	} while (pCurList != &pMiniFilterCallBackInfo->List.List);
@@ -211,20 +198,20 @@ void DlgMiniFilterCallBack::InsertCtrlListControl(PCFileSystemDeviceInfo pFileSy
 		//	m_CListCtrl.SetItemText(i, um_MiniFilterCallBack_Firm, (LPWSTR)szDstFileName.GetString());
 		//}
 
-		//è·å–ä¸‹ä¸€ä¸ª
+		//»ñÈ¡ÏÂÒ»¸ö
 		pCurList = pCurList->Blink;
-		//é‡Šæ”¾èµ„æº
+		//ÊÍ·Å×ÊÔ´
 		SIZE_T FreeSize = 0;
 		if (MyNtFreeVirtualMemory(GetCurrentProcess(), (LPVOID*)&pInfo, &FreeSize, MEM_RELEASE) != 0)
 		{
-			AfxMessageBox(L"é‡Šæ”¾ç©ºé—´å¤±è´¥!");
+			AfxMessageBox(L"ÊÍ·Å¿Õ¼äÊ§°Ü!");
 		}
 
 	} while (pCurList != &pFileSystemDeviceInfo->List.List);
 
 }
 
-// Sfilter å›è°ƒåˆ—è¡¨ï¼ˆæ¥è‡ª IopFsNotifyChangeQueueHead / MountAwareï¼‰
+// Sfilter »Øµ÷ÁĞ±í£¨À´×Ô IopFsNotifyChangeQueueHead / MountAware£©
 void DlgMiniFilterCallBack::InsertCtrlListControlSfilter(PCKernelCallBackInfo pSfilterInfo)
 {
 	if (pSfilterInfo == NULL) return;
@@ -238,15 +225,15 @@ void DlgMiniFilterCallBack::InsertCtrlListControlSfilter(PCKernelCallBackInfo pS
 		PCKernelCallBackInfo pInfo = (PCKernelCallBackInfo)pCurList;
 		CString StrBuf;
 
-		// ç±»å‹
+		// ÀàĞÍ
 		const wchar_t* typeStr = (pInfo->CallBackType == 1) ? L"Sfilter (MountAware)" : L"Sfilter";
 		m_CListCtrl.InsertItem(i, typeStr);
 
-		// å›è°ƒåœ°å€
+		// »Øµ÷µØÖ·
 		StrBuf.Format(L"%016I64X", pInfo->CallBackAddr);
 		m_CListCtrl.SetItemText(i, um_Sfilter_CallBackAddr, StrBuf);
 
-		// ä½ç½®ï¼šèµ° PdbResolver
+		// Î»ÖÃ£º×ß PdbResolver
 		{
 			ULONG64 modBase = (pInfo->CallBackAddr >= pInfo->ModuleOffset && pInfo->ModuleOffset != 0)
 				? (pInfo->CallBackAddr - pInfo->ModuleOffset) : 0;
@@ -256,15 +243,15 @@ void DlgMiniFilterCallBack::InsertCtrlListControlSfilter(PCKernelCallBackInfo pS
 			if (resolved[0]) m_CListCtrl.SetItemText(i, um_Sfilter_Pos, resolved);
 		}
 
-		// é©±åŠ¨å¯¹è±¡
+		// Çı¶¯¶ÔÏó
 		StrBuf.Format(L"%016I64X", pInfo->Descr);
 		m_CListCtrl.SetItemText(i, um_Sfilter_DriverObject, StrBuf);
 
-		// è·¯å¾„
+		// Â·¾¶
 		CString filePath = pInfo->ModulePath[0] ? PathTransForm(pInfo->ModulePath) : CString(L"--");
 		m_CListCtrl.SetItemText(i, um_Sfilter_ModulePath, filePath.GetBuffer());
 
-		// å‚å•†
+		// ³§ÉÌ
 		CString company = L"--";
 		if (pInfo->ModulePath[0])
 		{
@@ -285,7 +272,7 @@ void DlgMiniFilterCallBack::InsertCtrlListControlSfilter(PCKernelCallBackInfo pS
 	} while (pCurList != &pSfilterInfo->List.List);
 }
 
-// ClassInitData æ§½ä½åï¼ˆä¸é©±åŠ¨ç«¯ EnumClassInitDataCallback é‡Œçš„ slotOffs ç´¢å¼•ä¸€ä¸€å¯¹åº”ï¼‰
+// ClassInitData ²ÛÎ»Ãû£¨ÓëÇı¶¯¶Ë EnumClassInitDataCallback ÀïµÄ slotOffs Ë÷ÒıÒ»Ò»¶ÔÓ¦£©
 static const wchar_t* const g_ClassInitSlotNames[] = {
 	L"ClassInitDevice",
 	L"ClassStartDevice",
@@ -314,17 +301,17 @@ void DlgMiniFilterCallBack::InsertCtrlListControlClassInit(PCKernelCallBackInfo 
 		PCKernelCallBackInfo pInfo = (PCKernelCallBackInfo)pCurList;
 		CString StrBuf;
 
-		// æ§½ä½å
+		// ²ÛÎ»Ãû
 		const wchar_t* slotName = L"?";
 		if (pInfo->CallBackType < _countof(g_ClassInitSlotNames))
 			slotName = g_ClassInitSlotNames[pInfo->CallBackType];
 		m_CListCtrl.InsertItem(i, slotName);
 
-		// å›è°ƒåœ°å€
+		// »Øµ÷µØÖ·
 		StrBuf.Format(L"%016I64X", pInfo->CallBackAddr);
 		m_CListCtrl.SetItemText(i, um_Sfilter_CallBackAddr, StrBuf);
 
-		// ä½ç½® â†’ PdbResolver
+		// Î»ÖÃ ¡ú PdbResolver
 		{
 			ULONG64 modBase = (pInfo->CallBackAddr >= pInfo->ModuleOffset && pInfo->ModuleOffset != 0)
 				? (pInfo->CallBackAddr - pInfo->ModuleOffset) : 0;
@@ -334,15 +321,15 @@ void DlgMiniFilterCallBack::InsertCtrlListControlClassInit(PCKernelCallBackInfo 
 			if (resolved[0]) m_CListCtrl.SetItemText(i, um_Sfilter_Pos, resolved);
 		}
 
-		// å®¢æˆ·é©±åŠ¨å¯¹è±¡
+		// ¿Í»§Çı¶¯¶ÔÏó
 		StrBuf.Format(L"%016I64X", pInfo->Descr);
 		m_CListCtrl.SetItemText(i, um_Sfilter_DriverObject, StrBuf);
 
-		// è·¯å¾„
+		// Â·¾¶
 		CString filePath = pInfo->ModulePath[0] ? PathTransForm(pInfo->ModulePath) : CString(L"--");
 		m_CListCtrl.SetItemText(i, um_Sfilter_ModulePath, filePath.GetBuffer());
 
-		// å‚å•†
+		// ³§ÉÌ
 		CString company = L"--";
 		if (pInfo->ModulePath[0])
 		{
@@ -384,7 +371,7 @@ void DlgMiniFilterCallBack::InsertCtrlListControl(PCSysMajorFunctionInfo pCSysMa
 		StrBuf.Format(L"%X", pInfo->Ord);
 		m_CListCtrl.InsertItem(i, StrBuf);
 
-		// â€œå‡½æ•°åç§°â€ä¼˜å…ˆç”¨ PDB è§£ç¬¦å·ï¼›PDB æœªå°±ç»ªæ—¶å›è½ module+0xRVA
+		// ¡°º¯ÊıÃû³Æ¡±ÓÅÏÈÓÃ PDB ½â·ûºÅ£»PDB Î´¾ÍĞ÷Ê±»ØÂä module+0xRVA
 		{
 			WCHAR resolved[256] = { 0 };
 			PdbResolver_Resolve(pInfo->FunAddr, pInfo->ModuleBase,
@@ -399,19 +386,17 @@ void DlgMiniFilterCallBack::InsertCtrlListControl(PCSysMajorFunctionInfo pCSysMa
 		StrBuf.Format(L"%016I64X", pInfo->FunAddr);
 		m_CListCtrl.SetItemText(i, um_FileSystemMajorFunction_FunAddr, StrBuf);
 
-
 		m_CListCtrl.SetItemText(i, um_FileSystemMajorFunction_MoudlePath, pInfo->ModulePath);
 
 		CString FilePath = PathTransForm(pInfo->ModulePath);
 		m_CListCtrl.SetItemText(i, um_FileSystemMajorFunction_MoudlePath, FilePath.GetBuffer());
 
-
 		pCurList = pCurList->Blink;
-		//æ¸…ç†èµ„æº
+		//ÇåÀí×ÊÔ´
 		SIZE_T FreeSize = 0;
 		if (MyNtFreeVirtualMemory(GetCurrentProcess(), (LPVOID*)&pInfo, &FreeSize, MEM_RELEASE) != 0)
 		{
-			AfxMessageBox(L"é‡Šæ”¾ç©ºé—´å¤±è´¥!");
+			AfxMessageBox(L"ÊÍ·Å¿Õ¼äÊ§°Ü!");
 		}
 	} while (pCurList != &pCSysMajorFunctionInfo->List.List);
 }
@@ -426,39 +411,39 @@ void DlgMiniFilterCallBack::OnNMRClickDlgKernelMinifiltercallbackList(NMHDR* pNM
 
 void DlgMiniFilterCallBack::OnNMDblclkDlgKernelMinifiltercallbackTree(NMHDR* pNMHDR, LRESULT* pResult)
 {
-	// TODO: åœ¨æ­¤æ·»åŠ æ§ä»¶é€šçŸ¥å¤„ç†ç¨‹åºä»£ç 
+	// TODO: ÔÚ´ËÌí¼Ó¿Ø¼şÍ¨Öª´¦Àí³ÌĞò´úÂë
 	*pResult = 0;
 
-	//è·å–é€‰æ‹©çš„å­é›†
+	//»ñÈ¡Ñ¡ÔñµÄ×Ó¼¯
 	auto hSelectItem = m_CTreeCtrl.GetSelectedItem();
 
-	//è·å–ç»‘å®šçš„æ•°æ®
+	//»ñÈ¡°ó¶¨µÄÊı¾İ
 	int SelType = m_CTreeCtrl.GetItemData(hSelectItem);
 	switch (SelType)
 	{
 	case DlgMiniFilterCallBack::um_FileSystemType_MiniPortFilter:
 	{
-		//å½“é‡å¤é€‰æ‹©æ—¶ä¸åˆ·æ–°å½“å‰é¡µé¢
+		//µ±ÖØ¸´Ñ¡ÔñÊ±²»Ë¢ĞÂµ±Ç°Ò³Ãæ
 		if (nPerSel != um_FileSystemType_MiniPortFilter)
 		{
-			//åˆ é™¤æ‰€æœ‰Column
+			//É¾³ıËùÓĞColumn
 			while (m_CListCtrl.DeleteColumn(0)) {}
-			m_CListCtrl.InsertColumn(um_MiniFilterCallBack_FilterType_Name, _T("å›è°ƒå"), LVCFMT_LEFT, 150);
+			m_CListCtrl.InsertColumn(um_MiniFilterCallBack_FilterType_Name, _T("»Øµ÷Ãû"), LVCFMT_LEFT, 150);
 			m_CListCtrl.InsertColumn(um_MiniFilterCallBack_PreOperation, _T("PreOperation"), LVCFMT_LEFT, 125);
 			m_CListCtrl.InsertColumn(um_MiniFilterCallBack_PostOperation, _T("PostOperation"), LVCFMT_LEFT, 125);
-			m_CListCtrl.InsertColumn(um_MiniFilterCallBack_pFilterAddr, _T("å¥æŸ„"), LVCFMT_LEFT, 125);
+			m_CListCtrl.InsertColumn(um_MiniFilterCallBack_pFilterAddr, _T("¾ä±ú"), LVCFMT_LEFT, 125);
 			m_CListCtrl.InsertColumn(um_MiniFilterCallBack_Altitude, _T("Altitude"), LVCFMT_LEFT, 125);
-			m_CListCtrl.InsertColumn(um_MiniFilterCallBack_Moudle, _T("æ‰€åœ¨æ¨¡å—è·¯å¾„"), LVCFMT_LEFT, 300);
-			m_CListCtrl.InsertColumn(um_MiniFilterCallBack_Firm, _T("æ–‡ä»¶å‚å•†"), LVCFMT_LEFT, 150);
+			m_CListCtrl.InsertColumn(um_MiniFilterCallBack_Moudle, _T("ËùÔÚÄ£¿éÂ·¾¶"), LVCFMT_LEFT, 300);
+			m_CListCtrl.InsertColumn(um_MiniFilterCallBack_Firm, _T("ÎÄ¼ş³§ÉÌ"), LVCFMT_LEFT, 150);
 			m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 		}
 		else
 		{
-			//ä¸åˆ·æ–°
+			//²»Ë¢ĞÂ
 			return;
 		}
 
-		//é‡æ–°è®¾ç½®é€‰æ‹©çš„åœ°æ–¹
+		//ÖØĞÂÉèÖÃÑ¡ÔñµÄµØ·½
 		nPerSel = um_FileSystemType_MiniPortFilter;
 
 		OnMinifiltercallbackRefresh();
@@ -468,19 +453,19 @@ void DlgMiniFilterCallBack::OnNMDblclkDlgKernelMinifiltercallbackTree(NMHDR* pNM
 		if (nPerSel != um_FileSystemType_FileSystem)
 		{
 			while (m_CListCtrl.DeleteColumn(0)) {}
-			m_CListCtrl.InsertColumn(um_FileSystem_Type, _T("ç±»å‹"), LVCFMT_LEFT, 150);
-			m_CListCtrl.InsertColumn(um_FileSystem_Deivce, _T("è®¾å¤‡å¯¹è±¡"), LVCFMT_LEFT, 125);
-			m_CListCtrl.InsertColumn(um_FileSystem_DeviceObjectName, _T("è®¾å¤‡å¯¹è±¡å"), LVCFMT_LEFT, 125);
-			m_CListCtrl.InsertColumn(um_FileSystem_Driver, _T("é©±åŠ¨å¯¹è±¡"), LVCFMT_LEFT, 125);
-			m_CListCtrl.InsertColumn(um_FileSystem_DriverName, _T("é©±åŠ¨å¯¹è±¡åç§°"), LVCFMT_LEFT, 125);
+			m_CListCtrl.InsertColumn(um_FileSystem_Type, _T("ÀàĞÍ"), LVCFMT_LEFT, 150);
+			m_CListCtrl.InsertColumn(um_FileSystem_Deivce, _T("Éè±¸¶ÔÏó"), LVCFMT_LEFT, 125);
+			m_CListCtrl.InsertColumn(um_FileSystem_DeviceObjectName, _T("Éè±¸¶ÔÏóÃû"), LVCFMT_LEFT, 125);
+			m_CListCtrl.InsertColumn(um_FileSystem_Driver, _T("Çı¶¯¶ÔÏó"), LVCFMT_LEFT, 125);
+			m_CListCtrl.InsertColumn(um_FileSystem_DriverName, _T("Çı¶¯¶ÔÏóÃû³Æ"), LVCFMT_LEFT, 125);
 			m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 		}
 		else
 		{
-			//ä¸åˆ·æ–°
+			//²»Ë¢ĞÂ
 			return;
 		}
-		//é‡æ–°è®¾ç½®é€‰æ‹©çš„åœ°æ–¹
+		//ÖØĞÂÉèÖÃÑ¡ÔñµÄµØ·½
 		nPerSel = um_FileSystemType_FileSystem;
 
 		OnMinifiltercallbackRefresh();
@@ -489,12 +474,12 @@ void DlgMiniFilterCallBack::OnNMDblclkDlgKernelMinifiltercallbackTree(NMHDR* pNM
 		if (nPerSel != um_FileSystemType_SfilterCallBack)
 		{
 			while (m_CListCtrl.DeleteColumn(0)) {}
-			m_CListCtrl.InsertColumn(um_Sfilter_Type,         _T("ç±»å‹"),         LVCFMT_LEFT, 140);
-			m_CListCtrl.InsertColumn(um_Sfilter_CallBackAddr, _T("å›è°ƒåœ°å€"),     LVCFMT_LEFT, 140);
-			m_CListCtrl.InsertColumn(um_Sfilter_Pos,          _T("ä½ç½®"),         LVCFMT_LEFT, 200);
-			m_CListCtrl.InsertColumn(um_Sfilter_DriverObject, _T("é©±åŠ¨å¯¹è±¡"),     LVCFMT_LEFT, 140);
-			m_CListCtrl.InsertColumn(um_Sfilter_ModulePath,   _T("æ‰€åœ¨æ¨¡å—è·¯å¾„"), LVCFMT_LEFT, 280);
-			m_CListCtrl.InsertColumn(um_Sfilter_Company,      _T("æ–‡ä»¶å‚å•†"),     LVCFMT_LEFT, 150);
+			m_CListCtrl.InsertColumn(um_Sfilter_Type,         _T("ÀàĞÍ"),         LVCFMT_LEFT, 140);
+			m_CListCtrl.InsertColumn(um_Sfilter_CallBackAddr, _T("»Øµ÷µØÖ·"),     LVCFMT_LEFT, 140);
+			m_CListCtrl.InsertColumn(um_Sfilter_Pos,          _T("Î»ÖÃ"),         LVCFMT_LEFT, 200);
+			m_CListCtrl.InsertColumn(um_Sfilter_DriverObject, _T("Çı¶¯¶ÔÏó"),     LVCFMT_LEFT, 140);
+			m_CListCtrl.InsertColumn(um_Sfilter_ModulePath,   _T("ËùÔÚÄ£¿éÂ·¾¶"), LVCFMT_LEFT, 280);
+			m_CListCtrl.InsertColumn(um_Sfilter_Company,      _T("ÎÄ¼ş³§ÉÌ"),     LVCFMT_LEFT, 150);
 			m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 		}
 		else
@@ -509,12 +494,12 @@ void DlgMiniFilterCallBack::OnNMDblclkDlgKernelMinifiltercallbackTree(NMHDR* pNM
 		if (nPerSel != um_FileSystemType_ClassInitDataClass)
 		{
 			while (m_CListCtrl.DeleteColumn(0)) {}
-			m_CListCtrl.InsertColumn(um_Sfilter_Type,         _T("æ§½ä½"),         LVCFMT_LEFT, 200);
-			m_CListCtrl.InsertColumn(um_Sfilter_CallBackAddr, _T("å›è°ƒåœ°å€"),     LVCFMT_LEFT, 140);
-			m_CListCtrl.InsertColumn(um_Sfilter_Pos,          _T("ä½ç½®"),         LVCFMT_LEFT, 240);
-			m_CListCtrl.InsertColumn(um_Sfilter_DriverObject, _T("å®¢æˆ·é©±åŠ¨å¯¹è±¡"), LVCFMT_LEFT, 140);
-			m_CListCtrl.InsertColumn(um_Sfilter_ModulePath,   _T("æ‰€åœ¨æ¨¡å—è·¯å¾„"), LVCFMT_LEFT, 280);
-			m_CListCtrl.InsertColumn(um_Sfilter_Company,      _T("æ–‡ä»¶å‚å•†"),     LVCFMT_LEFT, 150);
+			m_CListCtrl.InsertColumn(um_Sfilter_Type,         _T("²ÛÎ»"),         LVCFMT_LEFT, 200);
+			m_CListCtrl.InsertColumn(um_Sfilter_CallBackAddr, _T("»Øµ÷µØÖ·"),     LVCFMT_LEFT, 140);
+			m_CListCtrl.InsertColumn(um_Sfilter_Pos,          _T("Î»ÖÃ"),         LVCFMT_LEFT, 240);
+			m_CListCtrl.InsertColumn(um_Sfilter_DriverObject, _T("¿Í»§Çı¶¯¶ÔÏó"), LVCFMT_LEFT, 140);
+			m_CListCtrl.InsertColumn(um_Sfilter_ModulePath,   _T("ËùÔÚÄ£¿éÂ·¾¶"), LVCFMT_LEFT, 280);
+			m_CListCtrl.InsertColumn(um_Sfilter_Company,      _T("ÎÄ¼ş³§ÉÌ"),     LVCFMT_LEFT, 150);
 			m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 		}
 		else
@@ -533,17 +518,17 @@ void DlgMiniFilterCallBack::OnNMDblclkDlgKernelMinifiltercallbackTree(NMHDR* pNM
 			nPerSel != um_FileSystemType_UsbPortMajorFunction)
 		{
 			while (m_CListCtrl.DeleteColumn(0)) {}
-			m_CListCtrl.InsertColumn(um_FileSystemCallBack_Order, _T("åºå·"), LVCFMT_LEFT, 50);
-			m_CListCtrl.InsertColumn(um_FileSystemCallBack_FunName, _T("å‡½æ•°åç§°"), LVCFMT_LEFT, 125);
-			m_CListCtrl.InsertColumn(um_FileSystemCallBack_CurFunAddr, _T("å½“å‰å‡½æ•°åœ°å€"), LVCFMT_LEFT, 125);
+			m_CListCtrl.InsertColumn(um_FileSystemCallBack_Order, _T("ĞòºÅ"), LVCFMT_LEFT, 50);
+			m_CListCtrl.InsertColumn(um_FileSystemCallBack_FunName, _T("º¯ÊıÃû³Æ"), LVCFMT_LEFT, 125);
+			m_CListCtrl.InsertColumn(um_FileSystemCallBack_CurFunAddr, _T("µ±Ç°º¯ÊıµØÖ·"), LVCFMT_LEFT, 125);
 			//m_CListCtrl.InsertColumn(um_FileSystemCallBack_Hook, _T("Hook"), LVCFMT_LEFT, 125);
-			//m_CListCtrl.InsertColumn(um_FileSystemCallBack_SrcFunAddr, _T("åŸå‡½æ•°åœ°å€"), LVCFMT_LEFT, 125);
-			m_CListCtrl.InsertColumn(um_FileSystemCallBack_ModulePath, _T("å‡½æ•°æ‰€åœ¨æ¨¡å—è·¯å¾„"), LVCFMT_LEFT, 300);
+			//m_CListCtrl.InsertColumn(um_FileSystemCallBack_SrcFunAddr, _T("Ô­º¯ÊıµØÖ·"), LVCFMT_LEFT, 125);
+			m_CListCtrl.InsertColumn(um_FileSystemCallBack_ModulePath, _T("º¯ÊıËùÔÚÄ£¿éÂ·¾¶"), LVCFMT_LEFT, 300);
 			m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 		}
 		else
 		{
-			//ä¸åˆ·æ–°
+			//²»Ë¢ĞÂ
 			return;
 		}
 		nPerSel = SelType;

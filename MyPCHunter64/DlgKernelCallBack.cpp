@@ -1,4 +1,4 @@
-ï»¿// DlgKernelCallBack.cpp: å®žçŽ°æ–‡ä»¶
+// DlgKernelCallBack.cpp: ÊµÏÖÎÄ¼þ
 //
 
 #include "pch.h"
@@ -8,7 +8,7 @@
 #include "resource.h"
 #include "Thread.h"
 #include "PdbResolver.h"
-// DlgKernelCallBack å¯¹è¯æ¡†
+// DlgKernelCallBack ¶Ô»°¿ò
 
 IMPLEMENT_DYNAMIC(DlgKernelCallBack, CDialogEx)
 
@@ -28,16 +28,13 @@ void DlgKernelCallBack::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, ID_DLG_KERNEL_KERNELCALLBACK_LIST, m_CListCtrl);
 }
 
-
 BEGIN_MESSAGE_MAP(DlgKernelCallBack, CDialogEx)
 	ON_NOTIFY(NM_RCLICK, ID_DLG_KERNEL_KERNELCALLBACK_LIST, &DlgKernelCallBack::OnNMRClickDlgKernelKernelcallbackList)
 	ON_COMMAND(ID_KERNELCALLBACK_REFRESH, &DlgKernelCallBack::OnKernelcallbackRefresh)
 	ON_WM_SIZE()
 END_MESSAGE_MAP()
 
-
-// DlgKernelCallBack æ¶ˆæ¯å¤„ç†ç¨‹åº
-
+// DlgKernelCallBack ÏûÏ¢´¦Àí³ÌÐò
 
 void DlgKernelCallBack::OnNMRClickDlgKernelKernelcallbackList(NMHDR* pNMHDR, LRESULT* pResult)
 {
@@ -47,21 +44,13 @@ void DlgKernelCallBack::OnNMRClickDlgKernelKernelcallbackList(NMHDR* pNMHDR, LRE
 	else if (r > 0) CopyBufferToClipboard(&m_CListCtrl, r - 1);
 }
 
-
 void DlgKernelCallBack::OnKernelcallbackRefresh()
 {
 	m_CListCtrl.DeleteAllItems();
-	//DWORD lpThreadId = 0;
-	////HANDLE hThread = CreateThread(NULL, NULL, EnumKernelCallBackThreadProc,/*å˜é‡å‚æ•°åœ°å€*/(LPVOID)this, 0, &lpThreadId);
-	//CThreadInfo* pThread = new CThreadInfo{ _LoadDriver::Um_UserCallBackType_UserEnumKernelCallBackInfo, this };
-	//HANDLE hThread = CreateThread(NULL, NULL, UniversalThreadFunction,/*å˜é‡å‚æ•°åœ°å€*/(LPVOID)pThread, 0, &lpThreadId);
-	//
-	//CloseHandle(hThread);
 
 	g_ThreadPool.AddTask(new _CThreadPack{ _LoadDriver::Um_UserCallBackType_UserEnumKernelCallBackInfo, this });
 
 }
-
 
 void DlgKernelCallBack::OnSize(UINT nType, int cx, int cy)
 {
@@ -72,21 +61,20 @@ void DlgKernelCallBack::OnSize(UINT nType, int cx, int cy)
 	m_CListCtrl.SetWindowPos(NULL, 0, 0, rect.Width(), rect.Height(), SWP_NOZORDER);
 }
 
-
 BOOL DlgKernelCallBack::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	m_CListCtrl.InsertColumn(um_KernelCallBack_Type, _T("ç±»åž‹"), LVCFMT_LEFT, 120);
-	m_CListCtrl.InsertColumn(um_KernelCallBack_Addr, _T("åœ°å€"), LVCFMT_LEFT, 120);
-	m_CListCtrl.InsertColumn(um_KernelCallBack_Pos, _T("ä½ç½®"), LVCFMT_LEFT, 120);
-	m_CListCtrl.InsertColumn(um_KernelCallBack_Path, _T("è·¯å¾„"), LVCFMT_LEFT, 250);
-	m_CListCtrl.InsertColumn(um_KernelCallBack_Company, _T("å…¬å¸å"), LVCFMT_LEFT, 120);
-	m_CListCtrl.InsertColumn(um_KernelCallBack_Descr, _T("å¤‡æ³¨"), LVCFMT_LEFT, 120);
+	m_CListCtrl.InsertColumn(um_KernelCallBack_Type, _T("ÀàÐÍ"), LVCFMT_LEFT, 120);
+	m_CListCtrl.InsertColumn(um_KernelCallBack_Addr, _T("µØÖ·"), LVCFMT_LEFT, 120);
+	m_CListCtrl.InsertColumn(um_KernelCallBack_Pos, _T("Î»ÖÃ"), LVCFMT_LEFT, 120);
+	m_CListCtrl.InsertColumn(um_KernelCallBack_Path, _T("Â·¾¶"), LVCFMT_LEFT, 250);
+	m_CListCtrl.InsertColumn(um_KernelCallBack_Company, _T("¹«Ë¾Ãû"), LVCFMT_LEFT, 120);
+	m_CListCtrl.InsertColumn(um_KernelCallBack_Descr, _T("±¸×¢"), LVCFMT_LEFT, 120);
 	m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
-	// å¼‚å¸¸: OCX å±žæ€§é¡µåº”è¿”å›ž FALSE
+	// Òì³£: OCX ÊôÐÔÒ³Ó¦·µ»Ø FALSE
 }
 
 void DlgKernelCallBack::InsertCtrlListControl(PCKernelCallBackInfo pKernelCallBackInfo)
@@ -96,9 +84,8 @@ void DlgKernelCallBack::InsertCtrlListControl(PCKernelCallBackInfo pKernelCallBa
 		return;
 	}
 
-	//ç±»åž‹
+	//ÀàÐÍ
 	CString CallBackType[] = { L"ShutDown",L"DbgCheck",L"PlugPlay",L"LoadImage",L"CreateProcess",L"CreateThread",L"Registry" ,L"IoTime" };
-
 
 	PCLIST_ENTRY pCurList = &pKernelCallBackInfo->List.List;
 
@@ -119,7 +106,6 @@ void DlgKernelCallBack::InsertCtrlListControl(PCKernelCallBackInfo pKernelCallBa
 		StrBuf.Format(L"%016I64X", pInfo->CallBackAddr);
 		m_CListCtrl.SetItemText(InsertIndex, um_KernelCallBack_Addr, StrBuf);
 
-
 		int n = 0;
 		int n1 = 0;
 
@@ -127,7 +113,6 @@ void DlgKernelCallBack::InsertCtrlListControl(PCKernelCallBackInfo pKernelCallBa
 		{
 			for (int i = 0; i < wcslen(pInfo->ModulePath); i++)
 			{
-
 
 				if (pInfo->ModulePath[i] == L'\\')
 				{
@@ -142,7 +127,7 @@ void DlgKernelCallBack::InsertCtrlListControl(PCKernelCallBackInfo pKernelCallBa
 		}
 
 		StrBuf.Format(L"%ws+%I64X", &pInfo->ModulePath[n + 1], pInfo->ModuleOffset);
-		// â€œä½ç½®â€åˆ—ç”¨ PdbResolver å°è¯•è§£ç¬¦å·ï¼›PDB æœªå°±ç»ªæ—¶ä»æŽ¨å‡ºä¸‹è½½å¹¶æ‰˜åº•ä¸º module+offset
+		// ¡°Î»ÖÃ¡±ÁÐÓÃ PdbResolver ³¢ÊÔ½â·ûºÅ£»PDB Î´¾ÍÐ÷Ê±ÈÔÍÆ³öÏÂÔØ²¢ÍÐµ×Îª module+offset
 		{
 			ULONG64 modBase = (pInfo->CallBackAddr >= pInfo->ModuleOffset) ?
 				(pInfo->CallBackAddr - pInfo->ModuleOffset) : 0;
@@ -164,11 +149,11 @@ void DlgKernelCallBack::InsertCtrlListControl(PCKernelCallBackInfo pKernelCallBa
 
 		pCurList = pCurList->Blink;
 
-		//é‡Šæ”¾ç©ºé—´
+		//ÊÍ·Å¿Õ¼ä
 		SIZE_T FreeSize = 0;
 		if (MyNtFreeVirtualMemory(GetCurrentProcess(), (LPVOID*)&pInfo, &FreeSize, MEM_RELEASE) != 0)
 		{
-			AfxMessageBox(L"é‡Šæ”¾ç©ºé—´å¤±è´¥!");
+			AfxMessageBox(L"ÊÍ·Å¿Õ¼äÊ§°Ü!");
 		}
 	} while (pCurList != &pKernelCallBackInfo->List.List);
 }

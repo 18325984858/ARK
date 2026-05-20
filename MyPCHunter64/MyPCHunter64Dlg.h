@@ -74,6 +74,8 @@ public:
 	VOID InitTableControl();
 	VOID RegHostKey();
 	VOID UnHostKey();
+	// 切换主 Tab 到“文件”页并在 DlgEnumFile 里定位高亮指定文件路径。
+	VOID ShowFileTabAndNavigate(const CString& fullPath);
 public:
 	DlgProcess m_DlgProcess;
 	DlgDriverModule m_DlgDriverModule;
@@ -98,3 +100,6 @@ public:
 private:
 	CStatusBar m_StatusBar;
 };
+
+// 供其它对话框友好调用：指令主窗口切到文件页并定位文件。实现在 MyPCHunter64Dlg.cpp。
+void OpenFileInMainFileTab(const CString& fullPath);

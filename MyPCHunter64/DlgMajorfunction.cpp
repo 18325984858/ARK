@@ -1,4 +1,4 @@
-Ôªø// DlgAcpi.cpp: ÂÆûÁé∞Êñá‰ª∂
+// DlgAcpi.cpp:  µœ÷Œƒº˛
 //
 
 #include "pch.h"
@@ -9,7 +9,7 @@
 #include "Thread.h"
 #include "PdbResolver.h"
 
-// DlgAcpi ÂØπËØùÊ°Ü
+// DlgAcpi ∂‘ª∞øÚ
 
 IMPLEMENT_DYNAMIC(DlgMajorfunction, CDialogEx)
 
@@ -29,7 +29,6 @@ void DlgMajorfunction::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, ID_MAJORFUNCTION_LIST, m_CListCtrl);
 }
 
-
 BEGIN_MESSAGE_MAP(DlgMajorfunction, CDialogEx)
 	ON_NOTIFY(LVN_ITEMCHANGED, ID_MAJORFUNCTION_LIST, &DlgMajorfunction::OnLvnItemchangedMajorFunctioniList)
 	ON_WM_SIZE()
@@ -37,17 +36,14 @@ BEGIN_MESSAGE_MAP(DlgMajorfunction, CDialogEx)
 	ON_NOTIFY(NM_RCLICK, ID_MAJORFUNCTION_LIST, &DlgMajorfunction::OnNMRClickMajorfunctionList)
 END_MESSAGE_MAP()
 
-
-// DlgAcpi Ê∂àÊÅØÂ§ÑÁêÜÁ®ãÂ∫è
-
+// DlgAcpi œ˚œ¢¥¶¿Ì≥Ã–Ú
 
 void DlgMajorfunction::OnLvnItemchangedMajorFunctioniList(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
-	// TODO: Âú®Ê≠§Ê∑ªÂä†Êéß‰ª∂ÈÄöÁü•Â§ÑÁêÜÁ®ãÂ∫è‰ª£Á†Å
+	// TODO: ‘⁄¥ÀÃÌº”øÿº˛Õ®÷™¥¶¿Ì≥Ã–Ú¥˙¬Î
 	*pResult = 0;
 }
-
 
 void DlgMajorfunction::OnSize(UINT nType, int cx, int cy)
 {
@@ -58,43 +54,32 @@ void DlgMajorfunction::OnSize(UINT nType, int cx, int cy)
 	m_CListCtrl.SetWindowPos(NULL, 0, 0, rect.Width(), rect.Height(), SWP_NOZORDER);
 }
 
-
 BOOL DlgMajorfunction::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	m_CListCtrl.InsertColumn(um_MajorFuction_Ord, _T("Â∫èÂè∑"), LVCFMT_LEFT, 50);
-	m_CListCtrl.InsertColumn(um_MajorFuction_FunName, _T("ÂáΩÊï∞ÂêçÁß∞"), LVCFMT_LEFT, 300);
-	m_CListCtrl.InsertColumn(um_MajorFuction_FunAddr, _T("ÂáΩÊï∞Âú∞ÂùÄ"), LVCFMT_LEFT, 120);
-	m_CListCtrl.InsertColumn(um_MajorFuction_Pos, _T("‰ΩçÁΩÆ"), LVCFMT_LEFT, 250);
-	m_CListCtrl.InsertColumn(um_MajorFuction_MoudlePath, _T("ÊâÄÂú®Ê®°ÂùóË∑ØÂæÑ"), LVCFMT_LEFT, 250);
+	m_CListCtrl.InsertColumn(um_MajorFuction_Ord, _T("–Ú∫≈"), LVCFMT_LEFT, 50);
+	m_CListCtrl.InsertColumn(um_MajorFuction_FunName, _T("∫Ø ˝√˚≥∆"), LVCFMT_LEFT, 300);
+	m_CListCtrl.InsertColumn(um_MajorFuction_FunAddr, _T("∫Ø ˝µÿ÷∑"), LVCFMT_LEFT, 120);
+	m_CListCtrl.InsertColumn(um_MajorFuction_Pos, _T("Œª÷√"), LVCFMT_LEFT, 250);
+	m_CListCtrl.InsertColumn(um_MajorFuction_MoudlePath, _T("À˘‘⁄ƒ£øÈ¬∑æ∂"), LVCFMT_LEFT, 250);
 	m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
-
 
 	m_DriverMajorFunctionInfo.m_Object = (ULONG64)this;
 	m_DriverMajorFunctionInfo.m_ThreadFlags = FALSE;
 
 	//OnDriverMajorFunctionRefresh();
 	return TRUE;  // return TRUE unless you set the focus to a control
-	// ÂºÇÂ∏∏: OCX Â±ûÊÄßÈ°µÂ∫îËøîÂõû FALSE
+	// “Ï≥£: OCX  Ù–‘“≥”¶∑µªÿ FALSE
 }
-
 
 void DlgMajorfunction::OnDriverMajorFunctionRefresh()
 {
 	m_CListCtrl.DeleteAllItems();
-	//DWORD lpThreadId = 0;
-	////HANDLE hThread = CreateThread(NULL, NULL, EnumDriverMajorFunctionThreadProc,/*ÂèòÈáèÂèÇÊï∞Âú∞ÂùÄ*/(LPVOID)&m_DriverMajorFunctionInfo, 0, &lpThreadId);
-	//
-	//CThreadInfo* pThread = new CThreadInfo{ _LoadDriver::Um_UserCallBackType_UserEnumDriverMajorFunctionInfo, &m_DriverMajorFunctionInfo };
-	//HANDLE hThread = CreateThread(NULL, NULL, UniversalThreadFunction,/*ÂèòÈáèÂèÇÊï∞Âú∞ÂùÄ*/(LPVOID)pThread, 0, &lpThreadId);
-	//
-	//CloseHandle(hThread);
 
 	g_ThreadPool.AddTask(new _CThreadPack{ _LoadDriver::Um_UserCallBackType_UserEnumDriverMajorFunctionInfo, &m_DriverMajorFunctionInfo });
 
 }
-
 
 void DlgMajorfunction::InsertCtrlListControl(PCSysMajorFunctionInfo pCSysMajorFunctionInfo)
 {
@@ -122,7 +107,7 @@ void DlgMajorfunction::InsertCtrlListControl(PCSysMajorFunctionInfo pCSysMajorFu
 		StrBuf.Format(L"%016I64X", pInfo->FunAddr);
 		m_CListCtrl.SetItemText(i, um_MajorFuction_FunAddr, StrBuf);
 
-		// ‰ΩçÁΩÆÂàóÔºöPdbResolver Ëß£ÊûêÁ¨¶Âè∑„ÄÇ‰ºòÂÖàÁî®È©±Âä®‰º†ÂõûÁöÑ ModuleBaseÔºåÊ≤°Âàô resolver Êü•ÂÜÖÊ†∏Ê®°ÂùóË°®
+		// Œª÷√¡–£∫PdbResolver Ω‚Œˆ∑˚∫≈°£”≈œ»”√«˝∂Ø¥´ªÿµƒ ModuleBase£¨√ª‘Ú resolver ≤Èƒ⁄∫Àƒ£øÈ±Ì
 		{
 			WCHAR resolved[256] = { 0 };
 			PdbResolver_Resolve(pInfo->FunAddr, pInfo->ModuleBase,
@@ -130,19 +115,17 @@ void DlgMajorfunction::InsertCtrlListControl(PCSysMajorFunctionInfo pCSysMajorFu
 			m_CListCtrl.SetItemText(i, um_MajorFuction_Pos, resolved);
 		}
 
-
 		m_CListCtrl.SetItemText(i, um_MajorFuction_MoudlePath, pInfo->ModulePath);
 
 		CString FilePath = PathTransForm(pInfo->ModulePath);
 		m_CListCtrl.SetItemText(i, um_MajorFuction_MoudlePath, FilePath.GetBuffer());
 
-
 		pCurList = pCurList->Blink;
-		//Ê∏ÖÁêÜËµÑÊ∫ê
+		//«Â¿Ì◊ ‘¥
 		SIZE_T FreeSize = 0;
 		if (MyNtFreeVirtualMemory(GetCurrentProcess(), (LPVOID*)&pInfo, &FreeSize, MEM_RELEASE) != 0)
 		{
-			AfxMessageBox(L"ÈáäÊîæÁ©∫Èó¥Â§±Ë¥•!");
+			AfxMessageBox(L" Õ∑≈ø’º‰ ß∞‹!");
 		}
 	} while (pCurList != &pCSysMajorFunctionInfo->List.List);
 

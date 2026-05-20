@@ -151,9 +151,13 @@ void DlgWorkerThread::OnNMRClickList(NMHDR* pNMHDR, LRESULT* pResult)
 	menu.AppendMenuW(MF_STRING, kRefreshId, L"刷新");
 	copySub.Detach(); // 所有权已交给 menu，避免双重销毁
 
+	CString explorerPath;
+	UINT explorerCmd = AppendOpenInExplorerItem(menu, &m_CListCtrl, explorerPath);
+
 	POINT pt = { 0 };
 	GetCursorPos(&pt);
 	UINT cmd = menu.TrackPopupMenu(TPM_LEFTBUTTON | TPM_RETURNCMD | TPM_NONOTIFY, pt.x, pt.y, this);
+	if (HandleOpenInExplorerCmd(cmd, explorerCmd, explorerPath)) return;
 	if (cmd == kRefreshId)
 	{
 		OnWorkerThreadRefresh();

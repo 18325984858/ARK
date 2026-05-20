@@ -6,6 +6,9 @@
 #include "afxdialogex.h"
 #include "DlgEnumFile.h"
 #include "Thread.h"
+#include <shlobj.h>
+#include <vector>
+#pragma comment(lib, "shell32.lib")
 
 // DlgEnumFile 对话框
 
@@ -36,6 +39,7 @@ BEGIN_MESSAGE_MAP(DlgEnumFile, CDialogEx)
 	ON_COMMAND(ID_FILE_REFRESH, &DlgEnumFile::OnFileRefresh)
 	ON_NOTIFY(NM_RCLICK, ID_ENUMFILE_LIST, &DlgEnumFile::OnNMRClickEnumfileList)
 	ON_COMMAND(ID_FILE_FILEDEOCCUPY, &DlgEnumFile::OnFileFiledeoccupy)
+	ON_NOTIFY(LVN_ENDLABELEDIT, ID_ENUMFILE_LIST, &DlgEnumFile::OnEndLabelEditEnumfileList)
 END_MESSAGE_MAP()
 
 
@@ -77,6 +81,8 @@ BOOL DlgEnumFile::OnInitDialog()
 
 	/*设置风格*/
 	m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
+	// 允许列表项标签内编辑：右键"重命名"会触发 EditLabel
+	m_CListCtrl.ModifyStyle(0, LVS_EDITLABELS);
 
 	for (int i = 0; i < sizeof(szBuf1) / sizeof(TCHAR*); i++)
 	{
@@ -359,8 +365,40 @@ void DlgEnumFile::OnNMRClickEnumfileList(NMHDR* pNMHDR, LRESULT* pResult)
 	bool hasSel = (m_CListCtrl.GetFirstSelectedItemPosition() != NULL);
 	bool hasItems = (m_CListCtrl.GetItemCount() > 0);
 
-	const UINT kCopyBase = 9001;
-	const UINT kRefresh  = 9000;
+	// 取选中行对应的文件全路径，用于"打开/资源管理器/属性/打开方式/重命名"等
+	CString selPath;
+	int selRow = -1;
+	if (hasSel)
+	{
+		POSITION p = m_CListCtrl.GetFirstSelectedItemPosition();
+		selRow = m_CListCtrl.GetNextSelectedItem(p);
+		CString* pStr = (CString*)m_CListCtrl.GetItemData(selRow);
+		if (pStr) selPath = *pStr;
+	}
+
+	// 选中项是否是可执行类型，决定"以管理员身份运行"是否可点
+	bool isExe = false;
+	if (!selPath.IsEmpty())
+	{
+		int dot = selPath.ReverseFind(L'.');
+		if (dot >= 0)
+		{
+			CString ext = selPath.Mid(dot + 1);
+			ext.MakeLower();
+			isExe = (ext == L"exe" || ext == L"bat" || ext == L"cmd" || ext == L"com" || ext == L"msi");
+		}
+	}
+
+	const UINT kCopyBase       = 9001;
+	const UINT kRefresh        = 9000;
+	const UINT kFileOpen       = 9020;
+	const UINT kFileRunAs      = 9021;
+	const UINT kFileOpenAs     = 9022;
+	const UINT kFileOpenExp    = 9023;
+	const UINT kFileCopyAsPath = 9024;
+	const UINT kFileCopyDir    = 9025;
+	const UINT kFileRename     = 9026;
+	const UINT kFileProperties = 9027;
 
 	CMenu copySub;
 	copySub.CreatePopupMenu();
@@ -375,20 +413,109 @@ void DlgEnumFile::OnNMRClickEnumfileList(NMHDR* pNMHDR, LRESULT* pResult)
 
 	CMenu menu;
 	menu.CreatePopupMenu();
-	if (nCols > 0) menu.AppendMenuW(MF_POPUP | (hasSel ? 0 : MF_GRAYED), (UINT_PTR)copySub.GetSafeHmenu(), L"复制");
-	menu.AppendMenuW(MF_STRING | (this->m_ThreadFlags == 1 ? MF_GRAYED : 0), kRefresh, L"刷新");
+	// 打开/运行 类
+	menu.AppendMenuW(MF_STRING | (hasSel ? 0 : MF_GRAYED), kFileOpen,    L"打开");
+	menu.AppendMenuW(MF_STRING | (hasSel && isExe ? 0 : MF_GRAYED), kFileRunAs, L"以管理员身份运行");
+	menu.AppendMenuW(MF_STRING | (hasSel ? 0 : MF_GRAYED), kFileOpenAs,  L"打开方式...");
+	menu.AppendMenuW(MF_STRING | (hasSel ? 0 : MF_GRAYED), kFileOpenExp, L"在资源管理器中显示");
 	menu.AppendMenuW(MF_SEPARATOR);
+
+	// 剪贴板/复制类
+	if (nCols > 0) menu.AppendMenuW(MF_POPUP | (hasSel ? 0 : MF_GRAYED), (UINT_PTR)copySub.GetSafeHmenu(), L"复制");
+	menu.AppendMenuW(MF_STRING | (hasSel ? 0 : MF_GRAYED), kFileCopyAsPath, L"复制为路径");
+	menu.AppendMenuW(MF_STRING | (!m_CurPath.IsEmpty() ? 0 : MF_GRAYED), kFileCopyDir, L"复制所在目录");
+	menu.AppendMenuW(MF_SEPARATOR);
+
+	// 重命名
+	menu.AppendMenuW(MF_STRING | (hasSel ? 0 : MF_GRAYED), kFileRename, L"重命名");
+	menu.AppendMenuW(MF_SEPARATOR);
+
+	// 危险/驱动相关
 	menu.AppendMenuW(MF_STRING | (hasItems ? 0 : MF_GRAYED), ID_FILE_DELETE,       L"强制删除文件");
 	menu.AppendMenuW(MF_STRING | (hasItems ? 0 : MF_GRAYED), ID_FILE_FILEDEOCCUPY, L"解除文件占用");
+	menu.AppendMenuW(MF_SEPARATOR);
+
+	// 属性 / 视图
+	menu.AppendMenuW(MF_STRING | (hasSel ? 0 : MF_GRAYED), kFileProperties, L"属性");
+	menu.AppendMenuW(MF_STRING | (this->m_ThreadFlags == 1 ? MF_GRAYED : 0), kRefresh, L"刷新");
 
 	POINT pt = { 0 }; GetCursorPos(&pt);
 	UINT cmd = menu.TrackPopupMenu(TPM_LEFTBUTTON | TPM_RETURNCMD | TPM_NONOTIFY, pt.x, pt.y, this);
 	copySub.Detach();
 
+	if (cmd == 0) return;
 	if (cmd == kRefresh) { OnFileRefresh(); return; }
 	if (cmd >= kCopyBase && cmd < kCopyBase + (UINT)nCols)
 	{
 		CopyBufferToClipboard(&m_CListCtrl, (int)(cmd - kCopyBase));
+		return;
+	}
+	if (cmd == kFileOpen && !selPath.IsEmpty())
+	{
+		ShellExecuteW(NULL, L"open", selPath, NULL, NULL, SW_SHOWNORMAL);
+		return;
+	}
+	if (cmd == kFileRunAs && !selPath.IsEmpty())
+	{
+		ShellExecuteW(NULL, L"runas", selPath, NULL, NULL, SW_SHOWNORMAL);
+		return;
+	}
+	if (cmd == kFileOpenAs && !selPath.IsEmpty())
+	{
+		OPENASINFO oai = { 0 };
+		oai.pcszFile = selPath;
+		oai.oaifInFlags = OAIF_EXEC | OAIF_HIDE_REGISTRATION;
+		SHOpenWithDialog(GetSafeHwnd(), &oai);
+		return;
+	}
+	if (cmd == kFileOpenExp && !selPath.IsEmpty())
+	{
+		PIDLIST_ABSOLUTE pidl = ILCreateFromPathW(selPath);
+		if (pidl)
+		{
+			SHOpenFolderAndSelectItems(pidl, 0, NULL, 0);
+			ILFree(pidl);
+		}
+		return;
+	}
+	if ((cmd == kFileCopyAsPath && !selPath.IsEmpty()) ||
+	    (cmd == kFileCopyDir && !m_CurPath.IsEmpty()))
+	{
+		CString text;
+		if (cmd == kFileCopyAsPath)
+		{
+			text = L"\"" + selPath + L"\"";
+		}
+		else
+		{
+			text = m_CurPath;
+			while (text.GetLength() > 3 && text[text.GetLength() - 1] == L'\\')
+				text.Delete(text.GetLength() - 1);
+		}
+		if (OpenClipboard())
+		{
+			EmptyClipboard();
+			size_t bytes = (text.GetLength() + 1) * sizeof(wchar_t);
+			HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, bytes);
+			if (hMem)
+			{
+				void* dst = GlobalLock(hMem);
+				if (dst) { memcpy(dst, (LPCWSTR)text, bytes); GlobalUnlock(hMem); }
+				SetClipboardData(CF_UNICODETEXT, hMem);
+			}
+			CloseClipboard();
+		}
+		return;
+	}
+	if (cmd == kFileRename && selRow >= 0)
+	{
+		m_CListCtrl.SetFocus();
+		m_CListCtrl.EditLabel(selRow);
+		return;
+	}
+	if (cmd == kFileProperties && !selPath.IsEmpty())
+	{
+		SHObjectProperties(GetSafeHwnd(), SHOP_FILEPATH, selPath, NULL);
 		return;
 	}
 	if (cmd == ID_FILE_DELETE || cmd == ID_FILE_FILEDEOCCUPY)
@@ -396,6 +523,134 @@ void DlgEnumFile::OnNMRClickEnumfileList(NMHDR* pNMHDR, LRESULT* pResult)
 		// 路由到现有的 ON_COMMAND 处理函数
 		SendMessageW(WM_COMMAND, MAKEWPARAM(cmd, 0), 0);
 		return;
+	}
+}
+
+// 列表项标签编辑结束(重命名)：用 MoveFileW 改名，并同步行内 CString*。
+void DlgEnumFile::OnEndLabelEditEnumfileList(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	NMLVDISPINFO* pInfo = (NMLVDISPINFO*)pNMHDR;
+	*pResult = FALSE; // 默认不接受编辑结果
+
+	if (pInfo == NULL || pInfo->item.pszText == NULL) return;
+	int row = pInfo->item.iItem;
+	if (row < 0) return;
+
+	CString newName = pInfo->item.pszText;
+	newName.Trim();
+	if (newName.IsEmpty()) return;
+
+	if (newName.FindOneOf(L"\\/:*?\"<>|") >= 0)
+	{
+		::MessageBoxW(GetSafeHwnd(), L"文件名不能包含 \\ / : * ? \" < > |", L"提示", MB_OK | MB_ICONWARNING);
+		return;
+	}
+
+	CString* pOld = (CString*)m_CListCtrl.GetItemData(row);
+	if (pOld == NULL || pOld->IsEmpty()) return;
+
+	CString oldPath = *pOld;
+	int slash = oldPath.ReverseFind(L'\\');
+	if (slash < 0) return;
+	CString dir = oldPath.Left(slash + 1);
+	CString newPath = dir + newName;
+
+	if (oldPath.CompareNoCase(newPath) == 0) return;
+
+	if (!MoveFileW(oldPath, newPath))
+	{
+		DWORD err = GetLastError();
+		CString msg;
+		msg.Format(L"重命名失败，错误码: %lu", err);
+		::MessageBoxW(GetSafeHwnd(), msg, L"提示", MB_OK | MB_ICONERROR);
+		return;
+	}
+
+	*pOld = newPath;
+	*pResult = TRUE;
+}
+
+// 由"进程模块"等页面调用，跳转到指定文件所在目录并选中该文件。
+// 沿路径一级一级在 Tree 上展开/选中节点，再选中目标行；
+// 这样后续 EnunFile() 的 hSelectItem 始终是正确的父节点，
+// 不会把子目录插到根层级，避免破坏树形层级结构。
+void DlgEnumFile::NavigateToFile(const CString& fullPath)
+{
+	if (fullPath.IsEmpty()) return;
+
+	CString p = fullPath;
+	p.Replace(L'/', L'\\');
+
+	int colon = p.Find(L':');
+	if (colon < 0) return;
+	CString driveRoot = p.Left(colon + 1) + L"\\"; // 例如 "C:\\"
+
+	// 把驱动器之后的部分拆成各级目录 + 末尾文件名
+	CString rest = p.Mid(colon + 1);
+	while (!rest.IsEmpty() && rest[0] == L'\\') rest = rest.Mid(1);
+
+	std::vector<CString> parts;
+	int s = 0;
+	while (s < rest.GetLength())
+	{
+		int sl = rest.Find(L'\\', s);
+		if (sl < 0) { parts.push_back(rest.Mid(s)); break; }
+		if (sl > s) parts.push_back(rest.Mid(s, sl - s));
+		s = sl + 1;
+	}
+	if (parts.empty()) return;
+
+	CString fileName = parts.back();
+	parts.pop_back(); // 余下的是目录链
+
+	// 找到对应盘符的根节点（OnInitDialog 里根节点文本是 "C:", 数据是 CString("C:\\")）
+	HTREEITEM hRoot = m_CTreeCtrl.GetRootItem();
+	HTREEITEM hCur = NULL;
+	while (hRoot)
+	{
+		CString* pData = (CString*)m_CTreeCtrl.GetItemData(hRoot);
+		if (pData && pData->CompareNoCase(driveRoot) == 0) { hCur = hRoot; break; }
+		hRoot = m_CTreeCtrl.GetNextSiblingItem(hRoot);
+	}
+	if (!hCur) return;
+
+	// 在根盘符上同步刷新一次，让它的子节点（一级目录）出现
+	m_CTreeCtrl.SelectItem(hCur);
+	m_CTreeCtrl.Expand(hCur, TVE_EXPAND);
+	m_CurPath = driveRoot;
+	EnunFile();
+
+	// 沿路径逐级匹配/展开
+	for (const CString& comp : parts)
+	{
+		HTREEITEM child = m_CTreeCtrl.GetChildItem(hCur);
+		HTREEITEM match = NULL;
+		while (child)
+		{
+			if (m_CTreeCtrl.GetItemText(child).CompareNoCase(comp) == 0) { match = child; break; }
+			child = m_CTreeCtrl.GetNextSiblingItem(child);
+		}
+		if (!match) break;
+		hCur = match;
+		m_CTreeCtrl.SelectItem(hCur);
+		m_CTreeCtrl.Expand(hCur, TVE_EXPAND);
+		CString* pData = (CString*)m_CTreeCtrl.GetItemData(hCur);
+		if (pData) m_CurPath = *pData;
+		EnunFile();
+	}
+	m_CTreeCtrl.EnsureVisible(hCur);
+
+	// 在列表里高亮目标文件
+	int cnt = m_CListCtrl.GetItemCount();
+	for (int i = 0; i < cnt; ++i)
+	{
+		if (m_CListCtrl.GetItemText(i, 0).CompareNoCase(fileName) == 0)
+		{
+			m_CListCtrl.SetItemState(i, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
+			m_CListCtrl.EnsureVisible(i, FALSE);
+			m_CListCtrl.SetFocus();
+			break;
+		}
 	}
 }
 

@@ -184,7 +184,6 @@
 #define ID_FILE_REFRESH                 32852
 #define ID_SSDT_32853                   32853
 #define ID_SSDT_RETURNHOOK              32854
-#define ID_SSDTSHADOW_32855             32855
 #define ID_SSDTSHADOW_RETURNHOOK        32856
 #define ID_FILE_32857                   32857
 #define ID_FILE_FILEDEOCCUPY            32858
