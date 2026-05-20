@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "afxdialogex.h"
+#include <vector>
 
 
 // DlgEnumFile 对话框
@@ -60,4 +61,28 @@ public:
 	afx_msg void OnEndLabelEditEnumfileList(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnNMRClickEnumfileTree(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnEndLabelEditEnumfileTree(NMHDR* pNMHDR, LRESULT* pResult);
+
+	// ===== 顶部地址栏 (后退/前进 + 路径输入 + 搜索) =====
+	CButton m_BtnBack;
+	CButton m_BtnForward;
+	CEdit   m_PathEdit;
+	CButton m_BtnGo;
+	CEdit   m_SearchEdit;
+
+	// 浏览历史，索引指向 m_NavHistory[m_NavIndex] 是"当前"目录
+	std::vector<CString> m_NavHistory;
+	int  m_NavIndex = -1;
+	bool m_NavSuppressHistory = false; // 后退/前进期间内部 Navigate 不写历史
+
+	// 跳转到目录（带 trailing \）；addHistory=true 时写入历史栈
+	void NavigateToDirectory(const CString& dirWithSlash, bool addHistory);
+	// 根据 m_NavHistory[m_NavIndex] 同步按钮可用状态
+	void UpdateNavButtons();
+	// 应用搜索过滤：把当前列表中不匹配的行删掉
+	void ApplyListSearchFilter(const CString& keyword);
+
+	afx_msg void OnBtnNavBack();
+	afx_msg void OnBtnNavForward();
+	afx_msg void OnBtnNavGo();
+	virtual BOOL PreTranslateMessage(MSG* pMsg);
 };

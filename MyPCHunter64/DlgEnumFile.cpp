@@ -10,6 +10,14 @@
 #include <vector>
 #pragma comment(lib, "shell32.lib")
 
+// 地址栏控件 ID（自定义范围，避开 MFC 资源 ID）
+#define ID_NAVBAR_BACK    30001
+#define ID_NAVBAR_FORWARD 30002
+#define ID_NAVBAR_PATH    30003
+#define ID_NAVBAR_GO      30004
+#define ID_NAVBAR_SEARCH  30005
+static const int kNavBarHeight = 28;
+
 // DlgEnumFile 对话框
 
 IMPLEMENT_DYNAMIC(DlgEnumFile, CDialogEx)
@@ -42,6 +50,9 @@ BEGIN_MESSAGE_MAP(DlgEnumFile, CDialogEx)
 	ON_NOTIFY(LVN_ENDLABELEDIT, ID_ENUMFILE_LIST, &DlgEnumFile::OnEndLabelEditEnumfileList)
 	ON_NOTIFY(NM_RCLICK, ID_ENUMFILE_TREE, &DlgEnumFile::OnNMRClickEnumfileTree)
 	ON_NOTIFY(TVN_ENDLABELEDIT, ID_ENUMFILE_TREE, &DlgEnumFile::OnEndLabelEditEnumfileTree)
+	ON_BN_CLICKED(ID_NAVBAR_BACK,    &DlgEnumFile::OnBtnNavBack)
+	ON_BN_CLICKED(ID_NAVBAR_FORWARD, &DlgEnumFile::OnBtnNavForward)
+	ON_BN_CLICKED(ID_NAVBAR_GO,      &DlgEnumFile::OnBtnNavGo)
 END_MESSAGE_MAP()
 
 
@@ -94,6 +105,35 @@ BOOL DlgEnumFile::OnInitDialog()
 		m_CListCtrl.SetColumnWidth(i, 200);
 	}
 
+	// ===== 顶部地址栏：[<] [>]  [Path .....] [Go]  [Search .....] =====
+	// 位置由 OnSize 统一调整；这里只负责创建。
+	CRect rcPlace(0, 0, 30, kNavBarHeight - 4);
+	m_BtnBack.Create(L"\u25C0", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
+		rcPlace, this, ID_NAVBAR_BACK);     // ◀
+	m_BtnForward.Create(L"\u25B6", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
+		rcPlace, this, ID_NAVBAR_FORWARD);  // ▶
+	m_PathEdit.Create(WS_CHILD | WS_VISIBLE | WS_BORDER | WS_TABSTOP | ES_AUTOHSCROLL,
+		rcPlace, this, ID_NAVBAR_PATH);
+	m_BtnGo.Create(L"\u21B2", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
+		rcPlace, this, ID_NAVBAR_GO);       // ↲
+	m_SearchEdit.Create(WS_CHILD | WS_VISIBLE | WS_BORDER | WS_TABSTOP | ES_AUTOHSCROLL,
+		rcPlace, this, ID_NAVBAR_SEARCH);
+
+	// 用对话框默认字体让控件外观一致
+	CFont* pFont = GetFont();
+	if (pFont)
+	{
+		m_BtnBack.SetFont(pFont);
+		m_BtnForward.SetFont(pFont);
+		m_PathEdit.SetFont(pFont);
+		m_BtnGo.SetFont(pFont);
+		m_SearchEdit.SetFont(pFont);
+	}
+	// Search 框显示占位提示 ("搜索 当前目录")
+	m_SearchEdit.SetCueBanner(L"搜索当前目录", TRUE);
+	m_PathEdit.SetCueBanner(L"输入目录路径，回车跳转", TRUE);
+	UpdateNavButtons();
+
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// 异常: OCX 属性页应返回 FALSE
 }
@@ -105,10 +145,40 @@ void DlgEnumFile::OnSize(UINT nType, int cx, int cy)
 	CRect rect;
 	GetClientRect(&rect);
 
+	// 顶部地址栏：[<] [>] [path .....] [Go] [search ...]
+	const int btnW   = 30;
+	const int gap    = 4;
+	const int margin = 2;
+	const int searchW = (rect.Width() / 4 > 240) ? 240 : (rect.Width() / 4);
+	if (m_BtnBack.GetSafeHwnd())
+	{
+		int x = margin;
+		int y = margin;
+		int h = kNavBarHeight - 2 * margin;
+		m_BtnBack.SetWindowPos(NULL, x, y, btnW, h, SWP_NOZORDER);
+		x += btnW + gap;
+		m_BtnForward.SetWindowPos(NULL, x, y, btnW, h, SWP_NOZORDER);
+		x += btnW + gap;
+
+		int pathRight = rect.Width() - margin - searchW - gap - btnW - gap;
+		if (pathRight < x + 60) pathRight = x + 60;
+		m_PathEdit.SetWindowPos(NULL, x, y + 2, pathRight - x, h - 4, SWP_NOZORDER);
+
+		x = pathRight + gap;
+		m_BtnGo.SetWindowPos(NULL, x, y, btnW, h, SWP_NOZORDER);
+		x += btnW + gap;
+
+		m_SearchEdit.SetWindowPos(NULL, x, y + 2, rect.Width() - margin - x, h - 4, SWP_NOZORDER);
+	}
+
+	// 树/列表：留出顶部地址栏高度
+	int top = kNavBarHeight;
+	int bodyH = rect.Height() - top;
+	if (bodyH < 0) bodyH = 0;
 	float fwidth = rect.Width() / 4;
 
-	m_CTreeCtrl.SetWindowPos(NULL, 0, 0, fwidth, rect.Height(), SWP_NOZORDER);
-	m_CListCtrl.SetWindowPos(NULL, fwidth, 0, rect.Width() - fwidth, rect.Height(), SWP_NOZORDER);
+	m_CTreeCtrl.SetWindowPos(NULL, 0, top, (int)fwidth, bodyH, SWP_NOZORDER);
+	m_CListCtrl.SetWindowPos(NULL, (int)fwidth, top, rect.Width() - (int)fwidth, bodyH, SWP_NOZORDER);
 }
 
 void DlgEnumFile::DelTreeChild(HTREEITEM pNode)
@@ -188,6 +258,19 @@ void DlgEnumFile::OnDblclkEnumfileTree(NMHDR* pNMHDR, LRESULT* pResult)
 
 	//将点击的路径存储起来
 	m_CurPath = strtmp;
+
+	// 写入浏览历史并同步地址栏
+	if (!m_NavSuppressHistory)
+	{
+		if (m_NavIndex >= 0 && m_NavIndex + 1 < (int)m_NavHistory.size())
+			m_NavHistory.erase(m_NavHistory.begin() + m_NavIndex + 1, m_NavHistory.end());
+		if (m_NavIndex < 0 || m_NavHistory[m_NavIndex].CompareNoCase(m_CurPath) != 0)
+		{
+			m_NavHistory.push_back(m_CurPath);
+			m_NavIndex = (int)m_NavHistory.size() - 1;
+		}
+	}
+	UpdateNavButtons();
 
 	OnFileRefresh();
 }
@@ -947,6 +1030,177 @@ void DlgEnumFile::NavigateToFile(const CString& fullPath)
 			break;
 		}
 	}
+}
+
+// ---------------------------------------------------------------------------
+//  顶部地址栏：后退 / 前进 / 跳转 / 搜索
+// ---------------------------------------------------------------------------
+
+void DlgEnumFile::UpdateNavButtons()
+{
+	if (m_BtnBack.GetSafeHwnd())
+		m_BtnBack.EnableWindow(m_NavIndex > 0);
+	if (m_BtnForward.GetSafeHwnd())
+		m_BtnForward.EnableWindow(m_NavIndex >= 0 && m_NavIndex + 1 < (int)m_NavHistory.size());
+	if (m_PathEdit.GetSafeHwnd() && m_NavIndex >= 0 && m_NavIndex < (int)m_NavHistory.size())
+	{
+		// 显示给用户：去掉末尾反斜杠，更接近 Explorer 的地址栏写法
+		CString shown = m_NavHistory[m_NavIndex];
+		while (shown.GetLength() > 3 && shown[shown.GetLength() - 1] == L'\\')
+			shown.Delete(shown.GetLength() - 1);
+		m_PathEdit.SetWindowTextW(shown);
+	}
+}
+
+// 沿路径在 Tree 上一级一级展开/选中到目标目录，并填充列表
+void DlgEnumFile::NavigateToDirectory(const CString& dirWithSlash, bool addHistory)
+{
+	if (dirWithSlash.IsEmpty()) return;
+	CString p = dirWithSlash;
+	p.Replace(L'/', L'\\');
+	if (p[p.GetLength() - 1] != L'\\') p += L'\\';
+
+	int colon = p.Find(L':');
+	if (colon < 0) return;
+	CString driveRoot = p.Left(colon + 1) + L"\\"; // "C:\"
+
+	CString rest = p.Mid(colon + 1);
+	while (!rest.IsEmpty() && rest[0] == L'\\') rest = rest.Mid(1);
+	std::vector<CString> parts;
+	int s = 0;
+	while (s < rest.GetLength())
+	{
+		int sl = rest.Find(L'\\', s);
+		if (sl < 0) { if (s < rest.GetLength()) parts.push_back(rest.Mid(s)); break; }
+		if (sl > s) parts.push_back(rest.Mid(s, sl - s));
+		s = sl + 1;
+	}
+
+	HTREEITEM hRoot = m_CTreeCtrl.GetRootItem();
+	HTREEITEM hCur = NULL;
+	while (hRoot)
+	{
+		CString* pData = (CString*)m_CTreeCtrl.GetItemData(hRoot);
+		if (pData && pData->CompareNoCase(driveRoot) == 0) { hCur = hRoot; break; }
+		hRoot = m_CTreeCtrl.GetNextSiblingItem(hRoot);
+	}
+	if (!hCur) return;
+
+	m_CTreeCtrl.SelectItem(hCur);
+	m_CTreeCtrl.Expand(hCur, TVE_EXPAND);
+	m_CurPath = driveRoot;
+	EnunFile();
+
+	for (const CString& comp : parts)
+	{
+		HTREEITEM child = m_CTreeCtrl.GetChildItem(hCur);
+		HTREEITEM match = NULL;
+		while (child)
+		{
+			if (m_CTreeCtrl.GetItemText(child).CompareNoCase(comp) == 0) { match = child; break; }
+			child = m_CTreeCtrl.GetNextSiblingItem(child);
+		}
+		if (!match) break;
+		hCur = match;
+		m_CTreeCtrl.SelectItem(hCur);
+		m_CTreeCtrl.Expand(hCur, TVE_EXPAND);
+		CString* pData = (CString*)m_CTreeCtrl.GetItemData(hCur);
+		if (pData) m_CurPath = *pData;
+		EnunFile();
+	}
+	m_CTreeCtrl.EnsureVisible(hCur);
+
+	if (addHistory && !m_NavSuppressHistory)
+	{
+		// 截断当前位置之后的"前进"历史，再追加新位置（去重）
+		if (m_NavIndex >= 0 && m_NavIndex + 1 < (int)m_NavHistory.size())
+			m_NavHistory.erase(m_NavHistory.begin() + m_NavIndex + 1, m_NavHistory.end());
+		CString cur = m_CurPath;
+		if (m_NavIndex < 0 || m_NavHistory[m_NavIndex].CompareNoCase(cur) != 0)
+		{
+			m_NavHistory.push_back(cur);
+			m_NavIndex = (int)m_NavHistory.size() - 1;
+		}
+	}
+	UpdateNavButtons();
+}
+
+void DlgEnumFile::OnBtnNavBack()
+{
+	if (m_NavIndex <= 0) return;
+	m_NavSuppressHistory = true;
+	--m_NavIndex;
+	NavigateToDirectory(m_NavHistory[m_NavIndex], false);
+	m_NavSuppressHistory = false;
+}
+
+void DlgEnumFile::OnBtnNavForward()
+{
+	if (m_NavIndex + 1 >= (int)m_NavHistory.size()) return;
+	m_NavSuppressHistory = true;
+	++m_NavIndex;
+	NavigateToDirectory(m_NavHistory[m_NavIndex], false);
+	m_NavSuppressHistory = false;
+}
+
+void DlgEnumFile::OnBtnNavGo()
+{
+	CString text;
+	m_PathEdit.GetWindowTextW(text);
+	text.Trim();
+	if (text.IsEmpty()) return;
+	if (GetFileAttributesW(text) == INVALID_FILE_ATTRIBUTES)
+	{
+		::MessageBoxW(GetSafeHwnd(), L"路径不存在。", L"提示", MB_OK | MB_ICONWARNING);
+		return;
+	}
+	NavigateToDirectory(text, true);
+}
+
+// 关键字过滤：把当前列表中文件名不含 keyword 的行删掉（不重新枚举目录）
+void DlgEnumFile::ApplyListSearchFilter(const CString& keyword)
+{
+	if (keyword.IsEmpty())
+	{
+		// 关键字清空时重新拉一次目录恢复全量
+		OnFileRefresh();
+		return;
+	}
+	CString needle = keyword; needle.MakeLower();
+	for (int i = m_CListCtrl.GetItemCount() - 1; i >= 0; --i)
+	{
+		CString name = m_CListCtrl.GetItemText(i, 0);
+		CString lower = name; lower.MakeLower();
+		if (lower.Find(needle) < 0)
+		{
+			CString* p = (CString*)m_CListCtrl.GetItemData(i);
+			if (p) delete p;
+			m_CListCtrl.DeleteItem(i);
+		}
+	}
+}
+
+BOOL DlgEnumFile::PreTranslateMessage(MSG* pMsg)
+{
+	// 让路径栏 / 搜索栏的回车键触发跳转/筛选，而不是关闭对话框
+	if (pMsg->message == WM_KEYDOWN && pMsg->wParam == VK_RETURN)
+	{
+		HWND hFocus = pMsg->hwnd;
+		if (m_PathEdit.GetSafeHwnd() == hFocus)
+		{
+			OnBtnNavGo();
+			return TRUE;
+		}
+		if (m_SearchEdit.GetSafeHwnd() == hFocus)
+		{
+			CString kw;
+			m_SearchEdit.GetWindowTextW(kw);
+			kw.Trim();
+			ApplyListSearchFilter(kw);
+			return TRUE;
+		}
+	}
+	return CDialogEx::PreTranslateMessage(pMsg);
 }
 
 void DlgEnumFile::OnFileFiledeoccupy()
