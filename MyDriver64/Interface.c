@@ -1335,16 +1335,16 @@ VOID __vectorcall ReadKernelRangeInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT U
 }
 
 // ============================================================
-// 强制读连续内核 VA：用 MmGetPhysicalAddress + MmMapIoSpaceEx 把目标
-// 物理页重新映射到一段"我们自己控制保护属性"的临时 VA，从临时 VA 拷贝
-// 之后再 MmUnmapIoSpace 还原。这种走法的好处：
-//   - 不受原 VA 的页保护影响（INIT 段被回收后 PTE 失效、PAGE_NX 等）
-//   - 不受 MmIsAddressValid 的"未驻留就拒绝"误判影响
-//   - 拷贝完立即 Unmap，不残留新的临时映射
-// 缺点：物理页不在内存里（真正被换出）时 MmGetPhysicalAddress 返回 0，
-// 此时无能为力，该页保持 0（不中断整段拷贝）。
+// 强制读连续内核 VA。改用文档化 API MmCopyMemory：
+//   - 比直接 RtlCopyMemory 多一层兜底：内部会去 PTE 走 page-in 路径，
+//     对 INIT 段被回收 / PAGE 段被换出等场景能容错，而不是 AV。
+//   - 返回 NTSTATUS，调用方可以判定哪一页拷不到，绝不会把系统拖蓝。
+//   - 比之前那版 MmMapIoSpaceEx 安全：MmMapIoSpaceEx 不允许映射 OS
+//     标记为 RAM 用途的物理页（ntoskrnl 镜像就是这种），Win10 会直接
+//     bugcheck 0x1A subcode 0x1233（MiShowBadMapper）。这条路废弃。
 //
-// 按页拆分（每页独立 try）；输入参数复用 CKernelRangeReadInfo。
+// 按页拆分（每页独立 NumberOfBytesTransferred 判定）；输入参数复用
+// CKernelRangeReadInfo；入口一次性 ProbeForWrite 用户缓冲。
 VOID __vectorcall ForceReadKernelRangeInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam)
 {
 	UNREFERENCED_PARAMETER(nCmd);
@@ -1378,34 +1378,17 @@ VOID __vectorcall ForceReadKernelRangeInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, 
 		ULONG     inPage  = (ULONG)(PAGE_SIZE - pageOff);
 		if (inPage > remain) inPage = remain;
 
-		PHYSICAL_ADDRESS pa = MmGetPhysicalAddress(src + done);
-		if (pa.QuadPart != 0)
+		MM_COPY_ADDRESS srcAddr;
+		srcAddr.VirtualAddress = src + done;
+		SIZE_T transferred = 0;
+		NTSTATUS st = MmCopyMemory(usr + done, srcAddr, inPage,
+			MM_COPY_MEMORY_VIRTUAL, &transferred);
+		if (NT_SUCCESS(st))
 		{
-			// 把该物理页重映射成一段 PAGE_READONLY 的新 VA。
-			// MmMapIoSpaceEx 在 Win8+，本项目最低支持 Win10。
-			PVOID newVa = MmMapIoSpaceEx(pa, PAGE_SIZE, PAGE_READONLY);
-			if (newVa)
-			{
-				__try
-				{
-					RtlCopyMemory(usr + done, (PUCHAR)newVa + pageOff, inPage);
-					p->BytesRead += inPage;
-				}
-				__except (EXCEPTION_EXECUTE_HANDLER) { }
-				MmUnmapIoSpace(newVa, PAGE_SIZE);
-			}
-			else
-			{
-				// 重映射失败（资源紧张？）回退到直接 VA 读
-				__try
-				{
-					RtlCopyMemory(usr + done, src + done, inPage);
-					p->BytesRead += inPage;
-				}
-				__except (EXCEPTION_EXECUTE_HANDLER) { }
-			}
+			p->BytesRead += (ULONG)transferred;
 		}
-		// pa == 0：物理页被真正换出 / VA 未映射 → 保留 0，不中断整段
+		// 读不到的页（被换出 / 未映射 / 受保护无法 page-in）保留 0，
+		// 不中断后续页 —— 大镜像里总会有这种小坑，不阻塞 sys dump。
 
 		done   += inPage;
 		remain -= inPage;
