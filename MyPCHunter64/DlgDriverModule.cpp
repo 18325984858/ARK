@@ -828,6 +828,7 @@ BOOL DlgDriverModule::OnInitDialog()
 	m_CListCtrl.InsertColumn(um_Driver_DigitalSignature, _T("数字签名"), LVCFMT_LEFT, 100);
 	m_CListCtrl.InsertColumn(um_Driver_FilePath, _T("路径"), LVCFMT_LEFT, 500);
 	m_CListCtrl.InsertColumn(um_Driver_FileName, _T("公司名"), LVCFMT_LEFT, 250);
+	m_CListCtrl.InsertColumn(um_Driver_StartType, _T("启动类型"), LVCFMT_LEFT, 80);
 	m_CListCtrl.SetExtendedStyle(m_CListCtrl.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 
 	return TRUE;
@@ -888,6 +889,38 @@ void DlgDriverModule::InsertCtrlListControl(PCDriverInfo pInfo)
 		if (this->GetCompanyName(FilePath, szDstFileName))
 		{
 			m_CListCtrl.SetItemText(i, um_Driver_FileName, (LPWSTR)szDstFileName.GetString());
+		}
+
+		// 启动类型：HKLM\SYSTEM\CurrentControlSet\Services\<名字>\Start
+		{
+			CString svcName = pDriverInfo->ImageBaseName;
+			int dot = svcName.ReverseFind(L'.');
+			if (dot > 0) svcName = svcName.Left(dot);
+			LPCWSTR startText = L"--";
+			if (!svcName.IsEmpty())
+			{
+				CString keyPath = L"SYSTEM\\CurrentControlSet\\Services\\" + svcName;
+				HKEY hKey = NULL;
+				if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, keyPath, 0, KEY_QUERY_VALUE, &hKey) == ERROR_SUCCESS)
+				{
+					DWORD startVal = 0, cb = sizeof(startVal), type = 0;
+					if (RegQueryValueExW(hKey, L"Start", NULL, &type,
+						(LPBYTE)&startVal, &cb) == ERROR_SUCCESS && type == REG_DWORD)
+					{
+						switch (startVal)
+						{
+						case 0: startText = L"启动";    break;
+						case 1: startText = L"系统";    break;
+						case 2: startText = L"自动";    break;
+						case 3: startText = L"手动";    break;
+						case 4: startText = L"禁用";    break;
+						default: startText = L"未知";   break;
+						}
+					}
+					RegCloseKey(hKey);
+				}
+			}
+			m_CListCtrl.SetItemText(i, um_Driver_StartType, startText);
 		}
 
 		//获取下一个节点

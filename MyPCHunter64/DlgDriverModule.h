@@ -17,7 +17,8 @@ public:
 		um_Driver_ServerName,
 		um_Driver_DigitalSignature,
 		um_Driver_FilePath,
-		um_Driver_FileName
+		um_Driver_FileName,
+		um_Driver_StartType
 	};
 public:
 	DlgDriverModule(CWnd* pParent = nullptr);   // 标准构造函数

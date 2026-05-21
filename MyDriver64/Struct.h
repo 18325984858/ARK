@@ -105,6 +105,7 @@ enum _CommunicatOpCode
 
 	um_Cmd_Force_Read_KernelRange_info,										//通过物理页重映射强制读内核 VA（兼容 PAGE/INIT 等被回收/特殊保护的页）
 
+	um_Cmd_SetProcessPriority_info,											//设置进程优先级（pIndata = PID, pParam = PROCESS_PRIORITY_CLASS 值 1..6）
 };
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

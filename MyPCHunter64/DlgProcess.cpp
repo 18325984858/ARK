@@ -214,22 +214,23 @@ void DlgProcess::OnNMRClickControlProcessList(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 	if (cmd >= kPrioBase && cmd <= kPrioRealTime && hasPid)
 	{
-		static const DWORD prioMap[] = {
-			IDLE_PRIORITY_CLASS,
-			BELOW_NORMAL_PRIORITY_CLASS,
-			NORMAL_PRIORITY_CLASS,
-			ABOVE_NORMAL_PRIORITY_CLASS,
-			HIGH_PRIORITY_CLASS,
-			REALTIME_PRIORITY_CLASS
-		};
-		HANDLE h = OpenProc(PROCESS_SET_INFORMATION);
-		if (h)
+		// 走驱动：ZwSetInformationProcess(ProcessPriorityClass) 在内核里直接改，
+		// 不依赖用户态 OpenProcess(PROCESS_SET_INFORMATION)。
+		// 映射菜单顺序 → PROCESS_PRIORITY_CLASS 值（1..6）：
+		//   IDLE=1, NORMAL=2, HIGH=3, REALTIME=4, BELOW_NORMAL=5, ABOVE_NORMAL=6
+		static const UCHAR kKernelPrioMap[] = { 1, 5, 2, 6, 3, 4 };
+		UCHAR kcls = kKernelPrioMap[cmd - kPrioBase];
+		ULONG64 nRet = g_LoadDriver.SendMsg(
+			um_Cmd_SetProcessPriority_info,
+			(PVOID)(ULONG_PTR)pid,
+			NULL, NULL,
+			(PVOID)(ULONG_PTR)kcls);
+		if ((LONG)nRet < 0)
 		{
-			BOOL ok = SetPriorityClass(h, prioMap[cmd - kPrioBase]);
-			CloseHandle(h);
-			if (!ok) ::MessageBoxW(GetSafeHwnd(), L"设置优先级失败。", L"提示", MB_OK | MB_ICONWARNING);
+			CString msg;
+			msg.Format(L"设置优先级失败。\n驱动返回 NTSTATUS=0x%08X", (ULONG)nRet);
+			::MessageBoxW(GetSafeHwnd(), msg, L"提示", MB_OK | MB_ICONWARNING);
 		}
-		else ::MessageBoxW(GetSafeHwnd(), L"无法以 PROCESS_SET_INFORMATION 打开进程。", L"提示", MB_OK | MB_ICONWARNING);
 		return;
 	}
 	if (cmd >= kAffinityBase && cmd <= kAffinityBase + 8 && hasPid)

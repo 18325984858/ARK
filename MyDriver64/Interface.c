@@ -58,6 +58,7 @@ CCmd g_CmdFun[MAX_FUNCALL_INDEX] = {
 	[um_Cmd_ResumeThread_info]								= {um_Cmd_ResumeThread_info, MyResumeThread},
 	[um_Cmd_KillThread_info]								= {um_Cmd_KillThread_info, MyKillThread},
 	[um_Cmd_Force_Read_KernelRange_info]					= {um_Cmd_Force_Read_KernelRange_info, ForceReadKernelRangeInfo},
+	[um_Cmd_SetProcessPriority_info]						= {um_Cmd_SetProcessPriority_info, MySetProcessPriority},
 };
 
 VOID MyThreadRoutine(PVOID Context)
@@ -1039,6 +1040,63 @@ VOID __vectorcall MyKillThread(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 
 			MyDbgPrintfEx("[MyKillThread] NtTerminateThread status=0x%X\n", Status);
 			ZwClose(hThread);
 			ObDereferenceObject(Thread);
+		}
+	}
+
+	if (MmIsAddressValid(pRet))
+	{
+		*(PULONG64)pRet = (ULONG64)Status;
+	}
+}
+
+// 内核侧设置进程优先级：完全绕开用户态 OpenProcess(PROCESS_SET_INFORMATION)。
+// pIndata = PID，pParam = PROCESS_PRIORITY_CLASS 值（1..6）。
+typedef struct _MY_PROCESS_PRIORITY_CLASS {
+	BOOLEAN Foreground;
+	UCHAR   PriorityClass;
+} MY_PROCESS_PRIORITY_CLASS;
+
+NTSYSAPI NTSTATUS NTAPI ZwSetInformationProcess(
+	IN HANDLE ProcessHandle,
+	IN ULONG ProcessInformationClass,
+	IN PVOID ProcessInformation,
+	IN ULONG ProcessInformationLength);
+
+VOID __vectorcall MySetProcessPriority(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam)
+{
+	UNREFERENCED_PARAMETER(nCmd);
+	UNREFERENCED_PARAMETER(pOutData);
+
+	HANDLE pid = (HANDLE)pIndata;
+	UCHAR  cls = (UCHAR)(pParam & 0xFF);
+
+	MyDbgPrintfEx("[MySetProcessPriority] pid=%I64u cls=%u\n", pIndata, (ULONG)cls);
+
+	NTSTATUS Status = STATUS_INVALID_PARAMETER;
+	if (cls >= 1 && cls <= 6)
+	{
+		PEPROCESS Process = NULL;
+		Status = PsLookupProcessByProcessId(pid, &Process);
+		MyDbgPrintfEx("[MySetProcessPriority] PsLookupProcessByProcessId st=0x%X Proc=%p\n",
+			Status, Process);
+		if (NT_SUCCESS(Status) && Process)
+		{
+			HANDLE hProc = NULL;
+			Status = ObOpenObjectByPointer(Process, OBJ_KERNEL_HANDLE, NULL,
+				0x0200 /*PROCESS_SET_INFORMATION*/, *PsProcessType, KernelMode, &hProc);
+			MyDbgPrintfEx("[MySetProcessPriority] ObOpenObjectByPointer st=0x%X hProc=%p\n",
+				Status, hProc);
+			if (NT_SUCCESS(Status) && hProc)
+			{
+				MY_PROCESS_PRIORITY_CLASS pc = { FALSE, cls };
+				CHAR saved = ForceKernelPreviousMode();
+				Status = ZwSetInformationProcess(hProc, /*ProcessPriorityClass*/ 18,
+					&pc, sizeof(pc));
+				RestorePreviousMode(saved);
+				MyDbgPrintfEx("[MySetProcessPriority] ZwSetInformationProcess st=0x%X\n", Status);
+				ZwClose(hProc);
+			}
+			ObDereferenceObject(Process);
 		}
 	}
 
