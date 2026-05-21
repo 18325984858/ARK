@@ -12,6 +12,8 @@
 #include "Thread.h"
 #include "PdbResolver.h"
 #include <thread>
+#include <winsvc.h>
+#pragma comment(lib, "Advapi32.lib")
 
 
 
@@ -50,6 +52,8 @@ BEGIN_MESSAGE_MAP(CMyPCHunter64Dlg, CDialogEx)
 	ON_WM_SIZE()
 	ON_WM_CLOSE()
 	ON_COMMAND(ID_MENU_MAIN_DLG_MONITORDLG, &CMyPCHunter64Dlg::OnMenuMainDlgMonitordlg)
+	ON_COMMAND(ID_MENU_LOAD_OPHION, &CMyPCHunter64Dlg::OnMenuLoadOphion)
+	ON_COMMAND(ID_MENU_UNLOAD_OPHION, &CMyPCHunter64Dlg::OnMenuUnloadOphion)
 	ON_WM_HOTKEY()
 	ON_MESSAGE(WM_USER_PDB_PROGRESS, &CMyPCHunter64Dlg::OnPdbProgress)
 END_MESSAGE_MAP()
@@ -563,6 +567,100 @@ void CMyPCHunter64Dlg::OnMenuMainDlgMonitordlg()
 	{
 		g_DlgProcessMonitor.ShowWindow(1);
 	}
+}
+
+// ---- Ophion VT 驱动加载/卸载（走 SCM：CreateService + StartService）----
+static BOOL OphionGetSysPath(LPWSTR out, DWORD cch)
+{
+	WCHAR exe[MAX_PATH] = { 0 };
+	if (!GetModuleFileNameW(NULL, exe, MAX_PATH)) return FALSE;
+	for (int i = (int)wcslen(exe) - 1; i >= 0; --i)
+	{
+		if (exe[i] == L'\\') { exe[i + 1] = 0; break; }
+	}
+	swprintf_s(out, cch, L"%sOphion.sys", exe);
+	return GetFileAttributesW(out) != INVALID_FILE_ATTRIBUTES;
+}
+
+void CMyPCHunter64Dlg::OnMenuLoadOphion()
+{
+	WCHAR sysPath[MAX_PATH] = { 0 };
+	if (!OphionGetSysPath(sysPath, MAX_PATH))
+	{
+		MessageBoxW(L"未找到 Ophion.sys（应与 MyPCHunter64.exe 同目录）。", L"加载 Ophion", MB_OK | MB_ICONERROR);
+		return;
+	}
+
+	SC_HANDLE hSCM = OpenSCManagerW(NULL, NULL, SC_MANAGER_ALL_ACCESS);
+	if (!hSCM) { MessageBoxW(L"打开 SCM 失败（需要管理员权限）。", L"加载 Ophion", MB_OK | MB_ICONERROR); return; }
+
+	SC_HANDLE hSvc = CreateServiceW(hSCM, L"Ophion", L"Ophion VT",
+		SERVICE_ALL_ACCESS, SERVICE_KERNEL_DRIVER, SERVICE_DEMAND_START, SERVICE_ERROR_NORMAL,
+		sysPath, NULL, NULL, NULL, NULL, NULL);
+	if (!hSvc)
+	{
+		DWORD gle = GetLastError();
+		if (gle == ERROR_SERVICE_EXISTS)
+			hSvc = OpenServiceW(hSCM, L"Ophion", SERVICE_ALL_ACCESS);
+		if (!hSvc)
+		{
+			CString msg; msg.Format(L"CreateService/OpenService 失败 (gle=%lu)。", gle);
+			MessageBoxW(msg, L"加载 Ophion", MB_OK | MB_ICONERROR);
+			CloseServiceHandle(hSCM); return;
+		}
+	}
+
+	if (!StartServiceW(hSvc, 0, NULL))
+	{
+		DWORD gle = GetLastError();
+		if (gle == ERROR_SERVICE_ALREADY_RUNNING)
+		{
+			MessageBoxW(L"Ophion 已在运行。", L"加载 Ophion", MB_OK | MB_ICONINFORMATION);
+		}
+		else
+		{
+			CString msg;
+			msg.Format(L"StartService 失败 (gle=%lu)。\n\n常见原因：\n"
+				L"  • HVCI/VBS 没关 → BSOD 或直接拒绝\n"
+				L"  • 驱动未签名且没开 testsigning\n"
+				L"  • BIOS 未启用 VT-x\n"
+				L"  • Hyper-V 仍在运行（VMX root 同时只能一个）", gle);
+			MessageBoxW(msg, L"加载 Ophion", MB_OK | MB_ICONERROR);
+		}
+	}
+	else
+	{
+		MessageBoxW(L"Ophion VT 驱动加载成功。", L"加载 Ophion", MB_OK | MB_ICONINFORMATION);
+	}
+	CloseServiceHandle(hSvc);
+	CloseServiceHandle(hSCM);
+}
+
+void CMyPCHunter64Dlg::OnMenuUnloadOphion()
+{
+	SC_HANDLE hSCM = OpenSCManagerW(NULL, NULL, SC_MANAGER_ALL_ACCESS);
+	if (!hSCM) { MessageBoxW(L"打开 SCM 失败。", L"卸载 Ophion", MB_OK | MB_ICONERROR); return; }
+
+	SC_HANDLE hSvc = OpenServiceW(hSCM, L"Ophion", SERVICE_ALL_ACCESS);
+	if (!hSvc)
+	{
+		MessageBoxW(L"Ophion 服务不存在（未加载？）。", L"卸载 Ophion", MB_OK | MB_ICONINFORMATION);
+		CloseServiceHandle(hSCM); return;
+	}
+
+	SERVICE_STATUS ss = { 0 };
+	ControlService(hSvc, SERVICE_CONTROL_STOP, &ss);   // 失败也继续 DeleteService
+
+	if (DeleteService(hSvc))
+		MessageBoxW(L"Ophion VT 驱动已卸载。", L"卸载 Ophion", MB_OK | MB_ICONINFORMATION);
+	else
+	{
+		CString msg; msg.Format(L"DeleteService 失败 (gle=%lu)。", GetLastError());
+		MessageBoxW(msg, L"卸载 Ophion", MB_OK | MB_ICONERROR);
+	}
+
+	CloseServiceHandle(hSvc);
+	CloseServiceHandle(hSCM);
 }
 
 void CMyPCHunter64Dlg::OnHotKey(UINT nHotKeyId, UINT nKey1, UINT nKey2)

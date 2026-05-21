@@ -225,6 +225,8 @@
 #define ID_32894                        32894
 #define ID_MENU_MAIN_DLG_MONITOR        32895
 #define ID_MENU_MAIN_DLG_MONITORDLG     32896
+#define ID_MENU_LOAD_OPHION             32918
+#define ID_MENU_UNLOAD_OPHION           32919
 #define ID_PROCESS_32897                32897
 #define ID_PROCESS_CLEAR_               32898
 #define ID_PROCESS_CLEAR_PROTECTION     32899

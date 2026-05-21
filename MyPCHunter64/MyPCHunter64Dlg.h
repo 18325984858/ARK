@@ -94,6 +94,8 @@ public:
 	virtual void OnOK();
 	afx_msg void OnClose();
 	afx_msg void OnMenuMainDlgMonitordlg();
+	afx_msg void OnMenuLoadOphion();
+	afx_msg void OnMenuUnloadOphion();
 	afx_msg void OnHotKey(UINT nHotKeyId, UINT nKey1, UINT nKey2);
 	afx_msg LRESULT OnPdbProgress(WPARAM wParam, LPARAM lParam);
 

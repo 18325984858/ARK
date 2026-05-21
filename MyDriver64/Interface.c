@@ -1171,17 +1171,43 @@ VOID __vectorcall HookSystemServiceTable(IN ULONG64 nCmd, IN ULONG64 pIndata, OU
 
 VOID __vectorcall HookSsdtTable(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam)
 {
-	if (!MmIsAddressValid(pIndata))
-	{
-		return;
-	}
+	UNREFERENCED_PARAMETER(nCmd);
+	UNREFERENCED_PARAMETER(pOutData);
+	UNREFERENCED_PARAMETER(pParam);
 
-	//__debugbreak();
+	NTSTATUS Status = STATUS_INVALID_PARAMETER;
+
+	if (!MmIsAddressValid((PVOID)pIndata))
+	{
+		goto done;
+	}
 
 	ULONG64 FunNumber = ((PCHookSsdtTableInfo)pIndata)->FunNumber;
 	ULONG64 State = ((PCHookSsdtTableInfo)pIndata)->State;
 
+	// (1) 越界保护：FunNumber 可能是任意 SSDT 序号
+	if (FunNumber >= SSDT_MAX_NUMBER)
+	{
+		Status = STATUS_INVALID_PARAMETER;
+		goto done;
+	}
+
+	// (2) 该 SSDT 项没有对应的 hook stub（MySSDTTable[i] == NULL 时 InitRootSsdtHook 不会
+	//     给它分配 PCEtwHook），槽位是 NULL，旧版直接 ->nIsMonitor 就 AV 了。
+	if (g_MySSDTTableHookInfo[FunNumber] == NULL)
+	{
+		Status = STATUS_NOT_SUPPORTED;
+		goto done;
+	}
+
 	g_MySSDTTableHookInfo[FunNumber]->nIsMonitor = State;
+	Status = STATUS_SUCCESS;
+
+done:
+	if (MmIsAddressValid((PVOID)pRet))
+	{
+		*(PULONG64)pRet = (ULONG64)Status;
+	}
 }
 
 VOID __vectorcall EnumHalTableInfo(IN ULONG64 nCmd, IN ULONG64 pIndata, OUT ULONG64 pOutData, OUT ULONG64 pRet, IN OUT ULONG64 pParam)
