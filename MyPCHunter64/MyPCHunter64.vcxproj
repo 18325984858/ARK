@@ -247,6 +247,7 @@
     <ClInclude Include="DlgDriverModule.h" />
     <ClInclude Include="DlgEnumFile.h" />
     <ClInclude Include="DlgEnumRegistry.h" />
+    <ClInclude Include="DlgEditRegValue.h" />
     <ClInclude Include="DlgGdt.h" />
     <ClInclude Include="DlgIdt.h" />
     <ClInclude Include="DlgKernel.h" />
@@ -298,6 +299,7 @@
     <ClCompile Include="DlgDriverModule.cpp" />
     <ClCompile Include="DlgEnumFile.cpp" />
     <ClCompile Include="DlgEnumRegistry.cpp" />
+    <ClCompile Include="DlgEditRegValue.cpp" />
     <ClCompile Include="DlgGdt.cpp" />
     <ClCompile Include="DlgIdt.cpp" />
     <ClCompile Include="DlgKernel.cpp" />

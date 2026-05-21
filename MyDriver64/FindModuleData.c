@@ -1000,19 +1000,33 @@ UCHAR GetOffset()
 			nRet = FALSE;
 		}
 
-		PsLoadedModuleList = ToUserSendGetGlobalVariablesMessgae(L"ntoskrnel.exe", L"PsLoadedModuleList") + g_NtoskrnlAddr;
-		if (!PsLoadedModuleList)
 		{
-			MyDbgPrintfEx("[%s] 获取PsLoadedModuleList变量失败 Data[%I64X]!\n", __FUNCTION__, PsLoadedModuleList);
-			nRet = FALSE;
+			ULONG64 rva = ToUserSendGetGlobalVariablesMessgae(L"ntoskrnel.exe", L"PsLoadedModuleList");
+			if (rva == 0 || rva == (ULONG64)-1)
+			{
+				PsLoadedModuleList = NULL;
+				MyDbgPrintfEx("[%s] 获取PsLoadedModuleList变量失败 rva=%I64X!\n", __FUNCTION__, rva);
+				nRet = FALSE;
+			}
+			else
+			{
+				PsLoadedModuleList = (PLIST_ENTRY)(rva + g_NtoskrnlAddr);
+			}
 		}
 
-	
-		KdPitchDebugger = ToUserSendGetGlobalVariablesMessgae(L"ntoskrnel.exe", L"KdPitchDebugger") + g_NtoskrnlAddr;
-		if (!KdPitchDebugger)
 		{
-			MyDbgPrintfEx("[%s] 获取KdPitchDebugger变量失败 Data[%I64X]!\n", __FUNCTION__, KdPitchDebugger);
-			nRet = FALSE;
+			ULONG64 rva = ToUserSendGetGlobalVariablesMessgae(L"ntoskrnel.exe", L"KdPitchDebugger");
+			if (rva == 0 || rva == (ULONG64)-1)
+			{
+				// PDB 查不到也不能让它变成 base-1 在内核里裸解引用。NULL 后面走 MmIsAddressValid 的保护分支。
+				KdPitchDebugger = NULL;
+				MyDbgPrintfEx("[%s] 获取KdPitchDebugger变量失败 rva=%I64X (已置 NULL)!\n", __FUNCTION__, rva);
+				// 不当致命，仅权调位变量可能可选
+			}
+			else
+			{
+				KdPitchDebugger = (PBOOLEAN)(rva + g_NtoskrnlAddr);
+			}
 		}
 	/*
 		KdDebuggerEnabled = ToUserSendGetGlobalVariablesMessgae(L"ntoskrnel.exe", L"KdDebuggerEnabled") + g_NtoskrnlAddr;

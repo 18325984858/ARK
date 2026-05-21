@@ -6308,9 +6308,10 @@ ULONG64 kdDebugFlags(PCDebugFlagInfo pDebugInfo)
 
 	if (pDebugInfo->UserOperate == USER_GET_DEBUG_FLAG)
 	{
-		pDebugInfo->KdPitchDebugger = *KdPitchDebugger;
-		pDebugInfo->kdDebuggerEnable = *KdDebuggerEnabled;
-		pDebugInfo->KdDebuggerNotPresent = *KdDebuggerNotPresent;
+		// PDB 可能查不到 KdPitchDebugger，初始化为 NULL/非法。读之前必须判有效。
+		pDebugInfo->KdPitchDebugger = MmIsAddressValid(KdPitchDebugger) ? *KdPitchDebugger : 0;
+		pDebugInfo->kdDebuggerEnable = MmIsAddressValid(KdDebuggerEnabled) ? *KdDebuggerEnabled : 0;
+		pDebugInfo->KdDebuggerNotPresent = MmIsAddressValid(KdDebuggerNotPresent) ? *KdDebuggerNotPresent : 0;
 		pDebugInfo->SharedDataKdDebuggerEnabled = ((PKUSER_SHARED_DATA)KI_USER_SHARED_DATA)->KdDebuggerEnabled;
 	}
 	else
@@ -6327,9 +6328,9 @@ ULONG64 kdDebugFlags(PCDebugFlagInfo pDebugInfo)
 		__writecr0(cr0 & ~0x10000ULL);  // 清掉 CR0.WP，允许内核写只读页
 		_disable();
 
-		__try { *KdPitchDebugger      = pDebugInfo->KdPitchDebugger; }      __except(EXCEPTION_EXECUTE_HANDLER) {}
-		__try { *KdDebuggerEnabled    = pDebugInfo->kdDebuggerEnable; }    __except(EXCEPTION_EXECUTE_HANDLER) {}
-		__try { *KdDebuggerNotPresent = pDebugInfo->KdDebuggerNotPresent; }__except(EXCEPTION_EXECUTE_HANDLER) {}
+		__try { if (MmIsAddressValid(KdPitchDebugger))      *KdPitchDebugger      = pDebugInfo->KdPitchDebugger; }      __except(EXCEPTION_EXECUTE_HANDLER) {}
+		__try { if (MmIsAddressValid(KdDebuggerEnabled))    *KdDebuggerEnabled    = pDebugInfo->kdDebuggerEnable; }    __except(EXCEPTION_EXECUTE_HANDLER) {}
+		__try { if (MmIsAddressValid(KdDebuggerNotPresent)) *KdDebuggerNotPresent = pDebugInfo->KdDebuggerNotPresent; }__except(EXCEPTION_EXECUTE_HANDLER) {}
 		__try { ((PKUSER_SHARED_DATA)KI_USER_SHARED_DATA)->KdDebuggerEnabled = pDebugInfo->SharedDataKdDebuggerEnabled; }
 		__except(EXCEPTION_EXECUTE_HANDLER) {}
 
@@ -6341,7 +6342,9 @@ ULONG64 kdDebugFlags(PCDebugFlagInfo pDebugInfo)
 		MyDbgPrintfEx("kdDebugFlags SET wanted P=%d E=%d N=%d S=%d ; readback P=%d E=%d N=%d S=%d\n",
 			pDebugInfo->KdPitchDebugger, pDebugInfo->kdDebuggerEnable,
 			pDebugInfo->KdDebuggerNotPresent, pDebugInfo->SharedDataKdDebuggerEnabled,
-			*KdPitchDebugger, *KdDebuggerEnabled, *KdDebuggerNotPresent,
+			MmIsAddressValid(KdPitchDebugger) ? *KdPitchDebugger : 0,
+			MmIsAddressValid(KdDebuggerEnabled) ? *KdDebuggerEnabled : 0,
+			MmIsAddressValid(KdDebuggerNotPresent) ? *KdDebuggerNotPresent : 0,
 			((PKUSER_SHARED_DATA)KI_USER_SHARED_DATA)->KdDebuggerEnabled);
 	}
 
