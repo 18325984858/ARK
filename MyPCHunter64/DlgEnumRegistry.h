@@ -44,6 +44,15 @@ public:
 	afx_msg void OnTvnSelchangedEnumregsitryTree(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnNMClickEnumregsitryTree(NMHDR* pNMHDR, LRESULT* pResult);
 
+	// ===== 树/列表之间的左右拖动分隔条 =====
+	int  m_SplitX = -1;      // 分隔条中心 x（客户区坐标），<0 表示未初始化
+	bool m_SplitDragging = false;
+	CRect GetSplitterRect() const;
+	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
+	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
+	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
+	afx_msg BOOL OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message);
+
 	// 把指定树节点的内核路径（ItemData 里的 CString*）转换成显示路径并写入 m_PathEdit。
 	void SyncPathEditFromTreeItem(HTREEITEM hItem);
 

@@ -87,4 +87,13 @@ public:
 	afx_msg void OnBtnNavUp();
 	afx_msg void OnBtnNavGo();
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
+
+	// ===== 树/列表之间的左右拖动分隔条 =====
+	int  m_SplitX = -1;      // 分隔条中心 x（客户区坐标），<0 表示未初始化
+	bool m_SplitDragging = false;
+	CRect GetSplitterRect() const; // 当前分隔条命中区域（客户区坐标）
+	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
+	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
+	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
+	afx_msg BOOL OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message);
 };

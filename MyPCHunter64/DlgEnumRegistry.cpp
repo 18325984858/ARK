@@ -60,6 +60,10 @@ BEGIN_MESSAGE_MAP(DlgEnumRegistry, CDialogEx)
 	ON_NOTIFY(LVN_ENDLABELEDIT, ID_ENUMREGSITRY_LIST, &DlgEnumRegistry::OnLvnEndlabeleditEnumregsitryList)
 	ON_NOTIFY(TVN_SELCHANGED, ID_ENUMREGSITRY_TREE, &DlgEnumRegistry::OnTvnSelchangedEnumregsitryTree)
 	ON_NOTIFY(NM_CLICK, ID_ENUMREGSITRY_TREE, &DlgEnumRegistry::OnNMClickEnumregsitryTree)
+	ON_WM_LBUTTONDOWN()
+	ON_WM_LBUTTONUP()
+	ON_WM_MOUSEMOVE()
+	ON_WM_SETCURSOR()
 END_MESSAGE_MAP()
 
 namespace
@@ -480,17 +484,89 @@ void DlgEnumRegistry::OnSize(UINT nType, int cx, int cy)
 	CRect rect;
 	GetClientRect(&rect);
 
-	float fwidth = rect.Width() / 4;
-
 	if (m_PathEdit.GetSafeHwnd())
 	{
 		m_PathEdit.SetWindowPos(NULL, 0, 0, rect.Width(), kPathBarH, SWP_NOZORDER);
 	}
 	const int top = m_PathEdit.GetSafeHwnd() ? kPathBarH : 0;
-	m_CTreeCtrl.SetWindowPos(NULL, 0, top, fwidth, rect.Height() - top, SWP_NOZORDER);
-	m_CListCtrl.SetWindowPos(NULL, fwidth, top, rect.Width() - fwidth, rect.Height() - top, SWP_NOZORDER);
+	int bodyH = rect.Height() - top;
+	if (bodyH < 0) bodyH = 0;
 
-	// TODO: 在此处添加消息处理程序代码
+	const int kSplitHalf = 3;
+	if (m_SplitX < 0) m_SplitX = rect.Width() / 4;
+	const int kMinPane = 80;
+	if (m_SplitX < kMinPane + kSplitHalf) m_SplitX = kMinPane + kSplitHalf;
+	if (m_SplitX > rect.Width() - kMinPane - kSplitHalf)
+		m_SplitX = rect.Width() - kMinPane - kSplitHalf;
+
+	int treeW = m_SplitX - kSplitHalf;
+	int listX = m_SplitX + kSplitHalf;
+	int listW = rect.Width() - listX;
+	if (treeW < 0) treeW = 0;
+	if (listW < 0) listW = 0;
+
+	m_CTreeCtrl.SetWindowPos(NULL, 0, top, treeW, bodyH, SWP_NOZORDER);
+	m_CListCtrl.SetWindowPos(NULL, listX, top, listW, bodyH, SWP_NOZORDER);
+}
+
+CRect DlgEnumRegistry::GetSplitterRect() const
+{
+	CRect rect;
+	GetClientRect(&rect);
+	const int kSplitHalf = 3;
+	const int top = m_PathEdit.GetSafeHwnd() ? kPathBarH : 0;
+	int bodyH = rect.Height() - top;
+	if (bodyH < 0) bodyH = 0;
+	int x = (m_SplitX < 0) ? rect.Width() / 4 : m_SplitX;
+	return CRect(x - kSplitHalf, top, x + kSplitHalf, top + bodyH);
+}
+
+void DlgEnumRegistry::OnLButtonDown(UINT nFlags, CPoint point)
+{
+	if (GetSplitterRect().PtInRect(point))
+	{
+		m_SplitDragging = true;
+		SetCapture();
+		return;
+	}
+	CDialogEx::OnLButtonDown(nFlags, point);
+}
+
+void DlgEnumRegistry::OnLButtonUp(UINT nFlags, CPoint point)
+{
+	if (m_SplitDragging)
+	{
+		m_SplitDragging = false;
+		ReleaseCapture();
+		return;
+	}
+	CDialogEx::OnLButtonUp(nFlags, point);
+}
+
+void DlgEnumRegistry::OnMouseMove(UINT nFlags, CPoint point)
+{
+	if (m_SplitDragging)
+	{
+		m_SplitX = point.x;
+		CRect rc; GetClientRect(&rc);
+		SendMessage(WM_SIZE, SIZE_RESTORED, MAKELPARAM(rc.Width(), rc.Height()));
+		return;
+	}
+	CDialogEx::OnMouseMove(nFlags, point);
+}
+
+BOOL DlgEnumRegistry::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
+{
+	if (pWnd == this && nHitTest == HTCLIENT)
+	{
+		CPoint pt; GetCursorPos(&pt); ScreenToClient(&pt);
+		if (m_SplitDragging || GetSplitterRect().PtInRect(pt))
+		{
+			SetCursor(LoadCursor(NULL, IDC_SIZEWE));
+			return TRUE;
+		}
+	}
+	return CDialogEx::OnSetCursor(pWnd, nHitTest, message);
 }
 
 BOOL DlgEnumRegistry::OnInitDialog()

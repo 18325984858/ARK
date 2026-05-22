@@ -19,6 +19,27 @@
 #define ID_NAVBAR_UP      30006
 static const int kNavBarHeight = 28;
 
+// 取系统小图标索引（基于扩展名/属性，不访问磁盘）
+static int GetShellSmallIconIndex(LPCWSTR name, DWORD attrs)
+{
+	SHFILEINFOW sfi = { 0 };
+	SHGetFileInfoW(name, attrs, &sfi, sizeof(sfi),
+		SHGFI_SYSICONINDEX | SHGFI_SMALLICON | SHGFI_USEFILEATTRIBUTES);
+	return sfi.iIcon;
+}
+
+// 带图标地插入一行：text 显示在第 0 列，name+attrs 用来挑图标
+static int InsertFileListItem(CListCtrl& lc, int row, LPCWSTR text, LPCWSTR name, DWORD attrs)
+{
+	LVITEMW it = { 0 };
+	it.mask = LVIF_TEXT | LVIF_IMAGE;
+	it.iItem = row;
+	it.iSubItem = 0;
+	it.pszText = (LPWSTR)text;
+	it.iImage = GetShellSmallIconIndex(name, attrs);
+	return lc.InsertItem(&it);
+}
+
 // DlgEnumFile 对话框
 
 IMPLEMENT_DYNAMIC(DlgEnumFile, CDialogEx)
@@ -55,6 +76,10 @@ BEGIN_MESSAGE_MAP(DlgEnumFile, CDialogEx)
 	ON_BN_CLICKED(ID_NAVBAR_FORWARD, &DlgEnumFile::OnBtnNavForward)
 	ON_BN_CLICKED(ID_NAVBAR_UP,      &DlgEnumFile::OnBtnNavUp)
 	ON_BN_CLICKED(ID_NAVBAR_GO,      &DlgEnumFile::OnBtnNavGo)
+	ON_WM_LBUTTONDOWN()
+	ON_WM_LBUTTONUP()
+	ON_WM_MOUSEMOVE()
+	ON_WM_SETCURSOR()
 END_MESSAGE_MAP()
 
 
@@ -105,6 +130,17 @@ BOOL DlgEnumFile::OnInitDialog()
 	{
 		m_CListCtrl.InsertColumn(i, szBuf1[i]);
 		m_CListCtrl.SetColumnWidth(i, 200);
+	}
+
+	// 挂接系统小图标 ImageList（系统共享，无需 Destroy）
+	{
+		SHFILEINFOW sfi = { 0 };
+		HIMAGELIST himl = (HIMAGELIST)SHGetFileInfoW(L"C:\\", 0, &sfi, sizeof(sfi),
+			SHGFI_SYSICONINDEX | SHGFI_SMALLICON);
+		if (himl)
+		{
+			ListView_SetImageList(m_CListCtrl.GetSafeHwnd(), himl, LVSIL_SMALL);
+		}
 	}
 
 	// ===== 顶部地址栏：[<] [>]  [Path .....] [Go]  [Search .....] =====
@@ -182,10 +218,84 @@ void DlgEnumFile::OnSize(UINT nType, int cx, int cy)
 	int top = kNavBarHeight;
 	int bodyH = rect.Height() - top;
 	if (bodyH < 0) bodyH = 0;
-	float fwidth = rect.Width() / 4;
 
-	m_CTreeCtrl.SetWindowPos(NULL, 0, top, (int)fwidth, bodyH, SWP_NOZORDER);
-	m_CListCtrl.SetWindowPos(NULL, (int)fwidth, top, rect.Width() - (int)fwidth, bodyH, SWP_NOZORDER);
+	// 首次按 1/4 初始化；后续尊重用户拖动后的 m_SplitX
+	const int kSplitHalf = 3; // 分隔条宽度 = 2*kSplitHalf
+	if (m_SplitX < 0) m_SplitX = rect.Width() / 4;
+	// 限制范围，不让树/列被拖没
+	const int kMinPane = 80;
+	if (m_SplitX < kMinPane + kSplitHalf) m_SplitX = kMinPane + kSplitHalf;
+	if (m_SplitX > rect.Width() - kMinPane - kSplitHalf)
+		m_SplitX = rect.Width() - kMinPane - kSplitHalf;
+
+	int treeW = m_SplitX - kSplitHalf;
+	int listX = m_SplitX + kSplitHalf;
+	int listW = rect.Width() - listX;
+	if (treeW < 0) treeW = 0;
+	if (listW < 0) listW = 0;
+
+	m_CTreeCtrl.SetWindowPos(NULL, 0, top, treeW, bodyH, SWP_NOZORDER);
+	m_CListCtrl.SetWindowPos(NULL, listX, top, listW, bodyH, SWP_NOZORDER);
+}
+
+CRect DlgEnumFile::GetSplitterRect() const
+{
+	CRect rect;
+	GetClientRect(&rect);
+	const int kSplitHalf = 3;
+	int top = kNavBarHeight;
+	int bodyH = rect.Height() - top;
+	if (bodyH < 0) bodyH = 0;
+	int x = (m_SplitX < 0) ? rect.Width() / 4 : m_SplitX;
+	return CRect(x - kSplitHalf, top, x + kSplitHalf, top + bodyH);
+}
+
+void DlgEnumFile::OnLButtonDown(UINT nFlags, CPoint point)
+{
+	if (GetSplitterRect().PtInRect(point))
+	{
+		m_SplitDragging = true;
+		SetCapture();
+		return;
+	}
+	CDialogEx::OnLButtonDown(nFlags, point);
+}
+
+void DlgEnumFile::OnLButtonUp(UINT nFlags, CPoint point)
+{
+	if (m_SplitDragging)
+	{
+		m_SplitDragging = false;
+		ReleaseCapture();
+		return;
+	}
+	CDialogEx::OnLButtonUp(nFlags, point);
+}
+
+void DlgEnumFile::OnMouseMove(UINT nFlags, CPoint point)
+{
+	if (m_SplitDragging)
+	{
+		m_SplitX = point.x;
+		CRect rc; GetClientRect(&rc);
+		SendMessage(WM_SIZE, SIZE_RESTORED, MAKELPARAM(rc.Width(), rc.Height()));
+		return;
+	}
+	CDialogEx::OnMouseMove(nFlags, point);
+}
+
+BOOL DlgEnumFile::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
+{
+	if (pWnd == this && nHitTest == HTCLIENT)
+	{
+		CPoint pt; GetCursorPos(&pt); ScreenToClient(&pt);
+		if (m_SplitDragging || GetSplitterRect().PtInRect(pt))
+		{
+			SetCursor(LoadCursor(NULL, IDC_SIZEWE));
+			return TRUE;
+		}
+	}
+	return CDialogEx::OnSetCursor(pWnd, nHitTest, message);
 }
 
 void DlgEnumFile::DelTreeChild(HTREEITEM pNode)
@@ -379,7 +489,8 @@ void DlgEnumFile::EnunFile()
 		{
 			ULONG64 i = m_CListCtrl.GetItemCount();
 
-			m_CListCtrl.InsertItem(i, pCurFileInfo->FileFullName);
+			InsertFileListItem(m_CListCtrl, (int)i, pCurFileInfo->FileFullName,
+				pCurFileInfo->FileFullName, FILE_ATTRIBUTE_NORMAL);
 
 			// 内核读到的时间字段为 UTC，转换到本地时区再显示
 			auto FormatTimeLocal = [](const auto& tf, CString& out) {
@@ -666,7 +777,7 @@ void DlgEnumFile::OnNMRClickEnumfileList(NMHDR* pNMHDR, LRESULT* pResult)
 			// 只更新列表：在末尾追加一行（不重新枚举整个目录）
 			CString name = full.Mid(m_CurPath.GetLength());
 			int row = m_CListCtrl.GetItemCount();
-			m_CListCtrl.InsertItem(row, name);
+			InsertFileListItem(m_CListCtrl, row, name, name, FILE_ATTRIBUTE_NORMAL);
 			// 时间/大小先填 "--"，下一次刷新会更准
 			m_CListCtrl.SetItemText(row, 1, L"--");
 			m_CListCtrl.SetItemText(row, 2, L"--");
@@ -1254,7 +1365,7 @@ void DlgEnumFile::ApplyListSearchFilter(const CString& keyword)
 
 			// 命中：列表显示完整路径，方便直接看出文件位置
 			int row = m_CListCtrl.GetItemCount();
-			m_CListCtrl.InsertItem(row, fullPath);
+			InsertFileListItem(m_CListCtrl, row, fullPath, fd.cFileName, FILE_ATTRIBUTE_NORMAL);
 
 			CString s;
 			fmtTime(fd.ftCreationTime,   s); m_CListCtrl.SetItemText(row, 1, s);
